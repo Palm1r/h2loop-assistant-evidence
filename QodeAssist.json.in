@@ -1,7 +1,7 @@
 {
     "Id" : "h2loopassistant",
     "Name" : "H2Loop Assistant",
-    "Version" : "0.0.1",
+    "Version" : "0.7.1",
     "CompatVersion" : "${IDE_VERSION}",
     "Vendor" : "H2Loop",
     "VendorId" : "h2loop",
