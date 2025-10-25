@@ -52,7 +52,7 @@ QodeAssistClient::QodeAssistClient(LLMClientInterface *clientInterface)
     , m_llmClient(clientInterface)
     , m_recentCharCount(0)
 {
-    setName("QodeAssist");
+    setName("H2Loop Assistant");
     LanguageClient::LanguageFilter filter;
     filter.mimeTypes = QStringList() << "*";
     setSupportedLanguage(filter);
