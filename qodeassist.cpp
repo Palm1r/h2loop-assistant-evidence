@@ -175,9 +175,10 @@ public:
         Settings::setupProjectPanel();
         ConfigurationManager::instance().init();
 
-        if (Settings::generalSettings().enableCheckUpdate()) {
-            QTimer::singleShot(3000, this, &QodeAssistPlugin::checkForUpdates);
-        }
+        // Temporarily disable update check
+        // if (Settings::generalSettings().enableCheckUpdate()) {
+        //     QTimer::singleShot(3000, this, &QodeAssistPlugin::checkForUpdates);
+        // }
 
         ActionBuilder quickRefactorAction(this, "QodeAssist.QuickRefactor");
         const QKeySequence quickRefactorShortcut = QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_R);
