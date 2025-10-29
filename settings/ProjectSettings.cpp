@@ -35,8 +35,8 @@ ProjectSettings::ProjectSettings(ProjectExplorer::Project *project)
     useGlobalSettings.setDefaultValue(true);
 
     enableQodeAssist.setSettingsKey(Constants::QODE_ASSIST_ENABLE_IN_PROJECT);
-    enableQodeAssist.setDisplayName(Tr::tr("Enable QodeAssist"));
-    enableQodeAssist.setLabelText(Tr::tr("Enable QodeAssist"));
+    enableQodeAssist.setDisplayName(Tr::tr("Enable H2Loop Assistant"));
+    enableQodeAssist.setLabelText(Tr::tr("Enable H2Loop Assistant"));
     enableQodeAssist.setDefaultValue(false);
 
     chatHistoryPath.setSettingsKey(Constants::QODE_ASSIST_CHAT_HISTORY_PATH);
