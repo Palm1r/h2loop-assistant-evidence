@@ -82,12 +82,7 @@ GeneralSettings::GeneralSettings()
     enableLogging.setToolTip(TrConstants::ENABLE_LOG_TOOLTIP);
     enableLogging.setDefaultValue(false);
 
-    enableCheckUpdate.setSettingsKey(Constants::ENABLE_CHECK_UPDATE);
-    enableCheckUpdate.setLabelText(TrConstants::ENABLE_CHECK_UPDATE_ON_START);
-    enableCheckUpdate.setDefaultValue(true);
-
     resetToDefaults.m_buttonText = TrConstants::RESET_TO_DEFAULTS;
-    checkUpdate.m_buttonText = TrConstants::CHECK_UPDATE;
 
     initStringAspect(ccProvider, Constants::CC_PROVIDER, TrConstants::PROVIDER, "Ollama");
     ccProvider.setReadOnly(true);
@@ -338,9 +333,8 @@ GeneralSettings::GeneralSettings()
             Column{Row{qrSaveConfig, qrLoadConfig, qrOpenConfigFolder, Stretch{1}}, qrGrid}};
 
         auto rootLayout = Column{
-            Row{enableQodeAssist, Stretch{1}, Row{checkUpdate, resetToDefaults}},
+            Row{enableQodeAssist, Stretch{1}, resetToDefaults},
             Row{enableLogging, Stretch{1}},
-            Row{enableCheckUpdate, Stretch{1}},
             Space{8},
             ccGroup,
             Space{8},
@@ -567,9 +561,6 @@ void GeneralSettings::setupConnections()
         Logger::instance().setLoggingEnabled(enableLogging.volatileValue());
     });
     connect(&resetToDefaults, &ButtonAspect::clicked, this, &GeneralSettings::resetPageToDefaults);
-    connect(&checkUpdate, &ButtonAspect::clicked, this, [this]() {
-        QodeAssist::UpdateDialog::checkForUpdatesAndShow(Core::ICore::dialogParent());
-    });
 
     connect(&specifyPreset1, &Utils::BoolAspect::volatileValueChanged, this, [this]() {
         updatePreset1Visiblity(specifyPreset1.volatileValue());
@@ -667,7 +658,6 @@ void GeneralSettings::resetPageToDefaults()
         resetAspect(caModel);
         resetAspect(caTemplate);
         resetAspect(caUrl);
-        resetAspect(enableCheckUpdate);
         resetAspect(specifyPreset1);
         resetAspect(preset1Language);
         resetAspect(ccPreset1Provider);
