@@ -321,7 +321,7 @@ developers write better code. If you find it useful, please</source>
         <location filename="../../settings/SettingsTr.hpp" line="27"/>
         <location filename="../../settings/ProjectSettings.cpp" line="38"/>
         <location filename="../../settings/ProjectSettings.cpp" line="39"/>
-        <source>Enable QodeAssist</source>
+        <source>Enable H2Loop Assistant</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
