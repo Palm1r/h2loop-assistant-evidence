@@ -38,7 +38,7 @@ namespace QodeAssist::Chat {
 ChatView::ChatView()
     : m_isPin(false)
 {
-    setTitle("QodeAssist Chat");
+    setTitle("H2Loop Assistant Chat");
     engine()->rootContext()->setContextProperty("_chatview", this);
     setSource(QUrl("qrc:/qt/qml/ChatView/qml/RootItem.qml"));
     setResizeMode(QQuickView::SizeRootObjectToView);
