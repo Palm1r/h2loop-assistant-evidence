@@ -128,7 +128,7 @@ public:
 
         Providers::registerProviders();
         Templates::registerTemplates();
-        
+
         CustomInstructionsManager::instance().loadInstructions();
 
         Utils::Icon QCODEASSIST_ICON(
