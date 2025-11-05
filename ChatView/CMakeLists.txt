@@ -1,7 +1,9 @@
 qt_add_library(QodeAssistChatView STATIC)
 
 qt_policy(SET QTP0001 NEW)
-qt_policy(SET QTP0004 NEW)
+if(Qt6_VERSION VERSION_GREATER_EQUAL "6.7.0")
+    qt_policy(SET QTP0004 NEW)
+endif()
 
 qt_add_qml_module(QodeAssistChatView
     URI ChatView

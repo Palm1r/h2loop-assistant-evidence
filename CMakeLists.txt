@@ -14,7 +14,11 @@ find_package(QtCreator REQUIRED COMPONENTS Core)
 find_package(Qt6 COMPONENTS Core Gui Quick Widgets Network Test LinguistTools REQUIRED)
 find_package(GTest)
 
-qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES en)
+if(Qt6_VERSION VERSION_GREATER_EQUAL "6.7.0")
+    qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES en)
+else()
+    qt_standard_project_setup()
+endif()
 
 # IDE_VERSION is defined by QtCreator package
 string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" version_match ${IDE_VERSION})
@@ -152,8 +156,10 @@ if (QtCreatorExecutable)
 endif()
 
 #TODO change to TS_OUTPUT_DIRECTORY after removing Qt6.8
-qt_add_translations(TARGETS QodeAssist
-          TS_FILE_DIR ${CMAKE_CURRENT_LIST_DIR}/resources/translations
-          RESOURCE_PREFIX "/translations"
-          LUPDATE_OPTIONS -no-obsolete
-)
+if(Qt6_VERSION VERSION_GREATER_EQUAL "6.7.0")
+    qt_add_translations(TARGETS QodeAssist
+              TS_FILE_DIR ${CMAKE_CURRENT_LIST_DIR}/resources/translations
+              RESOURCE_PREFIX "/translations"
+              LUPDATE_OPTIONS -no-obsolete
+    )
+endif()

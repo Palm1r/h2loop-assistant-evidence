@@ -22,6 +22,7 @@
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QGuiApplication>
 #include <QMessageBox>
 
 #include <coreplugin/editormanager/editormanager.h>
