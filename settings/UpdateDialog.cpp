@@ -32,7 +32,7 @@ UpdateDialog::UpdateDialog(QWidget *parent)
     : QDialog(parent)
     , m_updater(new PluginUpdater(this))
 {
-    setWindowTitle(tr("QodeAssist Update"));
+    setWindowTitle(tr("H2Loop Assistant Update"));
     setMinimumWidth(400);
     setMinimumHeight(300);
 
@@ -40,14 +40,14 @@ UpdateDialog::UpdateDialog(QWidget *parent)
     m_layout->setSpacing(12);
 
     auto *supportLabel = new QLabel(
-        tr("QodeAssist is an open-source project that helps\n"
+        tr("H2Loop Assistant is an open-source project that helps\n"
            "developers write better code. If you find it useful, please"),
         this);
     supportLabel->setAlignment(Qt::AlignCenter);
     m_layout->addWidget(supportLabel);
 
     auto *supportLink = new QLabel(
-        tr("<a href='https://ko-fi.com/qodeassist' style='color: #0066cc;'>Support on Ko-fi "
+        tr("<a href='https://h2loop.ai' style='color: #0066cc;'>Support on Ko-fi "
            "☕</a>"),
         this);
     supportLink->setOpenExternalLinks(true);
@@ -57,7 +57,7 @@ UpdateDialog::UpdateDialog(QWidget *parent)
 
     m_layout->addSpacing(20);
 
-    m_titleLabel = new QLabel(tr("A new version of QodeAssist is available!"), this);
+    m_titleLabel = new QLabel(tr("A new version of H2Loop Assistant is available!"), this);
     m_titleLabel->setStyleSheet("font-weight: bold; font-size: 14px;");
     m_titleLabel->setAlignment(Qt::AlignCenter);
     m_layout->addWidget(m_titleLabel);
@@ -107,13 +107,13 @@ void UpdateDialog::handleUpdateInfo(const PluginUpdater::UpdateInfo &info)
     m_updateInfo = info;
 
     if (!info.isUpdateAvailable) {
-        m_titleLabel->setText(tr("QodeAssist is up to date"));
+        m_titleLabel->setText(tr("H2Loop Assistant is up to date"));
         m_versionLabel->setText(
             tr("You are using the latest version: %1").arg(m_updater->currentVersion()));
         return;
     }
 
-    m_titleLabel->setText(tr("A new version of QodeAssist is available!"));
+    m_titleLabel->setText(tr("A new version of H2Loop Assistant is available!"));
     m_versionLabel->setText(tr("Version %1 is now available - you have %2")
                                 .arg(info.version, m_updater->currentVersion()));
 
@@ -127,7 +127,7 @@ void UpdateDialog::handleUpdateInfo(const PluginUpdater::UpdateInfo &info)
 
 void UpdateDialog::openReleasePage()
 {
-    QDesktopServices::openUrl(QUrl("https://github.com/Palm1r/QodeAssist/releases/latest"));
+    QDesktopServices::openUrl(QUrl("https://h2loop.ai"));
     accept();
 }
 
