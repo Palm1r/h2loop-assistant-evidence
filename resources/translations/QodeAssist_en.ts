@@ -96,7 +96,7 @@ Would you like to create new chat?</source>
     <name>QodeAssist::Chat::NavigationPanel</name>
     <message>
         <location filename="../../chat/NavigationPanel.cpp" line="28"/>
-        <source>QodeAssist Chat</source>
+        <source>H2Loop Assistant Chat</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -104,7 +104,7 @@ Would you like to create new chat?</source>
     <name>QodeAssist::EditorChatButton</name>
     <message>
         <location filename="../../widgets/EditorChatButton.cpp" line="64"/>
-        <source>Open QodeAssist Chat</source>
+        <source>Open H2Loop Assistant Chat</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -117,7 +117,7 @@ Would you like to create new chat?</source>
     </message>
     <message>
         <location filename="../../settings/UpdateDialog.cpp" line="43"/>
-        <source>QodeAssist is an open-source project that helps
+        <source>H2Loop Assistant is an open-source project that helps
 developers write better code. If you find it useful, please</source>
         <translation type="unfinished"></translation>
     </message>
@@ -129,7 +129,7 @@ developers write better code. If you find it useful, please</source>
     <message>
         <location filename="../../settings/UpdateDialog.cpp" line="60"/>
         <location filename="../../settings/UpdateDialog.cpp" line="116"/>
-        <source>A new version of QodeAssist is available!</source>
+        <source>A new version of H2Loop Assistant is available!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -160,7 +160,7 @@ developers write better code. If you find it useful, please</source>
     </message>
     <message>
         <location filename="../../settings/UpdateDialog.cpp" line="110"/>
-        <source>QodeAssist is up to date</source>
+        <source>H2Loop Assistant is up to date</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -879,27 +879,27 @@ Fields: language name, comment prefix, names from LLM (space-separated), file ex
     </message>
     <message>
         <location filename="../../qodeassist.cpp" line="128"/>
-        <source>Generate QodeAssist suggestion at the current cursor position.</source>
+        <source>Generate H2Loop Assistant suggestion at the current cursor position.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../qodeassist.cpp" line="129"/>
-        <source>Request QodeAssist Suggestion</source>
+        <source>Request H2Loop Assistant Suggestion</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../qodeassist.cpp" line="166"/>
-        <source>Refactor code using QodeAssist</source>
+        <source>Refactor code using H2Loop Assistant</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../qodeassist.cpp" line="167"/>
-        <source>Quick Refactor with QodeAssist</source>
+        <source>Quick Refactor with H2Loop Assistant</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../chat/ChatOutputPane.cpp" line="31"/>
-        <source>QodeAssist Chat</source>
+        <source>H2Loop Assistant Chat</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
