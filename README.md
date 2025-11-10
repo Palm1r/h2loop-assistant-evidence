@@ -21,13 +21,21 @@
 2. [Install Plugin](#install-plugin-to-qtcreator)
 3. [Configuration](#configuration)
 4. [Features](#features)
+   <<<<<<< HEAD
 5. [Context Layers](#context-layers)
 6. [QtCreator Version Compatibility](#qtcreator-version-compatibility)
 7. [Hotkeys](#hotkeys)
 8. [Troubleshooting](#troubleshooting)
 9. [Development Progress](#development-progress)
 10. [Support the Development](#support-the-development-of-qodeassist)
-11. [How to Build](#how-to-build)
+11. # [How to Build](#how-to-build)
+12. [QtCreator Version Compatibility](#qtcreator-version-compatibility)
+13. [Hotkeys](#hotkeys)
+14. [Troubleshooting](#troubleshooting)
+15. [Development Progress](#development-progress)
+16. [Support the Development](#support-the-development-of-qodeassist)
+17. [How to Build](#how-to-build)
+    > > > > > > > e59d17e (doc: Move out docs from main README)
 
 ## Overview
 
@@ -35,11 +43,18 @@ QodeAssist enhances Qt Creator with AI-powered coding assistance:
 
 - **Code Completion**: Intelligent, context-aware code suggestions for C++ and QML
 - **Chat Assistant**: Multiple interface options (popup window, side panel, bottom panel)
+  <<<<<<< HEAD
 - **Quick Refactoring**: Inline AI-assisted code improvements directly in editor with custom instructions library
 - **File Context**: Attach or link files for better AI understanding
 - **Tool Calling**: AI can read project files, search code, and access diagnostics
 - **Multiple Providers**: Support for Ollama, Claude, OpenAI, Google AI, Mistral AI, llama.cpp, and more
-- **Customizable**: Project-specific rules, custom instructions, and extensive model templates
+- # **Customizable**: Project-specific rules, custom instructions, and extensive model templates
+- **Quick Refactoring**: AI-assisted code improvements and alternative suggestions
+- **File Context**: Attach or link files for better AI understanding
+- **Tool Calling**: AI can read project files, search code, and access diagnostics
+- **Multiple Providers**: Support for Ollama, Claude, OpenAI, Google AI, Mistral AI, llama.cpp, and more
+- **Customizable**: Project-specific rules and extensive model templates
+  > > > > > > > e59d17e (doc: Move out docs from main README)
 
 **Join our [Discord Community](https://discord.gg/BGMkUsXUgf)** to get support and connect with other users!
 
@@ -445,10 +460,23 @@ cmake --build .
   OR - Windows
   cmake --build . -j %NUMBER_OF_PROCESSORS%
 
-where `<path_to_qtcreator>` is the relative or absolute path to a Qt Creator build directory, or to a
-combined binary and development package (Windows / Linux), or to the `Qt Creator.app/Contents/Resources/`
-directory of a combined binary and development package (macOS), and `<path_to_plugin_source>` is the
-relative or absolute path to this plugin directory.
+```bash
+mkdir build && cd build
+```
+
+2. Configure and build:
+
+```bash
+cmake -DCMAKE_PREFIX_PATH=<path_to_qtcreator> -DCMAKE_BUILD_TYPE=RelWithDebInfo <path_to_plugin_source>
+cmake --build .
+```
+
+**Path specifications:**
+
+- `<path_to_qtcreator>`:
+  - **Windows/Linux**: Qt Creator build directory or combined binary package
+  - **macOS**: `Qt Creator.app/Contents/Resources/`
+- `<path_to_plugin_source>`: Path to this plugin directory
 
 **Build Command Reference Example (Ubuntu 24)**
 
