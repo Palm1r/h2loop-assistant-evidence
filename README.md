@@ -107,7 +107,7 @@ QodeAssistUpdater is a command-line utility that automates plugin installation a
 
 **Installation:**
 
-Download pre-built binary from [QodeAssistUpdater releases](https://github.com/Palm1r/QodeAssistUpdater/releases) or build from source
+Download pre-built binary from [QodeAssistUpdater releases](https://github.com/Palm1r/QodeAssistUpdater/releases) or build from source:
 
 **Usage:**
 
