@@ -301,22 +301,17 @@ private:
             return;
         }
 
-        auto serverConfigs = Settings::mcpSettings().getServerConfigs();
-        for (const auto &configObj : serverConfigs) {
-            MCP::MCPServerConfig config;
-            config.name = configObj["name"].toString();
-            config.url = configObj["url"].toString();
-            config.command = configObj["command"].toString();
-            config.useStdio = configObj["useStdio"].toBool();
-            config.authToken = configObj["authToken"].toString();
+        auto serverUrls = Settings::mcpSettings().getServerUrls();
+        for (const auto &url : serverUrls) {
+            if (!url.isEmpty()) {
+                MCP::MCPServerConfig config;
+                config.name = url; // Use URL as name for simplicity
+                config.url = url;
+                config.useStdio = false; // Default to HTTP/SSE transport
 
-            auto headersObj = configObj["headers"].toObject();
-            for (auto it = headersObj.begin(); it != headersObj.end(); ++it) {
-                config.headers[it.key()] = it.value().toString();
+                m_mcpClientManager->addServer(config);
+                m_mcpClientManager->connectToServer(config.name);
             }
-
-            m_mcpClientManager->addServer(config);
-            m_mcpClientManager->connectToServer(config.name);
         }
     }
 

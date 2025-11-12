@@ -78,7 +78,7 @@ void MCPClientManager::connectToServer(const QString &serverName)
             // Use stdio client
             auto stdioClient = std::make_unique<mcp::stdio_client>(
                 connection->config.command.toStdString());
-            if (stdioClient->initialize("QodeAssist", "1.0.0")) {
+            if (stdioClient->initialize("H2LoopAssistant", "1.0.0")) {
                 connection->client = std::move(stdioClient);
                 connection->connected = true;
                 updateServerTools(serverName);
@@ -89,6 +89,13 @@ void MCPClientManager::connectToServer(const QString &serverName)
         } else {
             // Use SSE client
             auto sseClient = std::make_unique<mcp::sse_client>(connection->config.url.toStdString());
+
+            // Set client capabilities - FastMCP may require this
+            nlohmann::json clientCapabilities
+                = {{"experimental", nlohmann::json::object()},
+                   {"sampling", nlohmann::json::object()}};
+            sseClient->set_capabilities(clientCapabilities);
+
             if (!connection->config.authToken.isEmpty()) {
                 sseClient->set_auth_token(connection->config.authToken.toStdString());
             }
@@ -97,7 +104,7 @@ void MCPClientManager::connectToServer(const QString &serverName)
                  ++it) {
                 sseClient->set_header(it.key().toStdString(), it.value().toStdString());
             }
-            if (sseClient->initialize("QodeAssist", "1.0.0")) {
+            if (sseClient->initialize("H2LoopAssistant", "1.0.0")) {
                 connection->client = std::move(sseClient);
                 connection->connected = true;
                 updateServerTools(serverName);

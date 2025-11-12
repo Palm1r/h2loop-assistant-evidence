@@ -33,17 +33,17 @@ public:
     MCPSettings();
 
     Utils::BoolAspect enableMCP{this};
-    Utils::StringAspect mcpServers{this}; // JSON string containing server configurations
+    Utils::StringListAspect mcpServerUrls{this}; // List of MCP server URLs
 
     ButtonAspect addMCPServer{this};
     ButtonAspect removeMCPServer{this};
     ButtonAspect testMCPServer{this};
 
     // Helper methods
-    QList<QJsonObject> getServerConfigs() const;
-    void setServerConfigs(const QList<QJsonObject> &configs);
-    void addServerConfig(const QJsonObject &config);
-    void removeServerConfig(const QString &serverName);
+    QList<QString> getServerUrls() const;
+    void setServerUrls(const QList<QString> &urls);
+    void addServerUrl(const QString &url);
+    void removeServerUrl(const QString &url);
 
 private:
     void setupConnections();

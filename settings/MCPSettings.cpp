@@ -18,7 +18,12 @@
  */
 
 #include "MCPSettings.hpp"
-#include <QJsonDocument>
+#include <coreplugin/dialogs/ioptionspage.h>
+#include <utils/layoutbuilder.h>
+#include <QInputDialog>
+#include <QMessageBox>
+
+#include "SettingsConstants.hpp"
 
 namespace QodeAssist::Settings {
 
@@ -26,81 +31,128 @@ MCPSettings::MCPSettings()
 {
     setAutoApply(false);
 
+    setDisplayName("MCP");
+
     enableMCP.setSettingsKey("MCP/EnableMCP");
     enableMCP.setLabelText("Enable MCP Integration");
     enableMCP.setToolTip("Enable Model Context Protocol server integration");
+    enableMCP.setDefaultValue(false);
 
-    mcpServers.setSettingsKey("MCP/Servers");
-    mcpServers.setLabelText("MCP Servers");
-    mcpServers.setToolTip("JSON configuration of MCP servers");
+    mcpServerUrls.setSettingsKey("MCP/ServerUrls");
+    mcpServerUrls.setLabelText("MCP Server URLs");
+    mcpServerUrls.setToolTip("List of MCP server URLs to connect to");
 
     addMCPServer.setSettingsKey("MCP/AddServer");
     addMCPServer.setLabelText("Add Server");
-    addMCPServer.setToolTip("Add a new MCP server configuration");
+    addMCPServer.setToolTip("Add a new MCP server URL");
 
     removeMCPServer.setSettingsKey("MCP/RemoveServer");
     removeMCPServer.setLabelText("Remove Server");
-    removeMCPServer.setToolTip("Remove selected MCP server");
+    removeMCPServer.setToolTip("Remove selected MCP server URL");
 
     testMCPServer.setSettingsKey("MCP/TestServer");
     testMCPServer.setLabelText("Test Server");
     testMCPServer.setToolTip("Test connection to MCP server");
 
+    readSettings();
+
     setupConnections();
+
+    setLayouter([this]() {
+        using namespace Layouting;
+
+        return Column{
+            enableMCP,
+            Space{8},
+            Group{
+                title("MCP Servers"),
+                Column{mcpServerUrls, Row{addMCPServer, removeMCPServer, testMCPServer, Stretch{1}}}}};
+    });
 }
 
-QList<QJsonObject> MCPSettings::getServerConfigs() const
+QList<QString> MCPSettings::getServerUrls() const
 {
-    QList<QJsonObject> configs;
-    if (mcpServers.value().isEmpty()) {
-        return configs;
-    }
-
-    QJsonDocument doc = QJsonDocument::fromJson(mcpServers.value().toUtf8());
-    if (doc.isArray()) {
-        QJsonArray array = doc.array();
-        for (const QJsonValue &value : array) {
-            if (value.isObject()) {
-                configs.append(value.toObject());
-            }
-        }
-    }
-    return configs;
+    return mcpServerUrls.value();
 }
 
-void MCPSettings::setServerConfigs(const QList<QJsonObject> &configs)
+void MCPSettings::setServerUrls(const QList<QString> &urls)
 {
-    QJsonArray array;
-    for (const QJsonObject &config : configs) {
-        array.append(config);
-    }
-    QJsonDocument doc(array);
-    mcpServers.setValue(QString::fromUtf8(doc.toJson()));
+    mcpServerUrls.setValue(urls);
 }
 
-void MCPSettings::addServerConfig(const QJsonObject &config)
+void MCPSettings::addServerUrl(const QString &url)
 {
-    QList<QJsonObject> configs = getServerConfigs();
-    configs.append(config);
-    setServerConfigs(configs);
+    QList<QString> urls = getServerUrls();
+    if (!urls.contains(url)) {
+        urls.append(url);
+        setServerUrls(urls);
+    }
 }
 
-void MCPSettings::removeServerConfig(const QString &serverName)
+void MCPSettings::removeServerUrl(const QString &url)
 {
-    QList<QJsonObject> configs = getServerConfigs();
-    for (int i = 0; i < configs.size(); ++i) {
-        if (configs[i]["name"].toString() == serverName) {
-            configs.removeAt(i);
-            break;
-        }
-    }
-    setServerConfigs(configs);
+    QList<QString> urls = getServerUrls();
+    urls.removeAll(url);
+    setServerUrls(urls);
 }
 
 void MCPSettings::setupConnections()
 {
-    // Connections for button actions would be set up here
-    // For now, these are placeholders for UI integration
+    connect(&addMCPServer, &ButtonAspect::clicked, this, [this]() {
+        bool ok;
+        QString url = QInputDialog::getText(
+            nullptr,
+            tr("Add MCP Server"),
+            tr("Enter MCP server URL:"),
+            QLineEdit::Normal,
+            QString(),
+            &ok);
+
+        if (ok && !url.isEmpty()) {
+            addServerUrl(url);
+        }
+    });
+
+    connect(&removeMCPServer, &ButtonAspect::clicked, this, [this]() {
+        QList<QString> urls = getServerUrls();
+        if (urls.isEmpty()) {
+            QMessageBox::information(nullptr, tr("No Servers"), tr("No MCP servers configured."));
+            return;
+        }
+
+        bool ok;
+        QString selectedUrl = QInputDialog::getItem(
+            nullptr,
+            tr("Remove MCP Server"),
+            tr("Select server URL to remove:"),
+            urls,
+            0,
+            false,
+            &ok);
+
+        if (ok && !selectedUrl.isEmpty()) {
+            removeServerUrl(selectedUrl);
+        }
+    });
+
+    connect(&testMCPServer, &ButtonAspect::clicked, this, [this]() {
+        QList<QString> urls = getServerUrls();
+        if (urls.isEmpty()) {
+            QMessageBox::information(nullptr, tr("No Servers"), tr("No MCP servers configured."));
+            return;
+        }
+
+        bool ok;
+        QString selectedUrl = QInputDialog::getItem(
+            nullptr, tr("Test MCP Server"), tr("Select server URL to test:"), urls, 0, false, &ok);
+
+        if (ok && !selectedUrl.isEmpty()) {
+            QMessageBox::information(
+                nullptr,
+                tr("Test Server"),
+                tr("Testing server: %1\n\nThis feature is not yet implemented.").arg(selectedUrl));
+        }
+    });
 }
 
 MCPSettings &mcpSettings()
@@ -108,5 +160,19 @@ MCPSettings &mcpSettings()
     static MCPSettings settings;
     return settings;
 }
+
+class MCPSettingsPage : public Core::IOptionsPage
+{
+public:
+    MCPSettingsPage()
+    {
+        setId(Constants::QODE_ASSIST_MCP_SETTINGS_PAGE_ID);
+        setDisplayName("MCP");
+        setCategory(Constants::QODE_ASSIST_GENERAL_OPTIONS_CATEGORY);
+        setSettingsProvider([] { return &mcpSettings(); });
+    }
+};
+
+const MCPSettingsPage mcpSettingsPage;
 
 } // namespace QodeAssist::Settings
