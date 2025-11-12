@@ -55,6 +55,7 @@
 #include "providers/Providers.hpp"
 #include "settings/ChatAssistantSettings.hpp"
 #include "settings/GeneralSettings.hpp"
+#include "settings/MCPSettings.hpp"
 #include "settings/ProjectSettingsPanel.hpp"
 #include "settings/SettingsConstants.hpp"
 #include "templates/Templates.hpp"
@@ -62,6 +63,7 @@
 #include <ChatView/ChatView.hpp>
 #include <coreplugin/actionmanager/actioncontainer.h>
 #include <coreplugin/actionmanager/actionmanager.h>
+#include <mcp/MCPClientManager.hpp>
 #include <texteditor/textdocument.h>
 #include <texteditor/texteditor.h>
 #include <texteditor/texteditorconstants.h>
@@ -127,6 +129,13 @@ public:
 
         Providers::registerProviders();
         Templates::registerTemplates();
+
+        // Initialize MCP client manager if MCP is enabled
+        if (Settings::mcpSettings().enableMCP()) {
+            m_mcpClientManager.reset(new MCP::MCPClientManager(this));
+            initializeMCPServers();
+            LLMCore::ProvidersManager::instance().setMCPClientManager(m_mcpClientManager.get());
+        }
 
         Utils::Icon QCODEASSIST_ICON(
             {{":/resources/images/h2loop-icon.png", Utils::Theme::IconsBaseColor}});
@@ -286,6 +295,31 @@ private:
         m_updater->checkForUpdates();
     }
 
+    void initializeMCPServers()
+    {
+        if (!m_mcpClientManager) {
+            return;
+        }
+
+        auto serverConfigs = Settings::mcpSettings().getServerConfigs();
+        for (const auto &configObj : serverConfigs) {
+            MCP::MCPServerConfig config;
+            config.name = configObj["name"].toString();
+            config.url = configObj["url"].toString();
+            config.command = configObj["command"].toString();
+            config.useStdio = configObj["useStdio"].toBool();
+            config.authToken = configObj["authToken"].toString();
+
+            auto headersObj = configObj["headers"].toObject();
+            for (auto it = headersObj.begin(); it != headersObj.end(); ++it) {
+                config.headers[it.key()] = it.value().toString();
+            }
+
+            m_mcpClientManager->addServer(config);
+            m_mcpClientManager->connectToServer(config.name);
+        }
+    }
+
     void handleUpdateCheckResult(const PluginUpdater::UpdateInfo &info)
     {
         if (!info.isUpdateAvailable)
@@ -305,6 +339,7 @@ private:
     UpdateStatusWidget *m_statusWidget{nullptr};
     QString m_lastRefactorInstructions;
     QScopedPointer<Chat::ChatView> m_chatView;
+    QScopedPointer<MCP::MCPClientManager> m_mcpClientManager;
 };
 
 } // namespace QodeAssist::Internal

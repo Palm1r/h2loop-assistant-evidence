@@ -45,6 +45,13 @@ OpenAIProvider::OpenAIProvider(QObject *parent)
         &OpenAIProvider::onToolExecutionComplete);
 }
 
+void OpenAIProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->registerMCPTools(mcpManager);
+    }
+}
+
 QString OpenAIProvider::name() const
 {
     return "OpenAI";
@@ -211,7 +218,7 @@ void OpenAIProvider::sendRequest(
 
     LOG_MESSAGE(QString("OpenAIProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool OpenAIProvider::supportsTools() const

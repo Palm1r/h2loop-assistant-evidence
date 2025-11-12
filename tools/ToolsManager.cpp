@@ -19,6 +19,7 @@
 
 #include "ToolsManager.hpp"
 #include "logger/Logger.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 namespace QodeAssist::Tools {
 
@@ -67,8 +68,7 @@ void ToolsManager::executeToolCall(
     }
 
     if (queue.completed.contains(toolId)) {
-        LOG_MESSAGE(
-            QString("Tool %1 already completed for request %2").arg(toolId, requestId));
+        LOG_MESSAGE(QString("Tool %1 already completed for request %2").arg(toolId, requestId));
         return;
     }
 
@@ -194,6 +194,17 @@ QHash<QString, QString> ToolsManager::getToolResults(const QString &requestId) c
     }
 
     return results;
+}
+
+void ToolsManager::registerMCPTools(MCP::MCPClientManager *mcpManager)
+{
+    if (!mcpManager || !m_toolsFactory) {
+        LOG_MESSAGE("Warning: Cannot register MCP tools - manager or factory is null");
+        return;
+    }
+
+    m_toolsFactory->registerMCPTools(mcpManager);
+    LOG_MESSAGE("Registered MCP tools with ToolsManager");
 }
 
 } // namespace QodeAssist::Tools
