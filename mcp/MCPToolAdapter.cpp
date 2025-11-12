@@ -45,24 +45,45 @@ QString MCPToolAdapter::description() const
 
 QJsonObject MCPToolAdapter::getDefinition(LLMCore::ToolSchemaFormat format) const
 {
-    QJsonObject definition;
-    definition["name"] = m_toolInfo.name;
-    definition["description"] = m_toolInfo.description;
+    if (format == LLMCore::ToolSchemaFormat::OpenAI) {
+        QJsonObject functionDef;
+        functionDef["name"] = m_toolInfo.name;
+        functionDef["description"] = m_toolInfo.description;
 
-    // Use the input schema from MCP tool info
-    if (!m_toolInfo.inputSchema.isEmpty()) {
-        definition["parameters"] = m_toolInfo.inputSchema;
+        // Use the input schema from MCP tool info
+        if (!m_toolInfo.inputSchema.isEmpty()) {
+            functionDef["parameters"] = m_toolInfo.inputSchema;
+        } else {
+            // Fallback to basic object schema
+            QJsonObject parameters;
+            parameters["type"] = "object";
+            parameters["properties"] = QJsonObject();
+            functionDef["parameters"] = parameters;
+        }
+
+        QJsonObject toolDef;
+        toolDef["type"] = "function";
+        toolDef["function"] = functionDef;
+        return toolDef;
     } else {
-        // Fallback to basic object schema
-        QJsonObject parameters;
-        parameters["type"] = "object";
-        parameters["properties"] = QJsonObject();
-        definition["parameters"] = parameters;
-    }
+        // For other formats, return basic definition
+        QJsonObject definition;
+        definition["name"] = m_toolInfo.name;
+        definition["description"] = m_toolInfo.description;
 
-    // For now, return the base definition without format-specific customization
-    // TODO: Implement format-specific customization if needed
-    return definition;
+        // Use the input schema from MCP tool info
+        if (!m_toolInfo.inputSchema.isEmpty()) {
+            definition["parameters"] = m_toolInfo.inputSchema;
+        } else {
+            // Fallback to basic object schema
+            QJsonObject parameters;
+            parameters["type"] = "object";
+            parameters["properties"] = QJsonObject();
+            definition["parameters"] = parameters;
+        }
+
+        return definition;
+    }
 }
 
 LLMCore::ToolPermissions MCPToolAdapter::requiredPermissions() const
