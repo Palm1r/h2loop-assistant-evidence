@@ -88,7 +88,11 @@ void MCPClientManager::connectToServer(const QString &serverName)
             }
         } else {
             // Use SSE client
-            auto sseClient = std::make_unique<mcp::sse_client>(connection->config.url.toStdString());
+            QString normalizedUrl = connection->config.url;
+            if (normalizedUrl.endsWith('/')) {
+                normalizedUrl.chop(1);
+            }
+            auto sseClient = std::make_unique<mcp::sse_client>(normalizedUrl.toStdString());
 
             // Set client capabilities - FastMCP may require this
             nlohmann::json clientCapabilities
