@@ -23,8 +23,6 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
-#include "ButtonAspect.hpp"
-
 namespace QodeAssist::Settings {
 
 class MCPSettings : public Utils::AspectContainer
@@ -35,18 +33,11 @@ public:
     Utils::BoolAspect enableMCP{this};
     Utils::StringListAspect mcpServerUrls{this}; // List of MCP server URLs
 
-    ButtonAspect addMCPServer{this};
-    ButtonAspect removeMCPServer{this};
-    ButtonAspect testMCPServer{this};
-
     // Helper methods
     QList<QString> getServerUrls() const;
     void setServerUrls(const QList<QString> &urls);
     void addServerUrl(const QString &url);
     void removeServerUrl(const QString &url);
-
-private:
-    void setupConnections();
 };
 
 MCPSettings &mcpSettings();

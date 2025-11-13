@@ -20,8 +20,6 @@
 #include "MCPSettings.hpp"
 #include <coreplugin/dialogs/ioptionspage.h>
 #include <utils/layoutbuilder.h>
-#include <QInputDialog>
-#include <QMessageBox>
 
 #include "SettingsConstants.hpp"
 
@@ -42,31 +40,12 @@ MCPSettings::MCPSettings()
     mcpServerUrls.setLabelText("MCP Server URLs");
     mcpServerUrls.setToolTip("List of MCP server URLs to connect to");
 
-    addMCPServer.setSettingsKey("MCP/AddServer");
-    addMCPServer.setLabelText("Add Server");
-    addMCPServer.setToolTip("Add a new MCP server URL");
-
-    removeMCPServer.setSettingsKey("MCP/RemoveServer");
-    removeMCPServer.setLabelText("Remove Server");
-    removeMCPServer.setToolTip("Remove selected MCP server URL");
-
-    testMCPServer.setSettingsKey("MCP/TestServer");
-    testMCPServer.setLabelText("Test Server");
-    testMCPServer.setToolTip("Test connection to MCP server");
-
     readSettings();
-
-    setupConnections();
 
     setLayouter([this]() {
         using namespace Layouting;
 
-        return Column{
-            enableMCP,
-            Space{8},
-            Group{
-                title("MCP Servers"),
-                Column{mcpServerUrls, Row{addMCPServer, removeMCPServer, testMCPServer, Stretch{1}}}}};
+        return Column{enableMCP, Space{8}, Group{title("MCP Servers"), Column{mcpServerUrls}}};
     });
 }
 
@@ -94,65 +73,6 @@ void MCPSettings::removeServerUrl(const QString &url)
     QList<QString> urls = getServerUrls();
     urls.removeAll(url);
     setServerUrls(urls);
-}
-
-void MCPSettings::setupConnections()
-{
-    connect(&addMCPServer, &ButtonAspect::clicked, this, [this]() {
-        bool ok;
-        QString url = QInputDialog::getText(
-            nullptr,
-            tr("Add MCP Server"),
-            tr("Enter MCP server URL:"),
-            QLineEdit::Normal,
-            QString(),
-            &ok);
-
-        if (ok && !url.isEmpty()) {
-            addServerUrl(url);
-        }
-    });
-
-    connect(&removeMCPServer, &ButtonAspect::clicked, this, [this]() {
-        QList<QString> urls = getServerUrls();
-        if (urls.isEmpty()) {
-            QMessageBox::information(nullptr, tr("No Servers"), tr("No MCP servers configured."));
-            return;
-        }
-
-        bool ok;
-        QString selectedUrl = QInputDialog::getItem(
-            nullptr,
-            tr("Remove MCP Server"),
-            tr("Select server URL to remove:"),
-            urls,
-            0,
-            false,
-            &ok);
-
-        if (ok && !selectedUrl.isEmpty()) {
-            removeServerUrl(selectedUrl);
-        }
-    });
-
-    connect(&testMCPServer, &ButtonAspect::clicked, this, [this]() {
-        QList<QString> urls = getServerUrls();
-        if (urls.isEmpty()) {
-            QMessageBox::information(nullptr, tr("No Servers"), tr("No MCP servers configured."));
-            return;
-        }
-
-        bool ok;
-        QString selectedUrl = QInputDialog::getItem(
-            nullptr, tr("Test MCP Server"), tr("Select server URL to test:"), urls, 0, false, &ok);
-
-        if (ok && !selectedUrl.isEmpty()) {
-            QMessageBox::information(
-                nullptr,
-                tr("Test Server"),
-                tr("Testing server: %1\n\nThis feature is not yet implemented.").arg(selectedUrl));
-        }
-    });
 }
 
 MCPSettings &mcpSettings()
