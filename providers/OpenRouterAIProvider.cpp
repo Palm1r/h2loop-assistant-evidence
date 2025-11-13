@@ -20,6 +20,7 @@
 #include "OpenRouterAIProvider.hpp"
 
 #include "settings/ProviderSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -46,6 +47,11 @@ QString OpenRouterProvider::apiKey() const
 LLMCore::ProviderID OpenRouterProvider::providerID() const
 {
     return LLMCore::ProviderID::OpenRouter;
+}
+
+void OpenRouterProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    OpenAICompatProvider::setMCPClientManager(mcpManager);
 }
 
 } // namespace QodeAssist::Providers

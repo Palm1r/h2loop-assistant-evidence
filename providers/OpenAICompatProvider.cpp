@@ -25,6 +25,7 @@
 #include "settings/CodeCompletionSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -175,12 +176,25 @@ void OpenAICompatProvider::sendRequest(
     LOG_MESSAGE(
         QString("OpenAICompatProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool OpenAICompatProvider::supportsTools() const
 {
     return true;
+}
+
+void OpenAICompatProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->registerMCPTools(mcpManager);
+        // Connect to tools updated signal to re-register MCP tools when they become available
+        connect(
+            mcpManager,
+            &MCP::MCPClientManager::toolsUpdated,
+            this,
+            [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
+    }
 }
 
 void OpenAICompatProvider::cancelRequest(const LLMCore::RequestID &requestId)

@@ -30,6 +30,7 @@ public:
     QString url() const override;
     QString apiKey() const override;
     LLMCore::ProviderID providerID() const override;
+    void setMCPClientManager(MCP::MCPClientManager *mcpManager) override;
 };
 
 } // namespace QodeAssist::Providers
