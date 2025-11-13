@@ -25,6 +25,7 @@
 #include "settings/CodeCompletionSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 #include <QEventLoop>
 #include <QJsonArray>
@@ -175,12 +176,25 @@ void MistralAIProvider::sendRequest(
     LOG_MESSAGE(
         QString("MistralAIProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool MistralAIProvider::supportsTools() const
 {
     return true;
+}
+
+void MistralAIProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->registerMCPTools(mcpManager);
+        // Connect to tools updated signal to re-register MCP tools when they become available
+        connect(
+            mcpManager,
+            &MCP::MCPClientManager::toolsUpdated,
+            this,
+            [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
+    }
 }
 
 void MistralAIProvider::cancelRequest(const LLMCore::RequestID &requestId)

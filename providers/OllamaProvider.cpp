@@ -31,6 +31,7 @@
 #include "settings/CodeCompletionSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 namespace QodeAssist::Providers {
 
@@ -224,12 +225,25 @@ void OllamaProvider::sendRequest(
 
     LOG_MESSAGE(QString("OllamaProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool OllamaProvider::supportsTools() const
 {
     return true;
+}
+
+void OllamaProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->registerMCPTools(mcpManager);
+        // Connect to tools updated signal to re-register MCP tools when they become available
+        connect(
+            mcpManager,
+            &MCP::MCPClientManager::toolsUpdated,
+            this,
+            [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
+    }
 }
 
 void OllamaProvider::cancelRequest(const LLMCore::RequestID &requestId)
@@ -422,8 +436,7 @@ void OllamaProvider::processStreamData(const QString &requestId, const QJsonObje
                 message->handleToolCall(toolCallValue.toObject());
             }
         }
-    }
-    else if (data.contains("response")) {
+    } else if (data.contains("response")) {
         QString content = data["response"].toString();
         if (!content.isEmpty()) {
             message->handleContentDelta(content);

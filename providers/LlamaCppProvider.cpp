@@ -24,6 +24,7 @@
 #include "settings/ChatAssistantSettings.hpp"
 #include "settings/CodeCompletionSettings.hpp"
 #include "settings/GeneralSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 #include <QEventLoop>
 #include <QJsonArray>
@@ -189,12 +190,25 @@ void LlamaCppProvider::sendRequest(
     LOG_MESSAGE(
         QString("LlamaCppProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool LlamaCppProvider::supportsTools() const
 {
     return true;
+}
+
+void LlamaCppProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->registerMCPTools(mcpManager);
+        // Connect to tools updated signal to re-register MCP tools when they become available
+        connect(
+            mcpManager,
+            &MCP::MCPClientManager::toolsUpdated,
+            this,
+            [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
+    }
 }
 
 void LlamaCppProvider::cancelRequest(const LLMCore::RequestID &requestId)

@@ -32,6 +32,7 @@
 #include "settings/CodeCompletionSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 namespace QodeAssist::Providers {
 
@@ -211,12 +212,25 @@ void GoogleAIProvider::sendRequest(
     LOG_MESSAGE(
         QString("GoogleAIProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool GoogleAIProvider::supportsTools() const
 {
     return true;
+}
+
+void GoogleAIProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->registerMCPTools(mcpManager);
+        // Connect to tools updated signal to re-register MCP tools when they become available
+        connect(
+            mcpManager,
+            &MCP::MCPClientManager::toolsUpdated,
+            this,
+            [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
+    }
 }
 
 void GoogleAIProvider::cancelRequest(const LLMCore::RequestID &requestId)

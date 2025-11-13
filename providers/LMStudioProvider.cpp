@@ -25,6 +25,7 @@
 #include "settings/CodeCompletionSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 #include <QEventLoop>
 #include <QJsonArray>
@@ -86,12 +87,12 @@ QList<QString> LMStudioProvider::getInstalledModels(const QString &url)
         QByteArray responseData = reply->readAll();
         QJsonDocument jsonResponse = QJsonDocument::fromJson(responseData);
         QJsonObject jsonObject = jsonResponse.object();
-            QJsonArray modelArray = jsonObject["data"].toArray();
+        QJsonArray modelArray = jsonObject["data"].toArray();
 
-            for (const QJsonValue &value : modelArray) {
-                QJsonObject modelObject = value.toObject();
-                    QString modelId = modelObject["id"].toString();
-                    models.append(modelId);
+        for (const QJsonValue &value : modelArray) {
+            QJsonObject modelObject = value.toObject();
+            QString modelId = modelObject["id"].toString();
+            models.append(modelId);
         }
     } else {
         LOG_MESSAGE(QString("Error fetching LMStudio models: %1").arg(reply->errorString()));
@@ -154,12 +155,25 @@ void LMStudioProvider::sendRequest(
     LOG_MESSAGE(
         QString("LMStudioProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool LMStudioProvider::supportsTools() const
 {
     return true;
+}
+
+void LMStudioProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->registerMCPTools(mcpManager);
+        // Connect to tools updated signal to re-register MCP tools when they become available
+        connect(
+            mcpManager,
+            &MCP::MCPClientManager::toolsUpdated,
+            this,
+            [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
+    }
 }
 
 void LMStudioProvider::cancelRequest(const LLMCore::RequestID &requestId)
