@@ -135,6 +135,12 @@ public:
             m_mcpClientManager.reset(new MCP::MCPClientManager(this));
             initializeMCPServers();
             LLMCore::ProvidersManager::instance().setMCPClientManager(m_mcpClientManager.get());
+
+            // Connect to MCP settings changes to handle new server URLs
+            connect(
+                &Settings::mcpSettings(), &Settings::MCPSettings::serverUrlsChanged, this, [this]() {
+                    onMCPServerUrlsChanged();
+                });
         }
 
         Utils::Icon QCODEASSIST_ICON(
@@ -306,6 +312,29 @@ private:
             if (!url.isEmpty()) {
                 MCP::MCPServerConfig config;
                 config.name = url; // Use URL as name for simplicity
+                config.url = url;
+                config.useStdio = false; // Default to HTTP/SSE transport
+
+                m_mcpClientManager->addServer(config);
+                m_mcpClientManager->connectToServer(config.name);
+            }
+        }
+    }
+
+    void onMCPServerUrlsChanged()
+    {
+        if (!m_mcpClientManager) {
+            return;
+        }
+
+        // Get current URLs from settings
+        auto currentUrls = Settings::mcpSettings().getServerUrls();
+
+        // Check for new URLs that aren't already connected
+        for (const auto &url : currentUrls) {
+            if (!url.isEmpty() && !m_mcpClientManager->isServerConnected(url)) {
+                MCP::MCPServerConfig config;
+                config.name = url;
                 config.url = url;
                 config.useStdio = false; // Default to HTTP/SSE transport
 

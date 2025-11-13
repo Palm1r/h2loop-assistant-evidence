@@ -42,6 +42,9 @@ MCPSettings::MCPSettings()
 
     readSettings();
 
+    // Connect to the aspect container's changed signal to detect when settings are applied
+    connect(this, &Utils::AspectContainer::changed, this, [this]() { emit serverUrlsChanged(); });
+
     setLayouter([this]() {
         using namespace Layouting;
 

@@ -27,6 +27,7 @@ namespace QodeAssist::Settings {
 
 class MCPSettings : public Utils::AspectContainer
 {
+    Q_OBJECT
 public:
     MCPSettings();
 
@@ -38,6 +39,9 @@ public:
     void setServerUrls(const QList<QString> &urls);
     void addServerUrl(const QString &url);
     void removeServerUrl(const QString &url);
+
+signals:
+    void serverUrlsChanged();
 };
 
 MCPSettings &mcpSettings();
