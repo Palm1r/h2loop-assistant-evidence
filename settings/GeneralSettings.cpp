@@ -243,11 +243,8 @@ GeneralSettings::GeneralSettings()
                 Row{specifyPreset1, preset1Language, Stretch{1}},
                 ccPreset1Grid}};
 
-        auto caGroup = Group{
-            title(TrConstants::CHAT_ASSISTANT),
-            Column{
-                caGrid,
-                caTemplateDescription}};
+        auto caGroup
+            = Group{title(TrConstants::CHAT_ASSISTANT), Column{caGrid, caTemplateDescription}};
 
         auto rootLayout = Column{
             Row{enableQodeAssist, Stretch{1}, resetToDefaults},
@@ -510,7 +507,7 @@ public:
         setCategory(Constants::QODE_ASSIST_GENERAL_OPTIONS_CATEGORY);
 #if QODEASSIST_QT_CREATOR_VERSION < QT_VERSION_CHECK(15, 0, 83)
         setDisplayCategory(Constants::QODE_ASSIST_GENERAL_OPTIONS_DISPLAY_CATEGORY);
-        setCategoryIconPath(":/resources/images/qoderassist-icon.png");
+        setCategoryIconPath(":/resources/images/h2loop-icon.png");
 #endif
         setSettingsProvider([] { return &generalSettings(); });
     }

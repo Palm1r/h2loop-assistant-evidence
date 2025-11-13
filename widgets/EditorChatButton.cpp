@@ -31,7 +31,7 @@ EditorChatButton::EditorChatButton(QWidget *parent)
     m_textColor = Utils::creatorTheme()->color(Utils::Theme::TextColorNormal);
     m_backgroundColor = Utils::creatorTheme()->color(Utils::Theme::BackgroundColorNormal);
 
-    m_logoPixmap = QPixmap(":/resources/images/qoderassist-icon.png");
+    m_logoPixmap = QPixmap(":/resources/images/h2loop-icon.png");
 
     if (!m_logoPixmap.isNull()) {
         QImage image = m_logoPixmap.toImage();
