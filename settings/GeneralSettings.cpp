@@ -860,7 +860,7 @@ public:
         setCategory(Constants::QODE_ASSIST_GENERAL_OPTIONS_CATEGORY);
 #if QODEASSIST_QT_CREATOR_VERSION < QT_VERSION_CHECK(15, 0, 83)
         setDisplayCategory(Constants::QODE_ASSIST_GENERAL_OPTIONS_DISPLAY_CATEGORY);
-        setCategoryIconPath(":/resources/images/qoderassist-icon.png");
+        setCategoryIconPath(":/resources/images/h2loop-icon.png");
 #endif
         setSettingsProvider([] { return &generalSettings(); });
     }

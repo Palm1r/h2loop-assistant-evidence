@@ -42,7 +42,6 @@
 #include <QMessageBox>
 #include <QTranslator>
 
-#include <QInputDialog>
 #include "ConfigurationManager.hpp"
 #include "QodeAssistClient.hpp"
 #include "UpdateStatusWidget.hpp"
@@ -67,6 +66,7 @@
 #include <texteditor/textdocument.h>
 #include <texteditor/texteditor.h>
 #include <texteditor/texteditorconstants.h>
+#include <QInputDialog>
 
 using namespace Utils;
 using namespace Core;
@@ -119,7 +119,7 @@ public:
         Core::IOptionsPage::registerCategory(
             Constants::QODE_ASSIST_GENERAL_OPTIONS_CATEGORY,
             Constants::QODE_ASSIST_GENERAL_OPTIONS_DISPLAY_CATEGORY,
-            ":/resources/images/qoderassist-icon.png");
+            ":/resources/images/h2loop-icon.png");
 #endif
         QQuickWindow::setSceneGraphBackend(
             Settings::chatAssistantSettings().chatRenderer.stringValue());
@@ -132,7 +132,7 @@ public:
         CustomInstructionsManager::instance().loadInstructions();
 
         Utils::Icon QCODEASSIST_ICON(
-            {{":/resources/images/qoderassist-icon.png", Utils::Theme::IconsBaseColor}});
+            {{":/resources/images/h2loop-icon.png", Utils::Theme::IconsBaseColor}});
         Utils::Icon QCODEASSIST_CHAT_ICON(
             {{":/resources/images/qode-assist-chat-icon.png", Utils::Theme::IconsBaseColor}});
 
@@ -152,8 +152,9 @@ public:
                         m_qodeAssistClient->requestCompletions(editor);
                     }
                 } else
-                    qWarning() << "The H2Loop Assistant is not ready. Please check your connection and "
-                                  "settings.";
+                    qWarning()
+                        << "The H2Loop Assistant is not ready. Please check your connection and "
+                           "settings.";
             }
         });
 
@@ -200,8 +201,9 @@ public:
                         }
                     }
                 } else {
-                    qWarning() << "The H2Loop Assistant is not ready. Please check your connection and "
-                                  "settings.";
+                    qWarning()
+                        << "The H2Loop Assistant is not ready. Please check your connection and "
+                           "settings.";
                 }
             }
         });
@@ -245,10 +247,10 @@ public:
             editorContextMenu
                 ->addAction(quickRefactorAction.command(), Core::Constants::G_DEFAULT_THREE);
             editorContextMenu->addAction(requestAction.command(), Core::Constants::G_DEFAULT_THREE);
-            editorContextMenu->addAction(showChatViewAction.command(),
-                                         Core::Constants::G_DEFAULT_THREE);
-            editorContextMenu->addAction(closeChatViewAction.command(),
-                                         Core::Constants::G_DEFAULT_THREE);
+            editorContextMenu
+                ->addAction(showChatViewAction.command(), Core::Constants::G_DEFAULT_THREE);
+            editorContextMenu
+                ->addAction(closeChatViewAction.command(), Core::Constants::G_DEFAULT_THREE);
         }
     }
 

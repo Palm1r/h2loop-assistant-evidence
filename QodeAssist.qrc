@@ -1,7 +1,7 @@
 <RCC>
     <qresource prefix="/">
-        <file>resources/images/qoderassist-icon@2x.png</file>
-        <file>resources/images/qoderassist-icon.png</file>
+        <file>resources/images/h2loop-icon@2x.png</file>
+        <file>resources/images/h2loop-icon.png</file>
         <file>resources/images/repeat-last-instruct-icon@2x.png</file>
         <file>resources/images/repeat-last-instruct-icon.png</file>
         <file>resources/images/improve-current-code-icon@2x.png</file>
