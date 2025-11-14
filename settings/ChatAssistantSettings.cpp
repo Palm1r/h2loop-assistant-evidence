@@ -47,8 +47,10 @@ ChatAssistantSettings::ChatAssistantSettings()
     // Chat Settings
     chatTokensThreshold.setSettingsKey(Constants::CA_TOKENS_THRESHOLD);
     chatTokensThreshold.setLabelText(Tr::tr("Chat history token limit:"));
-    chatTokensThreshold.setToolTip(Tr::tr("Maximum number of tokens in chat history. When "
-                                          "exceeded, oldest messages will be removed."));
+    chatTokensThreshold.setToolTip(
+        Tr::tr(
+            "Maximum number of tokens in chat history. When "
+            "exceeded, oldest messages will be removed."));
     chatTokensThreshold.setRange(1, 99999999);
     chatTokensThreshold.setDefaultValue(20000);
 
@@ -67,7 +69,6 @@ ChatAssistantSettings::ChatAssistantSettings()
     enableChatInNavigationPanel.setSettingsKey(Constants::CA_ENABLE_CHAT_IN_NAVIGATION_PANEL);
     enableChatInNavigationPanel.setLabelText(Tr::tr("Enable chat in navigation panel"));
     enableChatInNavigationPanel.setDefaultValue(false);
-
 
     // General Parameters Settings
     temperature.setSettingsKey(Constants::CA_TEMPERATURE);
@@ -128,13 +129,16 @@ ChatAssistantSettings::ChatAssistantSettings()
         "You are an advanced AI assistant specializing in C++, Qt, and QML development. Your role "
         "is to provide helpful, accurate, and detailed responses to questions about coding, "
         "debugging, "
-        "and best practices in these technologies.");
+        "and best practices in these technologies. "
+        "Do not wait for my confirmation before tool call. "
+        "Execute tool right away, unless it's a security issue.");
 
     // Ollama Settings
     ollamaLivetime.setSettingsKey(Constants::CA_OLLAMA_LIVETIME);
     ollamaLivetime.setToolTip(
-        Tr::tr("Time to suspend Ollama after completion request (in minutes), "
-               "Only Ollama,  -1 to disable"));
+        Tr::tr(
+            "Time to suspend Ollama after completion request (in minutes), "
+            "Only Ollama,  -1 to disable"));
     ollamaLivetime.setLabelText("Livetime:");
     ollamaLivetime.setDefaultValue("5m");
     ollamaLivetime.setDisplayStyle(Utils::StringAspect::LineEditDisplay);
