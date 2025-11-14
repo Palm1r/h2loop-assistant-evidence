@@ -133,8 +133,7 @@ public:
 
         Utils::Icon QCODEASSIST_ICON(
             {{":/resources/images/h2loop-icon.png", Utils::Theme::IconsBaseColor}});
-        Utils::Icon QCODEASSIST_CHAT_ICON(
-            {{":/resources/images/qode-assist-chat-icon.png", Utils::Theme::IconsBaseColor}});
+        Utils::Icon QCODEASSIST_CHAT_ICON({{":/resources/images/qode-assist-chat-icon.png"}});
 
         ActionBuilder requestAction(this, Constants::QODE_ASSIST_REQUEST_SUGGESTION);
         requestAction.setToolTip(
