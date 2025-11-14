@@ -188,7 +188,12 @@ public:
 
     void setUrls(const QList<QString> &urls)
     {
-        m_urls = urls;
+        m_urls.clear();
+        for (const QString &url : urls) {
+            if (!url.isEmpty()) {
+                m_urls.append(url);
+            }
+        }
         updateList();
     }
 
@@ -284,6 +289,8 @@ MCPSettings::MCPSettings()
         // Connect to update settings when URLs change
         connect(serversWidget, &MCPServersWidget::urlsChanged, this, [this, serversWidget]() {
             setServerUrls(serversWidget->getUrls());
+            writeSettings();
+            emit serverUrlsChanged();
         });
 
         // Create fresh tree widget each time the layout is built
@@ -390,7 +397,13 @@ QList<QString> MCPSettings::getServerUrls() const
 
 void MCPSettings::setServerUrls(const QList<QString> &urls)
 {
-    mcpServerUrls.setValue(urls);
+    QList<QString> filteredUrls;
+    for (const QString &url : urls) {
+        if (!url.isEmpty()) {
+            filteredUrls.append(url);
+        }
+    }
+    mcpServerUrls.setValue(filteredUrls);
 }
 
 void MCPSettings::addServerUrl(const QString &url)
