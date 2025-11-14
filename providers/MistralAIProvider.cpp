@@ -194,6 +194,18 @@ void MistralAIProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
             &MCP::MCPClientManager::toolsUpdated,
             this,
             [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
+        // Connect to server connected signal to re-register MCP tools when servers are added
+        connect(
+            mcpManager,
+            &MCP::MCPClientManager::serverConnected,
+            this,
+            [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
+        // Connect to server disconnected signal to re-register MCP tools when servers are removed
+        connect(
+            mcpManager,
+            &MCP::MCPClientManager::serverDisconnected,
+            this,
+            [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
     }
 }
 
