@@ -54,6 +54,8 @@ public:
     {
         setWindowTitle("Add MCP Server");
         setModal(true);
+        setMinimumSize(400, 200);
+        setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
 
         auto *layout = new QVBoxLayout(this);
 
