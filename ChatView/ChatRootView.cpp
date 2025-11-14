@@ -36,9 +36,9 @@
 #include "ChatAssistantSettings.hpp"
 #include "ChatSerializer.hpp"
 #include "GeneralSettings.hpp"
-#include "ToolsSettings.hpp"
 #include "Logger.hpp"
 #include "ProjectSettings.hpp"
+#include "ToolsSettings.hpp"
 #include "context/ChangesManager.h"
 #include "context/ContextManager.hpp"
 #include "context/TokenUtils.hpp"
@@ -81,7 +81,7 @@ ChatRootView::ChatRootView(QQuickItem *parent)
         this,
         &ChatRootView::updateInputTokensCount);
 
-    connect(m_chatModel, &ChatModel::modelReseted, this, [this]() { 
+    connect(m_chatModel, &ChatModel::modelReseted, this, [this]() {
         setRecentFilePath(QString{});
         m_currentMessageRequestId.clear();
         updateCurrentMessageEditsStats();
@@ -145,41 +145,42 @@ ChatRootView::ChatRootView(QQuickItem *parent)
         m_lastErrorMessage = error;
         emit lastErrorMessageChanged();
     });
-    
+
     connect(m_clientInterface, &ClientInterface::requestStarted, this, [this](const QString &requestId) {
         if (!m_currentMessageRequestId.isEmpty()) {
-            LOG_MESSAGE(QString("Clearing previous message requestId: %1").arg(m_currentMessageRequestId));
+            LOG_MESSAGE(
+                QString("Clearing previous message requestId: %1").arg(m_currentMessageRequestId));
         }
-        
+
         m_currentMessageRequestId = requestId;
         LOG_MESSAGE(QString("New message request started: %1").arg(requestId));
         updateCurrentMessageEditsStats();
     });
-    
+
     connect(
         &Context::ChangesManager::instance(),
         &Context::ChangesManager::fileEditAdded,
         this,
         [this](const QString &) { updateCurrentMessageEditsStats(); });
-    
+
     connect(
         &Context::ChangesManager::instance(),
         &Context::ChangesManager::fileEditApplied,
         this,
         [this](const QString &) { updateCurrentMessageEditsStats(); });
-    
+
     connect(
         &Context::ChangesManager::instance(),
         &Context::ChangesManager::fileEditRejected,
         this,
         [this](const QString &) { updateCurrentMessageEditsStats(); });
-    
+
     connect(
         &Context::ChangesManager::instance(),
         &Context::ChangesManager::fileEditUndone,
         this,
         [this](const QString &) { updateCurrentMessageEditsStats(); });
-    
+
     connect(
         &Context::ChangesManager::instance(),
         &Context::ChangesManager::fileEditArchived,
@@ -268,7 +269,7 @@ QString ChatRootView::getChatsHistoryDir() const
         Settings::ProjectSettings projectSettings(project);
         path = projectSettings.chatHistoryPath().toFSPathString();
     } else {
-        path = QString("%1/qodeassist/chat_history")
+        path = QString("%1/h2loopassistant/chat_history")
                    .arg(Core::ICore::userResourcePath().toFSPathString());
     }
 
@@ -305,7 +306,7 @@ void ChatRootView::loadHistory(const QString &filePath)
     } else {
         setRecentFilePath(filePath);
     }
-    
+
     m_currentMessageRequestId.clear();
     updateInputTokensCount();
     updateCurrentMessageEditsStats();
@@ -544,7 +545,7 @@ void ChatRootView::openChatHistoryFolder()
         Settings::ProjectSettings projectSettings(project);
         path = projectSettings.chatHistoryPath().toFSPathString();
     } else {
-        path = QString("%1/qodeassist/chat_history")
+        path = QString("%1/h2loopassistant/chat_history")
                    .arg(Core::ICore::userResourcePath().toFSPathString());
     }
 
@@ -790,13 +791,13 @@ void ChatRootView::applyFileEdit(const QString &editId)
     if (Context::ChangesManager::instance().applyFileEdit(editId)) {
         m_lastInfoMessage = QString("File edit applied successfully");
         emit lastInfoMessageChanged();
-        
+
         updateFileEditStatus(editId, "applied");
     } else {
         auto edit = Context::ChangesManager::instance().getFileEdit(editId);
-        m_lastErrorMessage = edit.statusMessage.isEmpty() 
-            ? QString("Failed to apply file edit") 
-            : QString("Failed to apply file edit: %1").arg(edit.statusMessage);
+        m_lastErrorMessage = edit.statusMessage.isEmpty()
+                                 ? QString("Failed to apply file edit")
+                                 : QString("Failed to apply file edit: %1").arg(edit.statusMessage);
         emit lastErrorMessageChanged();
     }
 }
@@ -807,13 +808,13 @@ void ChatRootView::rejectFileEdit(const QString &editId)
     if (Context::ChangesManager::instance().rejectFileEdit(editId)) {
         m_lastInfoMessage = QString("File edit rejected");
         emit lastInfoMessageChanged();
-        
+
         updateFileEditStatus(editId, "rejected");
     } else {
         auto edit = Context::ChangesManager::instance().getFileEdit(editId);
-        m_lastErrorMessage = edit.statusMessage.isEmpty() 
-            ? QString("Failed to reject file edit") 
-            : QString("Failed to reject file edit: %1").arg(edit.statusMessage);
+        m_lastErrorMessage = edit.statusMessage.isEmpty()
+                                 ? QString("Failed to reject file edit")
+                                 : QString("Failed to reject file edit: %1").arg(edit.statusMessage);
         emit lastErrorMessageChanged();
     }
 }
@@ -824,13 +825,13 @@ void ChatRootView::undoFileEdit(const QString &editId)
     if (Context::ChangesManager::instance().undoFileEdit(editId)) {
         m_lastInfoMessage = QString("File edit undone successfully");
         emit lastInfoMessageChanged();
-        
+
         updateFileEditStatus(editId, "rejected");
     } else {
         auto edit = Context::ChangesManager::instance().getFileEdit(editId);
-        m_lastErrorMessage = edit.statusMessage.isEmpty() 
-            ? QString("Failed to undo file edit") 
-            : QString("Failed to undo file edit: %1").arg(edit.statusMessage);
+        m_lastErrorMessage = edit.statusMessage.isEmpty()
+                                 ? QString("Failed to undo file edit")
+                                 : QString("Failed to undo file edit: %1").arg(edit.statusMessage);
         emit lastErrorMessageChanged();
     }
 }
@@ -838,37 +839,36 @@ void ChatRootView::undoFileEdit(const QString &editId)
 void ChatRootView::openFileEditInEditor(const QString &editId)
 {
     LOG_MESSAGE(QString("Opening file edit in editor: %1").arg(editId));
-    
+
     auto edit = Context::ChangesManager::instance().getFileEdit(editId);
     if (edit.editId.isEmpty()) {
         m_lastErrorMessage = QString("File edit not found: %1").arg(editId);
         emit lastErrorMessageChanged();
         return;
     }
-    
+
     Utils::FilePath filePath = Utils::FilePath::fromString(edit.filePath);
-    
+
     Core::IEditor *editor = Core::EditorManager::openEditor(filePath);
     if (!editor) {
         m_lastErrorMessage = QString("Failed to open file in editor: %1").arg(edit.filePath);
         emit lastErrorMessageChanged();
         return;
     }
-    
+
     auto *textEditor = qobject_cast<TextEditor::BaseTextEditor *>(editor);
     if (textEditor && textEditor->editorWidget()) {
         QTextDocument *doc = textEditor->editorWidget()->document();
         if (doc) {
             QString currentContent = doc->toPlainText();
             int position = -1;
-            
+
             if (edit.status == Context::ChangesManager::Applied && !edit.newContent.isEmpty()) {
                 position = currentContent.indexOf(edit.newContent);
-            }
-            else if (!edit.oldContent.isEmpty()) {
+            } else if (!edit.oldContent.isEmpty()) {
                 position = currentContent.indexOf(edit.oldContent);
             }
-            
+
             if (position >= 0) {
                 QTextCursor cursor(doc);
                 cursor.setPosition(position);
@@ -877,7 +877,7 @@ void ChatRootView::openFileEditInEditor(const QString &editId)
             }
         }
     }
-    
+
     LOG_MESSAGE(QString("Opened file in editor: %1").arg(edit.filePath));
 }
 
@@ -887,33 +887,35 @@ void ChatRootView::updateFileEditStatus(const QString &editId, const QString &st
     for (int i = 0; i < messages.size(); ++i) {
         if (messages[i].role == Chat::ChatModel::FileEdit && messages[i].id == editId) {
             QString content = messages[i].content;
-            
+
             const QString marker = "QODEASSIST_FILE_EDIT:";
             int markerPos = content.indexOf(marker);
-            
+
             QString jsonStr = content;
             if (markerPos >= 0) {
                 jsonStr = content.mid(markerPos + marker.length());
             }
-            
+
             QJsonDocument doc = QJsonDocument::fromJson(jsonStr.toUtf8());
             if (doc.isObject()) {
                 QJsonObject obj = doc.object();
                 obj["status"] = status;
-                
+
                 auto edit = Context::ChangesManager::instance().getFileEdit(editId);
                 if (!edit.statusMessage.isEmpty()) {
                     obj["status_message"] = edit.statusMessage;
                 }
-                
-                QString updatedContent = marker + QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+
+                QString updatedContent = marker
+                                         + QString::fromUtf8(
+                                             QJsonDocument(obj).toJson(QJsonDocument::Compact));
                 m_chatModel->updateMessageContent(editId, updatedContent);
                 LOG_MESSAGE(QString("Updated file edit status to: %1").arg(status));
             }
             break;
         }
     }
-    
+
     updateCurrentMessageEditsStats();
 }
 
@@ -924,37 +926,39 @@ void ChatRootView::applyAllFileEditsForCurrentMessage()
         emit lastErrorMessageChanged();
         return;
     }
-    
+
     LOG_MESSAGE(QString("Applying all file edits for message: %1").arg(m_currentMessageRequestId));
-    
+
     QString errorMsg;
     bool success = Context::ChangesManager::instance()
                        .reapplyAllEditsForRequest(m_currentMessageRequestId, &errorMsg);
-    
+
     if (success) {
         m_lastInfoMessage = QString("All file edits applied successfully");
         emit lastInfoMessageChanged();
-        
-        auto edits = Context::ChangesManager::instance().getEditsForRequest(m_currentMessageRequestId);
+
+        auto edits = Context::ChangesManager::instance().getEditsForRequest(
+            m_currentMessageRequestId);
         for (const auto &edit : edits) {
             if (edit.status == Context::ChangesManager::Applied) {
                 updateFileEditStatus(edit.editId, "applied");
             }
         }
     } else {
-        m_lastErrorMessage = errorMsg.isEmpty() 
-            ? QString("Failed to apply some file edits")
-            : QString("Failed to apply some file edits:\n%1").arg(errorMsg);
+        m_lastErrorMessage = errorMsg.isEmpty()
+                                 ? QString("Failed to apply some file edits")
+                                 : QString("Failed to apply some file edits:\n%1").arg(errorMsg);
         emit lastErrorMessageChanged();
-        
-        auto edits = Context::ChangesManager::instance().getEditsForRequest(m_currentMessageRequestId);
+
+        auto edits = Context::ChangesManager::instance().getEditsForRequest(
+            m_currentMessageRequestId);
         for (const auto &edit : edits) {
             if (edit.status == Context::ChangesManager::Applied) {
                 updateFileEditStatus(edit.editId, "applied");
             }
         }
     }
-    
+
     updateCurrentMessageEditsStats();
 }
 
@@ -965,45 +969,47 @@ void ChatRootView::undoAllFileEditsForCurrentMessage()
         emit lastErrorMessageChanged();
         return;
     }
-    
+
     LOG_MESSAGE(QString("Undoing all file edits for message: %1").arg(m_currentMessageRequestId));
-    
+
     QString errorMsg;
     bool success = Context::ChangesManager::instance()
                        .undoAllEditsForRequest(m_currentMessageRequestId, &errorMsg);
-    
+
     if (success) {
         m_lastInfoMessage = QString("All file edits undone successfully");
         emit lastInfoMessageChanged();
-        
-        auto edits = Context::ChangesManager::instance().getEditsForRequest(m_currentMessageRequestId);
+
+        auto edits = Context::ChangesManager::instance().getEditsForRequest(
+            m_currentMessageRequestId);
         for (const auto &edit : edits) {
             if (edit.status == Context::ChangesManager::Rejected) {
                 updateFileEditStatus(edit.editId, "rejected");
             }
         }
     } else {
-        m_lastErrorMessage = errorMsg.isEmpty() 
-            ? QString("Failed to undo some file edits")
-            : QString("Failed to undo some file edits:\n%1").arg(errorMsg);
+        m_lastErrorMessage = errorMsg.isEmpty()
+                                 ? QString("Failed to undo some file edits")
+                                 : QString("Failed to undo some file edits:\n%1").arg(errorMsg);
         emit lastErrorMessageChanged();
-        
-        auto edits = Context::ChangesManager::instance().getEditsForRequest(m_currentMessageRequestId);
+
+        auto edits = Context::ChangesManager::instance().getEditsForRequest(
+            m_currentMessageRequestId);
         for (const auto &edit : edits) {
             if (edit.status == Context::ChangesManager::Rejected) {
                 updateFileEditStatus(edit.editId, "rejected");
             }
         }
     }
-    
+
     updateCurrentMessageEditsStats();
 }
 
 void ChatRootView::updateCurrentMessageEditsStats()
 {
     if (m_currentMessageRequestId.isEmpty()) {
-        if (m_currentMessageTotalEdits != 0 || m_currentMessageAppliedEdits != 0 ||
-            m_currentMessagePendingEdits != 0 || m_currentMessageRejectedEdits != 0) {
+        if (m_currentMessageTotalEdits != 0 || m_currentMessageAppliedEdits != 0
+            || m_currentMessagePendingEdits != 0 || m_currentMessageRejectedEdits != 0) {
             m_currentMessageTotalEdits = 0;
             m_currentMessageAppliedEdits = 0;
             m_currentMessagePendingEdits = 0;
@@ -1012,14 +1018,14 @@ void ChatRootView::updateCurrentMessageEditsStats()
         }
         return;
     }
-    
+
     auto edits = Context::ChangesManager::instance().getEditsForRequest(m_currentMessageRequestId);
-    
+
     int total = edits.size();
     int applied = 0;
     int pending = 0;
     int rejected = 0;
-    
+
     for (const auto &edit : edits) {
         switch (edit.status) {
         case Context::ChangesManager::Applied:
@@ -1036,7 +1042,7 @@ void ChatRootView::updateCurrentMessageEditsStats()
             break;
         }
     }
-    
+
     bool changed = false;
     if (m_currentMessageTotalEdits != total) {
         m_currentMessageTotalEdits = total;
@@ -1054,10 +1060,14 @@ void ChatRootView::updateCurrentMessageEditsStats()
         m_currentMessageRejectedEdits = rejected;
         changed = true;
     }
-    
+
     if (changed) {
-        LOG_MESSAGE(QString("Updated message edits stats: total=%1, applied=%2, pending=%3, rejected=%4")
-                       .arg(total).arg(applied).arg(pending).arg(rejected));
+        LOG_MESSAGE(
+            QString("Updated message edits stats: total=%1, applied=%2, pending=%3, rejected=%4")
+                .arg(total)
+                .arg(applied)
+                .arg(pending)
+                .arg(rejected));
         emit currentMessageEditsStatsChanged();
     }
 }
