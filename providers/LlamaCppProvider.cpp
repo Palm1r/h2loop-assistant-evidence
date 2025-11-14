@@ -201,25 +201,7 @@ bool LlamaCppProvider::supportsTools() const
 void LlamaCppProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
 {
     if (mcpManager) {
-        m_toolsManager->registerMCPTools(mcpManager);
-        // Connect to tools updated signal to re-register MCP tools when they become available
-        connect(
-            mcpManager,
-            &MCP::MCPClientManager::toolsUpdated,
-            this,
-            [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
-        // Connect to server connected signal to re-register MCP tools when servers are added
-        connect(
-            mcpManager,
-            &MCP::MCPClientManager::serverConnected,
-            this,
-            [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
-        // Connect to server disconnected signal to re-register MCP tools when servers are removed
-        connect(
-            mcpManager,
-            &MCP::MCPClientManager::serverDisconnected,
-            this,
-            [this, mcpManager](const QString &) { m_toolsManager->registerMCPTools(mcpManager); });
+        m_toolsManager->setMCPClientManager(mcpManager);
     }
 }
 

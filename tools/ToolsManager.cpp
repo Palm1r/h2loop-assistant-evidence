@@ -196,15 +196,33 @@ QHash<QString, QString> ToolsManager::getToolResults(const QString &requestId) c
     return results;
 }
 
-void ToolsManager::registerMCPTools(MCP::MCPClientManager *mcpManager)
+void ToolsManager::setMCPClientManager(MCP::MCPClientManager *mcpManager)
 {
     if (!mcpManager || !m_toolsFactory) {
-        LOG_MESSAGE("Warning: Cannot register MCP tools - manager or factory is null");
+        LOG_MESSAGE("Warning: Cannot set MCP client manager - manager or factory is null");
         return;
     }
 
+    // Register initial MCP tools
     m_toolsFactory->registerMCPTools(mcpManager);
-    LOG_MESSAGE("Registered MCP tools with ToolsManager");
+
+    // Connect to MCP signals to keep tools synchronized
+    connect(mcpManager, &MCP::MCPClientManager::toolsUpdated, this, [this, mcpManager]() {
+        m_toolsFactory->registerMCPTools(mcpManager);
+        emit toolsChanged();
+    });
+
+    connect(mcpManager, &MCP::MCPClientManager::serverConnected, this, [this, mcpManager]() {
+        m_toolsFactory->registerMCPTools(mcpManager);
+        emit toolsChanged();
+    });
+
+    connect(mcpManager, &MCP::MCPClientManager::serverDisconnected, this, [this, mcpManager]() {
+        m_toolsFactory->registerMCPTools(mcpManager);
+        emit toolsChanged();
+    });
+
+    LOG_MESSAGE("MCP client manager set and tools synchronized with ToolsManager");
 }
 
 } // namespace QodeAssist::Tools

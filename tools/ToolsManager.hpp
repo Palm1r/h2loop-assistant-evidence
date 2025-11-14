@@ -68,10 +68,11 @@ public:
 
     ToolsFactory *toolsFactory() const;
 
-    void registerMCPTools(MCP::MCPClientManager *mcpManager);
+    void setMCPClientManager(MCP::MCPClientManager *mcpManager);
 
 signals:
     void toolExecutionComplete(const QString &requestId, const QHash<QString, QString> &toolResults);
+    void toolsChanged();
 
 private slots:
     void onToolFinished(
