@@ -118,7 +118,7 @@ void MCPClientManager::connectToServer(const QString &serverName)
             }
         }
     } catch (const std::exception &e) {
-        emit serverError(serverName, QString("Connection error: %1").arg(e.what()));
+        emit serverError(serverName, QString("Connection error: %1").arg(QString::fromUtf8(e.what())));
     }
 }
 
@@ -168,7 +168,7 @@ QFuture<QString> MCPClientManager::executeTool(
             // Convert result back to QString
             return QString::fromStdString(result.dump());
         } catch (const std::exception &e) {
-            return QString("Tool execution error: %1").arg(e.what());
+            return QString("Tool execution error: %1").arg(QString::fromUtf8(e.what()));
         }
     });
 }
