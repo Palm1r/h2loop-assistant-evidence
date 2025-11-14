@@ -378,7 +378,8 @@ void MCPSettings::populateToolsWidget(QTreeWidget *treeWidget)
         treeWidget->collapseAll();
 
     } catch (const std::exception &e) {
-        LOG_MESSAGE(QString("Exception in populateToolsWidget: %1").arg(e.what()));
+        LOG_MESSAGE(
+            QString("Exception in populateToolsWidget: %1").arg(QString::fromUtf8(e.what())));
         auto *item = new QTreeWidgetItem(treeWidget);
         item->setText(0, "Error loading MCP tools");
         treeWidget->addTopLevelItem(item);
