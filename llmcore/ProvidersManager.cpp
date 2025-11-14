@@ -46,11 +46,17 @@ Provider *ProvidersManager::getProviderByName(const QString &providerName)
 
 void ProvidersManager::setMCPClientManager(MCP::MCPClientManager *mcpManager)
 {
+    m_mcpClientManager = mcpManager;
     for (auto it = m_providers.begin(); it != m_providers.end(); ++it) {
         if (it.value() && it.value()->supportsTools()) {
             it.value()->setMCPClientManager(mcpManager);
         }
     }
+}
+
+MCP::MCPClientManager *ProvidersManager::mcpClientManager() const
+{
+    return m_mcpClientManager;
 }
 
 } // namespace QodeAssist::LLMCore

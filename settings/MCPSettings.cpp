@@ -18,7 +18,9 @@
  */
 
 #include "MCPSettings.hpp"
+#include "logger/Logger.hpp"
 #include <coreplugin/dialogs/ioptionspage.h>
+#include <llmcore/ProvidersManager.hpp>
 #include <utils/layoutbuilder.h>
 
 #include "SettingsConstants.hpp"
@@ -48,8 +50,89 @@ MCPSettings::MCPSettings()
     setLayouter([this]() {
         using namespace Layouting;
 
-        return Column{enableMCP, Space{8}, Group{title("MCP Servers"), Column{mcpServerUrls}}};
+        // Create fresh tree widget each time the layout is built
+        auto *mcpToolsWidget = new QTreeWidget();
+        QStringList headers;
+        headers << "Available MCP Tools";
+        mcpToolsWidget->setHeaderLabels(headers);
+        mcpToolsWidget->setRootIsDecorated(true);
+        mcpToolsWidget->setSelectionMode(QAbstractItemView::NoSelection);
+        mcpToolsWidget->setMinimumHeight(200);
+        mcpToolsWidget->setMaximumHeight(400);
+
+        // Populate tools synchronously
+        populateToolsWidget(mcpToolsWidget);
+
+        return Column{
+            enableMCP,
+            Space{8},
+            Group{title("MCP Servers"), Column{mcpServerUrls}},
+            Space{8},
+            Group{title("Available MCP Tools"), Column{Layouting::Widget(mcpToolsWidget)}}};
     });
+}
+
+void MCPSettings::populateToolsWidget(QTreeWidget *treeWidget)
+{
+    if (!treeWidget)
+        return;
+
+    treeWidget->clear();
+
+    auto mcpManager = LLMCore::ProvidersManager::instance().mcpClientManager();
+    if (!mcpManager) {
+        // No MCP manager available, show empty message
+        auto *item = new QTreeWidgetItem(treeWidget);
+        item->setText(0, "No MCP servers configured");
+        treeWidget->addTopLevelItem(item);
+        return;
+    }
+
+    try {
+        auto tools = mcpManager->getAvailableTools();
+        if (tools.isEmpty()) {
+            auto *item = new QTreeWidgetItem(treeWidget);
+            item->setText(0, "No MCP tools available");
+            treeWidget->addTopLevelItem(item);
+            return;
+        }
+
+        for (const auto &tool : tools) {
+            if (tool.name.isEmpty())
+                continue; // Skip invalid tools
+
+            auto *item = new QTreeWidgetItem(treeWidget);
+            item->setText(0, tool.name);
+
+            if (!tool.description.isEmpty()) {
+                // Add description as child item
+                auto *descItem = new QTreeWidgetItem(item);
+                descItem->setText(0, tool.description);
+            }
+        }
+
+        // Collapse all items by default so only tool names are visible
+        treeWidget->collapseAll();
+
+    } catch (const std::exception &e) {
+        // Handle any exceptions during tool retrieval
+        LOG_MESSAGE(QString("Exception in populateToolsWidget: %1").arg(e.what()));
+        auto *item = new QTreeWidgetItem(treeWidget);
+        item->setText(0, "Error loading MCP tools");
+        treeWidget->addTopLevelItem(item);
+    } catch (...) {
+        // Handle any other exceptions
+        LOG_MESSAGE("Unknown exception in populateToolsWidget");
+        auto *item = new QTreeWidgetItem(treeWidget);
+        item->setText(0, "Error loading MCP tools");
+        treeWidget->addTopLevelItem(item);
+    }
+}
+
+void MCPSettings::updateToolsList()
+{
+    // This method is kept for backward compatibility but is no longer used
+    // since widgets are created fresh each time
 }
 
 QList<QString> MCPSettings::getServerUrls() const

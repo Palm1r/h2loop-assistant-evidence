@@ -19,9 +19,11 @@
 
 #pragma once
 
+#include <mcp/MCPClientManager.hpp>
 #include <utils/aspects.h>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QTreeWidget>
 
 namespace QodeAssist::Settings {
 
@@ -42,6 +44,12 @@ public:
 
 signals:
     void serverUrlsChanged();
+
+private:
+    void populateToolsWidget(QTreeWidget *treeWidget);
+
+private slots:
+    void updateToolsList();
 };
 
 MCPSettings &mcpSettings();
