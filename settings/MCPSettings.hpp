@@ -47,9 +47,6 @@ signals:
 
 private:
     void populateToolsWidget(QTreeWidget *treeWidget);
-
-private slots:
-    void updateToolsList();
 };
 
 MCPSettings &mcpSettings();
