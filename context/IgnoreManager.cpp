@@ -164,13 +164,13 @@ QStringList IgnoreManager::loadIgnorePatterns(ProjectExplorer::Project *project)
     QString ignoreFile = ignoreFilePath(project);
     if (ignoreFile.isEmpty() || !QFile::exists(ignoreFile)) {
         // LOG_MESSAGE(
-        //     QString("No .qodeassistignore file found for project: %1").arg(project->displayName()));
+        //     QString("No .h2loopignore file found for project: %1").arg(project->displayName()));
         return patterns;
     }
 
     QFile file(ignoreFile);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        LOG_MESSAGE(QString("Could not open .qodeassistignore file: %1").arg(ignoreFile));
+        LOG_MESSAGE(QString("Could not open .h2loopignore file: %1").arg(ignoreFile));
         return patterns;
     }
 
@@ -181,7 +181,7 @@ QStringList IgnoreManager::loadIgnorePatterns(ProjectExplorer::Project *project)
             patterns << line;
     }
 
-    LOG_MESSAGE(QString("Successfully loaded .qodeassistignore file: %1 with %2 patterns")
+    LOG_MESSAGE(QString("Successfully loaded .h2loopignore file: %1 with %2 patterns")
                     .arg(ignoreFile)
                     .arg(patterns.size()));
 
@@ -268,7 +268,7 @@ QString IgnoreManager::ignoreFilePath(ProjectExplorer::Project *project) const
         return QString();
     }
 
-    return project->projectDirectory().toUrlishString() + "/.qodeassistignore";
+    return project->projectDirectory().toUrlishString() + "/.h2loopignore";
 }
 
 } // namespace QodeAssist::Context
