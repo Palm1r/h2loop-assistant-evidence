@@ -63,6 +63,26 @@ MCPSettings::MCPSettings()
         // Populate tools synchronously
         populateToolsWidget(mcpToolsWidget);
 
+        // Connect to MCP manager signals to refresh tools when they change
+        auto mcpManager = LLMCore::ProvidersManager::instance().mcpClientManager();
+        if (mcpManager) {
+            connect(
+                mcpManager,
+                &MCP::MCPClientManager::toolsUpdated,
+                mcpToolsWidget,
+                [this, mcpToolsWidget]() { populateToolsWidget(mcpToolsWidget); });
+            connect(
+                mcpManager,
+                &MCP::MCPClientManager::serverConnected,
+                mcpToolsWidget,
+                [this, mcpToolsWidget]() { populateToolsWidget(mcpToolsWidget); });
+            connect(
+                mcpManager,
+                &MCP::MCPClientManager::serverDisconnected,
+                mcpToolsWidget,
+                [this, mcpToolsWidget]() { populateToolsWidget(mcpToolsWidget); });
+        }
+
         return Column{
             enableMCP,
             Space{8},
@@ -115,24 +135,16 @@ void MCPSettings::populateToolsWidget(QTreeWidget *treeWidget)
         treeWidget->collapseAll();
 
     } catch (const std::exception &e) {
-        // Handle any exceptions during tool retrieval
         LOG_MESSAGE(QString("Exception in populateToolsWidget: %1").arg(e.what()));
         auto *item = new QTreeWidgetItem(treeWidget);
         item->setText(0, "Error loading MCP tools");
         treeWidget->addTopLevelItem(item);
     } catch (...) {
-        // Handle any other exceptions
         LOG_MESSAGE("Unknown exception in populateToolsWidget");
         auto *item = new QTreeWidgetItem(treeWidget);
         item->setText(0, "Error loading MCP tools");
         treeWidget->addTopLevelItem(item);
     }
-}
-
-void MCPSettings::updateToolsList()
-{
-    // This method is kept for backward compatibility but is no longer used
-    // since widgets are created fresh each time
 }
 
 QList<QString> MCPSettings::getServerUrls() const

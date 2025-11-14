@@ -67,6 +67,7 @@ public:
         const QString &serverName, const QString &toolName, const QJsonObject &params);
 
     bool isServerConnected(const QString &serverName) const;
+    QStringList getServerNames() const;
 
 signals:
     void serverConnected(const QString &serverName);

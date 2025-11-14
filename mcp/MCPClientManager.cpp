@@ -178,6 +178,11 @@ bool MCPClientManager::isServerConnected(const QString &serverName) const
     return m_servers.contains(serverName) && m_servers[serverName]->connected;
 }
 
+QStringList MCPClientManager::getServerNames() const
+{
+    return m_servers.keys();
+}
+
 void MCPClientManager::onServerConnectionError(const QString &serverName, const QString &error)
 {
     emit serverError(serverName, error);

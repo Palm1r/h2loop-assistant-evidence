@@ -330,9 +330,20 @@ private:
         // Get current URLs from settings
         auto currentUrls = Settings::mcpSettings().getServerUrls();
 
-        // Check for new URLs that aren't already connected
+        // Get list of currently managed servers
+        QStringList managedServers = m_mcpClientManager->getServerNames();
+
+        // Remove servers that are no longer in settings
+        for (const auto &serverName : managedServers) {
+            if (!currentUrls.contains(serverName)) {
+                m_mcpClientManager->disconnectFromServer(serverName);
+                m_mcpClientManager->removeServer(serverName);
+            }
+        }
+
+        // Check for new URLs that aren't already managed
         for (const auto &url : currentUrls) {
-            if (!url.isEmpty() && !m_mcpClientManager->isServerConnected(url)) {
+            if (!url.isEmpty() && !managedServers.contains(url)) {
                 MCP::MCPServerConfig config;
                 config.name = url;
                 config.url = url;
