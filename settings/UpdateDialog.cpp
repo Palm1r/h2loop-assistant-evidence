@@ -47,8 +47,7 @@ UpdateDialog::UpdateDialog(QWidget *parent)
     m_layout->addWidget(supportLabel);
 
     auto *supportLink = new QLabel(
-        tr("<a href='https://h2loop.ai' style='color: #0066cc;'>Visit H2Loop website</a>"),
-        this);
+        tr("<a href='https://h2loop.ai' style='color: #0066cc;'>Visit H2Loop website</a>"), this);
     supportLink->setOpenExternalLinks(true);
     supportLink->setTextFormat(Qt::RichText);
     supportLink->setAlignment(Qt::AlignCenter);
