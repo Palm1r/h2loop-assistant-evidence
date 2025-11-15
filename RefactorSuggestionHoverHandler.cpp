@@ -59,6 +59,7 @@ void RefactorSuggestionHoverHandler::identifyMatch(
     QScopeGuard cleanup([&] { report(Priority_None); });
 
     if (!editorWidget->suggestionVisible()) {
+        LOG_MESSAGE("RefactorSuggestionHoverHandler: No suggestion visible");
         return;
     }
 
@@ -80,9 +81,12 @@ void RefactorSuggestionHoverHandler::identifyMatch(
 #endif
 
     if (!suggestion) {
+        LOG_MESSAGE("RefactorSuggestionHoverHandler: No RefactorSuggestion in block");
         return;
     }
 
+    LOG_MESSAGE(
+        "RefactorSuggestionHoverHandler: Found RefactorSuggestion, reporting Priority_Suggestion");
     cleanup.dismiss();
     report(Priority_Suggestion);
 }
@@ -106,14 +110,19 @@ void RefactorSuggestionHoverHandler::operateTooltip(
 #endif
 
     if (!suggestion) {
+        LOG_MESSAGE("RefactorSuggestionHoverHandler::operateTooltip: No suggestion in block");
         return;
     }
 
+    LOG_MESSAGE("RefactorSuggestionHoverHandler::operateTooltip: Creating tooltip widget");
+
+    // Create compact widget with buttons
     auto *widget = new QWidget();
     auto *layout = new QHBoxLayout(widget);
     layout->setContentsMargins(4, 3, 4, 3);
     layout->setSpacing(6);
 
+    // Get theme colors
     const QColor normalBg = Utils::creatorColor(Utils::Theme::BackgroundColorNormal);
     const QColor hoverBg = Utils::creatorColor(Utils::Theme::BackgroundColorHover);
     const QColor selectedBg = Utils::creatorColor(Utils::Theme::BackgroundColorSelected);
@@ -194,6 +203,7 @@ void RefactorSuggestionHoverHandler::operateTooltip(
     layout->addWidget(applyButton);
     layout->addWidget(dismissButton);
 
+    // Position tooltip above cursor, like standard Qt Creator suggestions
     const QRect cursorRect = editorWidget->cursorRect(editorWidget->textCursor());
     QPoint pos = editorWidget->viewport()->mapToGlobal(cursorRect.topLeft())
                  - Utils::ToolTip::offsetFromPosition();
