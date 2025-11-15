@@ -30,9 +30,9 @@
 #include "LSPCompletion.hpp"
 #include "QuickRefactorHandler.hpp"
 #include "RefactorSuggestionHoverHandler.hpp"
-#include "widgets/CompletionProgressHandler.hpp"
 #include "widgets/CompletionErrorHandler.hpp"
 #include "widgets/CompletionHintHandler.hpp"
+#include "widgets/CompletionProgressHandler.hpp"
 #include "widgets/EditorChatButtonHandler.hpp"
 #include <languageclient/client.h>
 #include <llmcore/IPromptProvider.hpp>
@@ -53,7 +53,7 @@ public:
     void requestCompletions(TextEditor::TextEditorWidget *editor);
     void requestQuickRefactor(
         TextEditor::TextEditorWidget *editor, const QString &instructions = QString());
-    
+
     bool isHintVisible() const;
     void hideHintAndRequestCompletion(TextEditor::TextEditorWidget *editor);
 
@@ -71,8 +71,13 @@ private:
     void cleanupConnections();
     void handleRefactoringResult(const RefactorResult &result);
 
-    void handleAutoRequestTrigger(TextEditor::TextEditorWidget *widget, int charsAdded, bool isSpaceOrTab);
-    void handleHintBasedTrigger(TextEditor::TextEditorWidget *widget, int charsAdded, bool isSpaceOrTab, QTextCursor &cursor);
+    void handleAutoRequestTrigger(
+        TextEditor::TextEditorWidget *widget, int charsAdded, bool isSpaceOrTab);
+    void handleHintBasedTrigger(
+        TextEditor::TextEditorWidget *widget,
+        int charsAdded,
+        bool isSpaceOrTab,
+        QTextCursor &cursor);
 
     QHash<TextEditor::TextEditorWidget *, GetCompletionRequest> m_runningRequests;
     QHash<TextEditor::TextEditorWidget *, QTimer *> m_scheduledRequests;

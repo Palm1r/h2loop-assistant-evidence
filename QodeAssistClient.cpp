@@ -86,7 +86,6 @@ void QodeAssistClient::openDocument(TextEditor::TextDocument *document)
         return;
 
     Client::openDocument(document);
-
     auto editors = TextEditor::BaseTextEditor::textEditorsForDocument(document);
     for (auto *editor : editors) {
         if (auto *widget = editor->editorWidget()) {
@@ -219,6 +218,7 @@ void QodeAssistClient::requestCompletions(TextEditor::TextEditorWidget *editor)
     }
     request.setResponseCallback([this, editor = QPointer<TextEditorWidget>(editor)](
                                     const GetCompletionRequest::Response &response) {
+        qDebug() << "setResponseCallback";
         QTC_ASSERT(editor, return);
         handleCompletions(response, editor);
     });
@@ -354,7 +354,6 @@ void QodeAssistClient::handleCompletions(
             Text::Position pos{toTextPos(c.position())};
             return TextSuggestion::Data{range, pos, c.text()};
         });
-
         if (completions.isEmpty()) {
             LOG_MESSAGE("No valid completions received");
             return;
