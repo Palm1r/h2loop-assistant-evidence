@@ -80,7 +80,7 @@ public:
     ProjectPanelFactory()
     {
         setPriority(1000);
-        setDisplayName(Tr::tr("QodeAssist"));
+        setDisplayName(Tr::tr("H2LoopAssistant"));
         setCreateWidgetFunction(&createProjectPanel);
     }
 };

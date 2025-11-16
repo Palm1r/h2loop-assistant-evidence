@@ -48,8 +48,7 @@ LLMClientInterface::LLMClientInterface(
     , m_documentReader(documentReader)
     , m_performanceLogger(performanceLogger)
     , m_contextManager(new Context::ContextManager(this))
-{
-}
+{}
 
 LLMClientInterface::~LLMClientInterface()
 {
@@ -58,7 +57,7 @@ LLMClientInterface::~LLMClientInterface()
 
 Utils::FilePath LLMClientInterface::serverDeviceTemplate() const
 {
-    return "QodeAssist";
+    return "H2LoopAssistant";
 }
 
 void LLMClientInterface::startImpl()
@@ -158,7 +157,7 @@ void LLMClientInterface::handleInitialize(const QJsonObject &request)
     result["capabilities"] = capabilities;
 
     QJsonObject serverInfo;
-    serverInfo["name"] = "QodeAssist LSP Server";
+    serverInfo["name"] = "H2LoopAssistant LSP Server";
     serverInfo["version"] = "0.1";
     result["serverInfo"] = serverInfo;
 
@@ -408,14 +407,13 @@ void LLMClientInterface::sendCompletionToClient(
     if (outputHandler == "Raw text") {
         processedCompletion = completion;
     } else if (outputHandler == "Force processing") {
-        processedCompletion = CodeHandler::processText(completion,
-                                                       Context::extractFilePathFromRequest(request));
+        processedCompletion
+            = CodeHandler::processText(completion, Context::extractFilePathFromRequest(request));
     } else { // "Auto"
-        processedCompletion = CodeHandler::hasCodeBlocks(completion)
-                                  ? CodeHandler::processText(completion,
-                                                             Context::extractFilePathFromRequest(
-                                                                 request))
-                                  : completion;
+        processedCompletion
+            = CodeHandler::hasCodeBlocks(completion)
+                  ? CodeHandler::processText(completion, Context::extractFilePathFromRequest(request))
+                  : completion;
     }
 
     completionItem[LanguageServerProtocol::textKey] = processedCompletion;
