@@ -92,6 +92,7 @@ private:
     QTimer m_hintHideTimer;
     CompletionProgressHandler m_progressHandler;
     CompletionErrorHandler m_errorHandler;
+    CompletionHintHandler m_hintHandler;
     EditorChatButtonHandler m_chatButtonHandler;
     QuickRefactorHandler *m_refactorHandler{nullptr};
     RefactorSuggestionHoverHandler *m_refactorHoverHandler{nullptr};
