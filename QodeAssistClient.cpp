@@ -152,8 +152,7 @@ void QodeAssistClient::openDocument(TextEditor::TextDocument *document)
             }
 
             bool isSpaceOrTab = lastChar[0].isSpace();
-            bool ignoreWhitespace
-                = Settings::codeCompletionSettings().ignoreWhitespaceInCharCount();
+            bool ignoreWhitespace = Settings::codeCompletionSettings().ignoreWhitespaceInCharCount();
 
             if (!ignoreWhitespace || !isSpaceOrTab) {
                 m_recentCharCount += charsAdded;
@@ -186,7 +185,6 @@ void QodeAssistClient::requestCompletions(TextEditor::TextEditorWidget *editor)
 
     if (!isEnabled(project))
         return;
-
 
     if (m_llmClient->contextManager()
             ->ignoreManager()
@@ -510,22 +508,18 @@ void QodeAssistClient::handleRefactoringResult(const RefactorResult &result)
     LOG_MESSAGE("Displaying refactoring suggestion with hover handler");
 }
 
-void QodeAssistClient::handleAutoRequestTrigger(TextEditor::TextEditorWidget *widget,
-                                                 int charsAdded,
-                                                 bool isSpaceOrTab)
+void QodeAssistClient::handleAutoRequestTrigger(
+    TextEditor::TextEditorWidget *widget, int charsAdded, bool isSpaceOrTab)
 {
     Q_UNUSED(isSpaceOrTab);
 
-    if (m_recentCharCount
-        > Settings::codeCompletionSettings().autoCompletionCharThreshold()) {
+    if (m_recentCharCount > Settings::codeCompletionSettings().autoCompletionCharThreshold()) {
         scheduleRequest(widget);
     }
 }
 
-void QodeAssistClient::handleHintBasedTrigger(TextEditor::TextEditorWidget *widget,
-                                               int charsAdded,
-                                               bool isSpaceOrTab,
-                                               QTextCursor &cursor)
+void QodeAssistClient::handleHintBasedTrigger(
+    TextEditor::TextEditorWidget *widget, int charsAdded, bool isSpaceOrTab, QTextCursor &cursor)
 {
     Q_UNUSED(charsAdded);
 
@@ -543,8 +537,7 @@ void QodeAssistClient::handleHintBasedTrigger(TextEditor::TextEditorWidget *widg
         QTextCursor textCursor = widget->textCursor();
 
         if (m_recentCharCount <= hintThreshold) {
-            textCursor
-                .movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, m_recentCharCount);
+            textCursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, m_recentCharCount);
         } else {
             textCursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, hintThreshold);
         }
@@ -581,27 +574,29 @@ bool QodeAssistClient::eventFilter(QObject *watched, QEvent *event)
 
             switch (triggerKeyIndex) {
             case 0: // Space
-                isMatchingKey = (keyEvent->key() == Qt::Key_Space 
-                                 && (modifiers == Qt::NoModifier || modifiers == Qt::ShiftModifier));
+                isMatchingKey
+                    = (keyEvent->key() == Qt::Key_Space
+                       && (modifiers == Qt::NoModifier || modifiers == Qt::ShiftModifier));
                 break;
             case 1: // Ctrl+Space
-                isMatchingKey = (keyEvent->key() == Qt::Key_Space 
-                                 && (modifiers & Qt::ControlModifier));
+                isMatchingKey
+                    = (keyEvent->key() == Qt::Key_Space && (modifiers & Qt::ControlModifier));
                 break;
             case 2: // Alt+Space
-                isMatchingKey = (keyEvent->key() == Qt::Key_Space 
-                                 && (modifiers & Qt::AltModifier));
+                isMatchingKey = (keyEvent->key() == Qt::Key_Space && (modifiers & Qt::AltModifier));
                 break;
             case 3: // Ctrl+Enter
-                isMatchingKey = ((keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter)
-                                 && (modifiers & Qt::ControlModifier));
+                isMatchingKey
+                    = ((keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter)
+                       && (modifiers & Qt::ControlModifier));
                 break;
             case 4: // Tab
                 isMatchingKey = (keyEvent->key() == Qt::Key_Tab);
                 break;
             case 5: // Enter
-                isMatchingKey = ((keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter)
-                                 && (modifiers == Qt::NoModifier || modifiers == Qt::ShiftModifier));
+                isMatchingKey
+                    = ((keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter)
+                       && (modifiers == Qt::NoModifier || modifiers == Qt::ShiftModifier));
                 break;
             }
 
