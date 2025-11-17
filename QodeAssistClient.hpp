@@ -57,6 +57,9 @@ public:
     bool isHintVisible() const;
     void hideHintAndRequestCompletion(TextEditor::TextEditorWidget *editor);
 
+    bool isHintVisible() const;
+    void hideHintAndRequestCompletion(TextEditor::TextEditorWidget *editor);
+
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
 
