@@ -21,21 +21,13 @@
 2. [Install Plugin](#install-plugin-to-qtcreator)
 3. [Configuration](#configuration)
 4. [Features](#features)
-   <<<<<<< HEAD
 5. [Context Layers](#context-layers)
 6. [QtCreator Version Compatibility](#qtcreator-version-compatibility)
 7. [Hotkeys](#hotkeys)
 8. [Troubleshooting](#troubleshooting)
 9. [Development Progress](#development-progress)
 10. [Support the Development](#support-the-development-of-qodeassist)
-11. # [How to Build](#how-to-build)
-12. [QtCreator Version Compatibility](#qtcreator-version-compatibility)
-13. [Hotkeys](#hotkeys)
-14. [Troubleshooting](#troubleshooting)
-15. [Development Progress](#development-progress)
-16. [Support the Development](#support-the-development-of-qodeassist)
-17. [How to Build](#how-to-build)
-    > > > > > > > e59d17e (doc: Move out docs from main README)
+11. [How to Build](#how-to-build)
 
 ## Overview
 
