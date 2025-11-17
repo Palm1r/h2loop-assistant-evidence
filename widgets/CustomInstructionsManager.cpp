@@ -115,7 +115,6 @@ bool CustomInstructionsManager::saveInstruction(const CustomInstruction &instruc
 
     CustomInstruction newInstruction = instruction;
     QString oldFileName;
-
     if (newInstruction.id.isEmpty()) {
         newInstruction.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
     } else {
