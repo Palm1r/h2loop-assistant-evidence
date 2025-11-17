@@ -39,7 +39,8 @@ AddCustomInstructionDialog::AddCustomInstructionDialog(QWidget *parent)
     resize(500, 400);
 }
 
-AddCustomInstructionDialog::AddCustomInstructionDialog(const CustomInstruction &instruction, QWidget *parent)
+AddCustomInstructionDialog::AddCustomInstructionDialog(
+    const CustomInstruction &instruction, QWidget *parent)
     : QDialog(parent)
     , m_instruction(instruction)
 {
@@ -74,7 +75,8 @@ void AddCustomInstructionDialog::setupUi()
 
     m_defaultCheckBox = new QCheckBox(Tr::tr("Set as default instruction"), this);
     m_defaultCheckBox->setToolTip(
-        Tr::tr("This instruction will be automatically selected when opening Quick Refactor dialog"));
+        Tr::tr(
+            "This instruction will be automatically selected when opening Quick Refactor dialog"));
     mainLayout->addWidget(m_defaultCheckBox);
 
     QDialogButtonBox *buttonBox
@@ -82,11 +84,13 @@ void AddCustomInstructionDialog::setupUi()
 
     connect(buttonBox, &QDialogButtonBox::accepted, this, [this]() {
         if (m_nameEdit->text().trimmed().isEmpty()) {
-            QMessageBox::warning(this, Tr::tr("Invalid Input"), Tr::tr("Instruction name cannot be empty."));
+            QMessageBox::warning(
+                this, Tr::tr("Invalid Input"), Tr::tr("Instruction name cannot be empty."));
             return;
         }
         if (m_bodyEdit->toPlainText().trimmed().isEmpty()) {
-            QMessageBox::warning(this, Tr::tr("Invalid Input"), Tr::tr("Instruction body cannot be empty."));
+            QMessageBox::warning(
+                this, Tr::tr("Invalid Input"), Tr::tr("Instruction body cannot be empty."));
             return;
         }
         accept();
@@ -107,4 +111,3 @@ CustomInstruction AddCustomInstructionDialog::getInstruction() const
 }
 
 } // namespace QodeAssist
-

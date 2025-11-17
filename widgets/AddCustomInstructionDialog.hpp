@@ -36,14 +36,15 @@ class AddCustomInstructionDialog : public QDialog
 
 public:
     explicit AddCustomInstructionDialog(QWidget *parent = nullptr);
-    explicit AddCustomInstructionDialog(const CustomInstruction &instruction, QWidget *parent = nullptr);
+    explicit AddCustomInstructionDialog(
+        const CustomInstruction &instruction, QWidget *parent = nullptr);
     ~AddCustomInstructionDialog() override = default;
 
     CustomInstruction getInstruction() const;
 
 private:
     void setupUi();
-    
+
     QLineEdit *m_nameEdit;
     QPlainTextEdit *m_bodyEdit;
     QCheckBox *m_defaultCheckBox;
@@ -51,4 +52,3 @@ private:
 };
 
 } // namespace QodeAssist
-

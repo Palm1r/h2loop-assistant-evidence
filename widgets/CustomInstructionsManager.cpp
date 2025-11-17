@@ -82,9 +82,8 @@ bool CustomInstructionsManager::loadInstructions()
         QJsonParseError error;
         QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &error);
         if (error.error != QJsonParseError::NoError) {
-            LOG_MESSAGE(
-                QString("Failed to parse instruction file %1: %2")
-                    .arg(fileInfo.fileName(), error.errorString()));
+            LOG_MESSAGE(QString("Failed to parse instruction file %1: %2")
+                            .arg(fileInfo.fileName(), error.errorString()));
             continue;
         }
 
@@ -116,7 +115,7 @@ bool CustomInstructionsManager::saveInstruction(const CustomInstruction &instruc
 
     CustomInstruction newInstruction = instruction;
     QString oldFileName;
-    
+
     if (newInstruction.id.isEmpty()) {
         newInstruction.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
     } else {
@@ -127,7 +126,7 @@ bool CustomInstructionsManager::saveInstruction(const CustomInstruction &instruc
                 QString oldName = m_instructions[i].name;
                 oldName.replace(' ', '_');
                 oldFileName = QString("%1/%2_%3.json")
-                    .arg(getInstructionsDirectory(), oldName, newInstruction.id);
+                                  .arg(getInstructionsDirectory(), oldName, newInstruction.id);
                 break;
             }
         }
@@ -138,20 +137,21 @@ bool CustomInstructionsManager::saveInstruction(const CustomInstruction &instruc
         for (int i = 0; i < m_instructions.size(); ++i) {
             if (m_instructions[i].id != newInstruction.id && m_instructions[i].isDefault) {
                 m_instructions[i].isDefault = false;
-                
+
                 // Update the file for this instruction
                 QString sanitizedName = m_instructions[i].name;
                 sanitizedName.replace(' ', '_');
-                QString otherFileName = QString("%1/%2_%3.json")
-                    .arg(getInstructionsDirectory(), sanitizedName, m_instructions[i].id);
-                
+                QString otherFileName
+                    = QString("%1/%2_%3.json")
+                          .arg(getInstructionsDirectory(), sanitizedName, m_instructions[i].id);
+
                 QJsonObject otherObj;
                 otherObj["id"] = m_instructions[i].id;
                 otherObj["name"] = m_instructions[i].name;
                 otherObj["body"] = m_instructions[i].body;
                 otherObj["default"] = false;
                 otherObj["version"] = "0.1";
-                
+
                 QFile otherFile(otherFileName);
                 if (otherFile.open(QIODevice::WriteOnly)) {
                     otherFile.write(QJsonDocument(otherObj).toJson(QJsonDocument::Indented));
@@ -176,16 +176,16 @@ bool CustomInstructionsManager::saveInstruction(const CustomInstruction &instruc
     obj["version"] = "0.1";
 
     QJsonDocument doc(obj);
-    
+
     QString sanitizedName = newInstruction.name;
     sanitizedName.replace(' ', '_');
-    QString fileName = QString("%1/%2_%3.json")
-        .arg(getInstructionsDirectory(), sanitizedName, newInstruction.id);
-    
+    QString fileName
+        = QString("%1/%2_%3.json").arg(getInstructionsDirectory(), sanitizedName, newInstruction.id);
+
     if (!oldFileName.isEmpty() && oldFileName != fileName) {
         QFile::remove(oldFileName);
     }
-    
+
     QFile file(fileName);
     if (!file.open(QIODevice::WriteOnly)) {
         LOG_MESSAGE(QString("Failed to save instruction to file: %1").arg(fileName));
@@ -225,9 +225,8 @@ bool CustomInstructionsManager::deleteInstruction(const QString &id)
 
     QString sanitizedName = m_instructions[index].name;
     sanitizedName.replace(' ', '_');
-    QString fileName = QString("%1/%2_%3.json")
-        .arg(getInstructionsDirectory(), sanitizedName, id);
-    
+    QString fileName = QString("%1/%2_%3.json").arg(getInstructionsDirectory(), sanitizedName, id);
+
     QFile file(fileName);
     if (!file.remove()) {
         LOG_MESSAGE(QString("Failed to delete instruction file: %1").arg(fileName));
@@ -251,4 +250,3 @@ CustomInstruction CustomInstructionsManager::getInstructionById(const QString &i
 }
 
 } // namespace QodeAssist
-

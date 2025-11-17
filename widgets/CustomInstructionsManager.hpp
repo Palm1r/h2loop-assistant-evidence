@@ -43,22 +43,21 @@ public:
     bool loadInstructions();
     bool saveInstruction(const CustomInstruction &instruction);
     bool deleteInstruction(const QString &id);
-    
+
     QVector<CustomInstruction> instructions() const { return m_instructions; }
     CustomInstruction getInstructionById(const QString &id) const;
-    
+
 signals:
     void instructionsChanged();
 
 private:
     explicit CustomInstructionsManager(QObject *parent = nullptr);
     ~CustomInstructionsManager() override = default;
-    
+
     QString getInstructionsDirectory() const;
     bool ensureDirectoryExists() const;
-    
+
     QVector<CustomInstruction> m_instructions;
 };
 
 } // namespace QodeAssist
-

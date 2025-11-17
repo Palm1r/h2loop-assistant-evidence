@@ -88,13 +88,13 @@ void QuickRefactorDialog::setupUi()
     m_commandsComboBox->setEditable(true);
     m_commandsComboBox->setInsertPolicy(QComboBox::NoInsert);
     m_commandsComboBox->lineEdit()->setPlaceholderText("Search or select instruction...");
-    
+
     QCompleter *completer = new QCompleter(this);
     completer->setCompletionMode(QCompleter::PopupCompletion);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     completer->setFilterMode(Qt::MatchContains);
     m_commandsComboBox->setCompleter(completer);
-    
+
     instructionsLayout->addWidget(m_commandsComboBox);
 
     m_addCommandButton = new QToolButton(this);
@@ -124,7 +124,8 @@ void QuickRefactorDialog::setupUi()
 
     m_textEdit = new QPlainTextEdit(this);
     m_textEdit->setMinimumHeight(100);
-    m_textEdit->setPlaceholderText(Tr::tr("Add extra details or modifications to the selected instruction..."));
+    m_textEdit->setPlaceholderText(
+        Tr::tr("Add extra details or modifications to the selected instruction..."));
 
     connect(m_textEdit, &QPlainTextEdit::textChanged, this, &QuickRefactorDialog::updateDialogSize);
     connect(
@@ -190,12 +191,12 @@ void QuickRefactorDialog::createActionButtons()
 QString QuickRefactorDialog::instructions() const
 {
     QString result;
-    
+
     CustomInstruction instruction = findCurrentInstruction();
     if (!instruction.id.isEmpty()) {
         result = instruction.body;
     }
-    
+
     QString additionalText = m_textEdit->toPlainText().trimmed();
     if (!additionalText.isEmpty()) {
         if (!result.isEmpty()) {
@@ -203,7 +204,7 @@ QString QuickRefactorDialog::instructions() const
         }
         result += additionalText;
     }
-    
+
     return result;
 }
 
@@ -248,9 +249,10 @@ void QuickRefactorDialog::useImproveCodeTemplate()
 {
     m_commandsComboBox->setCurrentIndex(0);
     m_commandsComboBox->clearEditText(); // Clear search text
-    m_textEdit->setPlainText(Tr::tr(
-        "Improve the selected code by enhancing readability, efficiency, and maintainability. "
-        "Follow best practices for C++/Qt and fix any potential issues."));
+    m_textEdit->setPlainText(
+        Tr::tr(
+            "Improve the selected code by enhancing readability, efficiency, and maintainability. "
+            "Follow best practices for C++/Qt and fix any potential issues."));
     m_selectedAction = Action::ImproveCode;
     accept();
 }
@@ -260,9 +262,10 @@ void QuickRefactorDialog::useAlternativeSolutionTemplate()
     m_commandsComboBox->setCurrentIndex(0);
     m_commandsComboBox->clearEditText(); // Clear search text
     m_textEdit->setPlainText(
-        Tr::tr("Suggest an alternative implementation approach for the selected code. "
-               "Provide a different solution that might be cleaner, more efficient, "
-               "or uses different Qt/C++ patterns or idioms."));
+        Tr::tr(
+            "Suggest an alternative implementation approach for the selected code. "
+            "Provide a different solution that might be cleaner, more efficient, "
+            "or uses different Qt/C++ patterns or idioms."));
     m_selectedAction = Action::AlternativeSolution;
     accept();
 }
@@ -321,12 +324,12 @@ void QuickRefactorDialog::loadCustomCommands()
 
     QStringList instructionNames;
     int defaultInstructionIndex = -1;
-    
+
     for (int i = 0; i < instructions.size(); ++i) {
         const CustomInstruction &instruction = instructions[i];
         m_commandsComboBox->addItem(instruction.name, instruction.id);
         instructionNames.append(instruction.name);
-        
+
         if (instruction.isDefault) {
             defaultInstructionIndex = i + 1;
         }
@@ -355,13 +358,13 @@ CustomInstruction QuickRefactorDialog::findCurrentInstruction() const
 
     auto &manager = CustomInstructionsManager::instance();
     const QVector<CustomInstruction> &instructions = manager.instructions();
-    
+
     for (const CustomInstruction &instruction : instructions) {
         if (instruction.name == currentText) {
             return instruction;
         }
     }
-    
+
     int currentIndex = m_commandsComboBox->currentIndex();
     if (currentIndex > 0) {
         QString instructionId = m_commandsComboBox->itemData(currentIndex).toString();
@@ -369,7 +372,7 @@ CustomInstruction QuickRefactorDialog::findCurrentInstruction() const
             return manager.getInstructionById(instructionId);
         }
     }
-    
+
     return CustomInstruction();
 }
 
@@ -387,9 +390,9 @@ void QuickRefactorDialog::onAddCustomCommand()
 
         if (manager.saveInstruction(instruction)) {
             loadCustomCommands();
-            
+
             m_commandsComboBox->setCurrentText(instruction.name);
-            
+
             m_textEdit->clear();
         } else {
             QMessageBox::warning(
@@ -403,10 +406,12 @@ void QuickRefactorDialog::onAddCustomCommand()
 void QuickRefactorDialog::onEditCustomCommand()
 {
     CustomInstruction instruction = findCurrentInstruction();
-    
+
     if (instruction.id.isEmpty()) {
         QMessageBox::information(
-            this, Tr::tr("No Instruction Selected"), Tr::tr("Please select an instruction to edit."));
+            this,
+            Tr::tr("No Instruction Selected"),
+            Tr::tr("Please select an instruction to edit."));
         return;
     }
 
@@ -431,10 +436,12 @@ void QuickRefactorDialog::onEditCustomCommand()
 void QuickRefactorDialog::onDeleteCustomCommand()
 {
     CustomInstruction instruction = findCurrentInstruction();
-    
+
     if (instruction.id.isEmpty()) {
         QMessageBox::information(
-            this, Tr::tr("No Instruction Selected"), Tr::tr("Please select an instruction to delete."));
+            this,
+            Tr::tr("No Instruction Selected"),
+            Tr::tr("Please select an instruction to delete."));
         return;
     }
 
@@ -463,12 +470,12 @@ void QuickRefactorDialog::onOpenInstructionsFolder()
 {
     QString path = QString("%1/qodeassist/quick_refactor/instructions")
                        .arg(Core::ICore::userResourcePath().toFSPathString());
-    
+
     QDir dir(path);
     if (!dir.exists()) {
         dir.mkpath(".");
     }
-    
+
     QUrl url = QUrl::fromLocalFile(dir.absolutePath());
     QDesktopServices::openUrl(url);
 }
