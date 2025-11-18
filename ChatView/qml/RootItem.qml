@@ -367,9 +367,11 @@ ChatRootView {
     }
 
     function sendChatMessage() {
-        root.sendMessage(messageInput.text)
-        messageInput.text = ""
-        scrollToBottom()
+        if (messageInput.text.trim().length > 0) {
+            root.sendMessage(messageInput.text)
+            messageInput.text = ""
+            scrollToBottom()
+        }
     }
 
     Toast {
