@@ -21,6 +21,7 @@
 
 #include <QDebug>
 #include <QJsonDocument>
+#include <QThreadPool>
 #include <QtConcurrent>
 
 namespace QodeAssist::MCP {
@@ -130,10 +131,13 @@ void MCPClientManager::disconnectFromServer(const QString &serverName)
 
     auto connection = m_servers[serverName];
     if (connection->connected) {
-        connection->client.reset();
         connection->connected = false;
         connection->tools.clear();
-        emit serverDisconnected(serverName);
+        // Perform client cleanup in background to avoid blocking UI
+        QThreadPool::globalInstance()->start([this, serverName, connection]() {
+            connection->client.reset();
+            emit serverDisconnected(serverName);
+        });
     }
 }
 
