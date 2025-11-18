@@ -74,16 +74,19 @@ public:
         layout->addWidget(m_statusLabel);
 
         auto *buttonLayout = new QHBoxLayout();
-        m_okButton = new QPushButton("Add");
+        m_addButton = new QPushButton("Add");
         m_cancelButton = new QPushButton("Cancel");
         buttonLayout->addStretch();
         buttonLayout->addWidget(m_cancelButton);
-        buttonLayout->addWidget(m_okButton);
+        buttonLayout->addWidget(m_addButton);
         layout->addLayout(buttonLayout);
 
-        connect(m_okButton, &QPushButton::clicked, this, &AddMCPUrlDialog::onOkClicked);
+        connect(m_addButton, &QPushButton::clicked, this, &AddMCPUrlDialog::onAddClicked);
         connect(m_cancelButton, &QPushButton::clicked, this, &QDialog::reject);
         connect(m_urlEdit, &QLineEdit::textChanged, this, &AddMCPUrlDialog::onUrlChanged);
+
+        m_addButton->setDefault(true);
+        m_addButton->setFocus();
 
         onUrlChanged();
     }
@@ -91,9 +94,9 @@ public:
     QString getUrl() const { return m_urlEdit->text().trimmed(); }
 
 private slots:
-    void onUrlChanged() { m_okButton->setEnabled(!m_urlEdit->text().trimmed().isEmpty()); }
+    void onUrlChanged() { m_addButton->setEnabled(!m_urlEdit->text().trimmed().isEmpty()); }
 
-    void onOkClicked()
+    void onAddClicked()
     {
         QString url = getUrl();
         if (url.isEmpty()) {
@@ -105,7 +108,7 @@ private slots:
         m_progressBar->setRange(0, 0); // Indeterminate
         m_statusLabel->setText("Validating connection...");
         m_statusLabel->setVisible(true);
-        m_okButton->setEnabled(false);
+        m_addButton->setEnabled(false);
         m_cancelButton->setEnabled(false);
         m_urlEdit->setEnabled(false);
 
@@ -121,7 +124,7 @@ private slots:
             } else {
                 m_progressBar->setVisible(false);
                 m_statusLabel->setText("Failed to connect to MCP server");
-                m_okButton->setEnabled(true);
+                m_addButton->setEnabled(true);
                 m_cancelButton->setEnabled(true);
                 m_urlEdit->setEnabled(true);
             }
@@ -154,7 +157,7 @@ private:
     QLineEdit *m_urlEdit;
     QProgressBar *m_progressBar;
     QLabel *m_statusLabel;
-    QPushButton *m_okButton;
+    QPushButton *m_addButton;
     QPushButton *m_cancelButton;
     QFutureWatcher<bool> *m_validationWatcher = nullptr;
 };

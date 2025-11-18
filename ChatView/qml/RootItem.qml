@@ -222,8 +222,8 @@ ChatRootView {
                 id: messageInput
 
                 placeholderText: Qt.platform.os === "osx"
-                                 ? qsTr("Type your message here... (⌘+↩ to send)")
-                                 : qsTr("Type your message here... (Ctrl+Enter to send)")
+                                 ? qsTr("Type your message here... (↩ to send)")
+                                 : qsTr("Type your message here... (Enter to send)")
                 placeholderTextColor: palette.mid
                 color: palette.text
                 background: Rectangle {
@@ -245,6 +245,11 @@ ChatRootView {
                 }
 
                 onTextChanged: root.calculateMessageTokensCount(messageInput.text)
+
+                Keys.onReturnPressed: {
+                    root.sendChatMessage()
+                    event.accepted = true
+                }
 
                 MouseArea {
                     anchors.fill: parent
@@ -338,7 +343,7 @@ ChatRootView {
                                                             : root.cancelRequest()
             sendButton.icon.source: !root.isRequestInProgress ? "qrc:/qt/qml/ChatView/icons/chat-icon.svg"
                                                               : "qrc:/qt/qml/ChatView/icons/chat-pause-icon.svg"
-            sendButton.ToolTip.text: !root.isRequestInProgress ? qsTr("Send message to LLM %1").arg(Qt.platform.os === "osx" ? "Cmd+Return" : "Ctrl+Return")
+            sendButton.ToolTip.text: !root.isRequestInProgress ? qsTr("Send message to LLM %1").arg("Enter")
                                                                : qsTr("Stop")
             syncOpenFiles {
                 checked: root.isSyncOpenFiles
@@ -352,7 +357,7 @@ ChatRootView {
     Shortcut {
         id: sendMessageShortcut
 
-        sequences: ["Ctrl+Return", "Ctrl+Enter"]
+        sequences: ["Return", "Enter"]
         context: Qt.WindowShortcut
         onActivated: {
             if (messageInput.activeFocus && !Qt.inputMethod.visible) {
@@ -372,9 +377,11 @@ ChatRootView {
     }
 
     function sendChatMessage() {
-        root.sendMessage(messageInput.text)
-        messageInput.text = ""
-        scrollToBottom()
+        if (messageInput.text.trim().length > 0) {
+            root.sendMessage(messageInput.text)
+            messageInput.text = ""
+            scrollToBottom()
+        }
     }
 
     Toast {
