@@ -85,6 +85,9 @@ public:
         connect(m_cancelButton, &QPushButton::clicked, this, &QDialog::reject);
         connect(m_urlEdit, &QLineEdit::textChanged, this, &AddMCPUrlDialog::onUrlChanged);
 
+        m_addButton->setDefault(true);
+        m_addButton->setFocus();
+
         onUrlChanged();
     }
 
