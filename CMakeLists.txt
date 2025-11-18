@@ -123,6 +123,8 @@ add_qtc_plugin(QodeAssist
     ConfigurationManager.hpp ConfigurationManager.cpp
     CodeHandler.hpp CodeHandler.cpp
     UpdateStatusWidget.hpp UpdateStatusWidget.cpp
+    widgets/InlineRefactorWidget.hpp
+    widgets/InlineRefactorWidget.cpp
     widgets/CompletionProgressHandler.hpp widgets/CompletionProgressHandler.cpp
     widgets/ProgressWidget.hpp widgets/ProgressWidget.cpp
     widgets/EditorChatButton.hpp widgets/EditorChatButton.cpp

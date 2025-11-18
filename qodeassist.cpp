@@ -59,6 +59,7 @@
 #include "settings/ProjectSettingsPanel.hpp"
 #include "settings/SettingsConstants.hpp"
 #include "templates/Templates.hpp"
+#include "widgets/InlineRefactorWidget.hpp"
 #include "widgets/QuickRefactorDialog.hpp"
 #include <ChatView/ChatView.hpp>
 #include <coreplugin/actionmanager/actioncontainer.h>
@@ -197,16 +198,27 @@ public:
         quickRefactorAction.addOnTriggered(this, [this] {
             if (auto editor = TextEditor::TextEditorWidget::currentTextEditorWidget()) {
                 if (m_qodeAssistClient && m_qodeAssistClient->reachable()) {
-                    QuickRefactorDialog
-                        dialog(Core::ICore::dialogParent(), m_lastRefactorInstructions);
+                    const QTextCursor cursor = editor->textCursor();
+                    const QRect selectionRect = editor->cursorRect(cursor);
+                    QPoint globalPos = editor->viewport()->mapToGlobal(selectionRect.bottomLeft());
 
-                    if (dialog.exec() == QDialog::Accepted) {
-                        QString instructions = dialog.instructions();
+                    InlineRefactorWidget *widget
+                        = new InlineRefactorWidget(editor, m_lastRefactorInstructions);
+                    connect(widget, &InlineRefactorWidget::accepted, this, [this, widget, editor]() {
+                        QString instructions = widget->instructions();
                         if (!instructions.isEmpty()) {
                             m_lastRefactorInstructions = instructions;
                             m_qodeAssistClient->requestQuickRefactor(editor, instructions);
                         }
-                    }
+                        widget->deleteLater();
+                    });
+                    connect(
+                        widget,
+                        &InlineRefactorWidget::rejected,
+                        widget,
+                        &InlineRefactorWidget::deleteLater);
+
+                    widget->showAt(globalPos);
                 } else {
                     qWarning()
                         << "The H2Loop Assistant is not ready. Please check your connection and "
