@@ -218,7 +218,7 @@ QFuture<QString> BuildProjectTool::executeAsync(const QJsonObject &input)
 
                 LOG_MESSAGE(QString("BuildProjectTool: %1 completed - %2")
                                 .arg(buildType)
-                                .arg(buildCompleted ? "success" : "failed"));
+                                .arg(QString(buildCompleted ? "success" : "failed")));
 
                 promise->addResult(result);
                 promise->finish();
