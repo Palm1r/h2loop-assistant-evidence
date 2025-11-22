@@ -84,13 +84,14 @@ public:
         const QString &toolName,
         const QString &result);
     void updateMessageContent(const QString &messageId, const QString &newContent);
-    
+
     void setLoadingFromHistory(bool loading);
     bool isLoadingFromHistory() const;
 
 signals:
     void tokensThresholdChanged();
     void modelReseted();
+    void messageAdded();
 
 private slots:
     void onFileEditApplied(const QString &editId);
@@ -98,8 +99,9 @@ private slots:
     void onFileEditArchived(const QString &editId);
 
 private:
-    void updateFileEditStatus(const QString &editId, const QString &status, const QString &statusMessage);
-    
+    void updateFileEditStatus(
+        const QString &editId, const QString &status, const QString &statusMessage);
+
     QVector<Message> m_messages;
     bool m_loadingFromHistory = false;
 };

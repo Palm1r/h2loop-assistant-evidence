@@ -86,6 +86,7 @@ ChatRootView::ChatRootView(QQuickItem *parent)
         m_currentMessageRequestId.clear();
         updateCurrentMessageEditsStats();
     });
+    connect(m_chatModel, &ChatModel::messageAdded, this, &ChatRootView::updateInputTokensCount);
     connect(this, &ChatRootView::attachmentFilesChanged, &ChatRootView::updateInputTokensCount);
     connect(this, &ChatRootView::linkedFilesChanged, &ChatRootView::updateInputTokensCount);
     connect(
