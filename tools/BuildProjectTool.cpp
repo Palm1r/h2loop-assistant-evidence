@@ -216,9 +216,9 @@ QFuture<QString> BuildProjectTool::executeAsync(const QJsonObject &input)
                     result += "No compilation issues found.";
                 }
 
-                LOG_MESSAGE(QString("BuildProjectTool: %1 completed - %2")
-                                .arg(buildType)
-                                .arg(QString(buildCompleted ? "success" : "failed")));
+                // LOG_MESSAGE(QString("BuildProjectTool: %1 completed - %2")
+                //                 .arg(buildType)
+                //                 .arg(buildCompleted ? QString("success") : QString("failed")));
 
                 promise->addResult(result);
                 promise->finish();
