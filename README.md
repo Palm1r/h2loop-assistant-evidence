@@ -439,6 +439,24 @@ cmake --build .
   - **Windows/Linux**: Qt Creator build directory or combined binary package
   - **macOS**: `Qt Creator.app/Contents/Resources/`
 - `<path_to_plugin_source>`: Path to this plugin directory
+  or (for faster builds with parallel jobs) - Linux
+  cmake --build . -j $(nproc)
+
+  OR - Windows
+  cmake --build . -j %NUMBER_OF_PROCESSORS%
+
+where `<path_to_qtcreator>` is the relative or absolute path to a Qt Creator build directory, or to a
+combined binary and development package (Windows / Linux), or to the `Qt Creator.app/Contents/Resources/`
+directory of a combined binary and development package (macOS), and `<path_to_plugin_source>` is the
+relative or absolute path to this plugin directory.
+
+**Build Command Reference Example (Ubuntu 24)**
+
+    cmake -DCMAKE_PREFIX_PATH=/home/dinesh/Qt/Tools/QtCreator/lib/cmake/QtCreator -DCMAKE_BUILD_TYPE=RelWithDebInfo /media/dinesh/HDD1/RamailoTech/QodeAssist
+
+    cmake -DCMAKE_PREFIX_PATH=/home/dinesh/Qt/6.9.3/gcc_64/ -DCMAKE_BUILD_TYPE=RelWithDebInfo /media/dinesh/HDD1/RamailoTech/QodeAssist
+
+    cmake --build . -j $(nproc)
 
 **Build Command Reference Example (Ubuntu 24)**
 
