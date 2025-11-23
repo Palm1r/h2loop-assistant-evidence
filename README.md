@@ -1,4 +1,5 @@
 # QodeAssist - AI-powered coding assistant plugin for Qt Creator
+
 [![Build plugin](https://github.com/Palm1r/QodeAssist/actions/workflows/build_cmake.yml/badge.svg?branch=main)](https://github.com/Palm1r/QodeAssist/actions/workflows/build_cmake.yml)
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Palm1r/QodeAssist/total?color=41%2C173%2C71)
 ![GitHub Tag](https://img.shields.io/github/v/tag/Palm1r/QodeAssist)
@@ -7,12 +8,15 @@
 ![qodeassist-icon](https://github.com/user-attachments/assets/dc336712-83cb-440d-8761-8d0a31de898d) QodeAssist is a comprehensive AI-powered coding assistant plugin for Qt Creator. It provides intelligent code completion, interactive chat with multiple interface options, inline quick refactoring, and AI function calling capabilities for C++ and QML development. Supporting both local providers (Ollama, llama.cpp, LM Studio) and cloud services (Claude, OpenAI, Google AI, Mistral AI), QodeAssist enhances your productivity with context-aware AI assistance, project-specific rules, and extensive customization options directly in your Qt development environment.
 
 ⚠️ **Important Notice About Paid Providers**
+
 > When using paid providers like Claude, OpenRouter or OpenAI-compatible services:
+>
 > - These services will consume API tokens which may result in charges to your account
 > - The QodeAssist developer bears no responsibility for any charges incurred
 > - Please carefully review the provider's pricing and your account settings before use
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Install Plugin](#install-plugin-to-qtcreator)
 3. [Configuration](#configuration)
@@ -86,6 +90,7 @@ QodeAssist enhances Qt Creator with AI-powered coding assistance:
 QodeAssistUpdater is a command-line utility that automates plugin installation and updates with automatic Qt Creator version detection and checksum verification.
 
 **Features:**
+
 - Automatic Qt Creator version detection
 - Install, update, or remove plugin with single command
 - List all available plugin versions
@@ -114,10 +119,10 @@ For more information, visit the [QodeAssistUpdater repository](https://github.co
 1. Install Latest Qt Creator
 2. Download the QodeAssist plugin for your Qt Creator
    - Remove old version plugin if already was installed
-      - on macOS for QtCreator 16: ~/Library/Application Support/QtProject/Qt Creator/plugins/16.0.0/petrmironychev.qodeassist
-      - on windows for QtCreator 16: C:\Users\<user>\AppData\Local\QtProject\qtcreator\plugins\16.0.0\petrmironychev.qodeassist\lib\qtcreator\plugins  
+     - on macOS for QtCreator 16: ~/Library/Application Support/QtProject/Qt Creator/plugins/16.0.0/petrmironychev.qodeassist
+     - on windows for QtCreator 16: C:\Users\<user>\AppData\Local\QtProject\qtcreator\plugins\16.0.0\petrmironychev.qodeassist\lib\qtcreator\plugins
 3. Launch Qt Creator and install the plugin:
-   - Go to: 
+   - Go to:
      - MacOS: Qt Creator -> About Plugins...
      - Windows\Linux: Help -> About Plugins...
    - Click on "Install Plugin..."
@@ -146,6 +151,7 @@ QodeAssist supports multiple LLM providers. Choose your preferred provider and f
 ## Features
 
 ### Code Completion
+
 - AI-powered intelligent code completion
 - Support for C++ and QML
 - Context-aware suggestions
@@ -156,6 +162,7 @@ QodeAssist supports multiple LLM providers. Choose your preferred provider and f
 QodeAssist offers two trigger modes for code completion:
 
 **Hint-based (Default, Recommended)**
+
 - Shows a hint indicator near cursor when you type 3+ characters
 - Press **Space** (or custom key) to request completion
 - **Best for**: Paid APIs (Claude, OpenAI), conscious control
@@ -163,6 +170,7 @@ QodeAssist offers two trigger modes for code completion:
 - **Visual**: Clear indicator shows when completion is ready
 
 **Automatic**
+
 - Automatically requests completion after typing threshold
 - Works immediately without additional keypresses
 - **Best for**: Local models (Ollama, llama.cpp), maximum automation
@@ -173,6 +181,7 @@ QodeAssist offers two trigger modes for code completion:
 Configure in: `Tools → Options → QodeAssist → Code Completion → General Settings`
 
 ### Chat Assistant
+
 - Multiple chat panels: side panel, bottom panel, and popup window
 - Chat history with auto-save and restore
 - Token usage monitoring
@@ -181,6 +190,7 @@ Configure in: `Tools → Options → QodeAssist → Code Completion → General 
 - Extended thinking mode (Claude, other providers in plan) - Enable deeper reasoning for complex tasks
 
 ### Quick Refactoring
+
 - Inline code refactoring directly in the editor with AI assistance
 - Selection-based improvements with instant code replacement
 - Built-in quick actions (repeat, improve, alternative)
@@ -190,6 +200,7 @@ Configure in: `Tools → Options → QodeAssist → Code Completion → General 
 - **[Learn more](docs/quick-refactoring.md)**
 
 ### Tools & Function Calling
+
 - Read project files
 - List and search in project
 - Access linter/compiler issues
@@ -335,29 +346,29 @@ See [Project Rules Documentation](docs/project-rules.md) and [Quick Refactoring 
 ## QtCreator Version Compatibility
 
 | Qt Creator Version | QodeAssist Version |
-|-------------------|-------------------|
-| 17.0.0+ | 0.6.0 - 0.x.x |
-| 16.0.2 | 0.5.13 - 0.x.x |
-| 16.0.1 | 0.5.7 - 0.5.13 |
-| 16.0.0 | 0.5.2 - 0.5.6 |
-| 15.0.1 | 0.4.8 - 0.5.1 |
-| 15.0.0 | 0.4.0 - 0.4.7 |
-| 14.0.2 | 0.2.3 - 0.3.x |
-| 14.0.1 | ≤ 0.2.2 |
+| ------------------ | ------------------ |
+| 17.0.0+            | 0.6.0 - 0.x.x      |
+| 16.0.2             | 0.5.13 - 0.x.x     |
+| 16.0.1             | 0.5.7 - 0.5.13     |
+| 16.0.0             | 0.5.2 - 0.5.6      |
+| 15.0.1             | 0.4.8 - 0.5.1      |
+| 15.0.0             | 0.4.0 - 0.4.7      |
+| 14.0.2             | 0.2.3 - 0.3.x      |
+| 14.0.1             | ≤ 0.2.2            |
 
 ## Hotkeys
 
 All hotkeys can be customized in Qt Creator Settings. Default hotkeys:
 
-| Action | macOS | Windows/Linux |
-|--------|-------|--------------|
-| Open chat window | ⌥⌘W | Ctrl+Alt+W |
-| Close chat window | ⌥⌘S | Ctrl+Alt+S |
-| Manual code suggestion | ⌥⌘Q | Ctrl+Alt+Q |
-| Accept full suggestion | Tab | Tab |
-| Accept word | ⌥→ | Alt+→ |
-| Quick refactor | ⌥⌘R | Ctrl+Alt+R |
-    
+| Action                 | macOS | Windows/Linux |
+| ---------------------- | ----- | ------------- |
+| Open chat window       | ⌥⌘W   | Ctrl+Alt+W    |
+| Close chat window      | ⌥⌘S   | Ctrl+Alt+S    |
+| Manual code suggestion | ⌥⌘Q   | Ctrl+Alt+Q    |
+| Accept full suggestion | Tab   | Tab           |
+| Accept word            | ⌥→    | Alt+→         |
+| Quick refactor         | ⌥⌘R   | Ctrl+Alt+R    |
+
 ## Troubleshooting
 
 Having issues with QodeAssist? Check our [detailed troubleshooting guide](docs/troubleshooting.md) for:
@@ -382,6 +393,7 @@ For additional support, join our [Discord Community](https://discord.gg/BGMkUsXU
 - [ ] MCP (Model Context Protocol) support
 
 ## Support the development of QodeAssist
+
 If you find QodeAssist helpful, there are several ways you can support the project:
 
 1. **Report Issues**: If you encounter any bugs or have suggestions for improvements, please [open an issue](https://github.com/Palm1r/qodeassist/issues) on our GitHub repository.
@@ -401,6 +413,7 @@ Every contribution, no matter how small, is greatly appreciated and helps keep t
 ## How to Build
 
 ### Prerequisites
+
 - CMake 3.16+
 - C++20 compatible compiler
 - Qt Creator development files
@@ -421,10 +434,19 @@ cmake --build .
 ```
 
 **Path specifications:**
+
 - `<path_to_qtcreator>`:
   - **Windows/Linux**: Qt Creator build directory or combined binary package
   - **macOS**: `Qt Creator.app/Contents/Resources/`
 - `<path_to_plugin_source>`: Path to this plugin directory
+
+**Build Command Reference Example (Ubuntu 24)**
+
+    cmake -DCMAKE_PREFIX_PATH=/home/dinesh/Qt/Tools/QtCreator/lib/cmake/QtCreator -DCMAKE_BUILD_TYPE=RelWithDebInfo /media/dinesh/HDD1/RamailoTech/QodeAssist
+
+    cmake -DCMAKE_PREFIX_PATH=/home/dinesh/Qt/6.9.3/gcc_64/ -DCMAKE_BUILD_TYPE=RelWithDebInfo /media/dinesh/HDD1/RamailoTech/QodeAssist
+
+    cmake --build . -j $(nproc)
 
 ## For Contributors
 
@@ -440,4 +462,3 @@ For detailed development guidelines, architecture patterns, and best practices, 
 
 ![qodeassist-icon](https://github.com/user-attachments/assets/dc336712-83cb-440d-8761-8d0a31de898d)
 ![qodeassist-icon-small](https://github.com/user-attachments/assets/8ec241bf-3186-452e-b8db-8d70543c2f41)
-
