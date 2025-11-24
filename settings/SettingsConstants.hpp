@@ -123,7 +123,7 @@ const char QODE_ASSIST_TOOLS_SETTINGS_PAGE_ID[] = "QodeAssist.5ToolsSettingsPage
 const char QODE_ASSIST_CUSTOM_PROMPT_SETTINGS_PAGE_ID[] = "QodeAssist.6CustomPromptSettingsPageId";
 
 const char QODE_ASSIST_GENERAL_OPTIONS_CATEGORY[] = "QodeAssist.Category";
-const char QODE_ASSIST_GENERAL_OPTIONS_DISPLAY_CATEGORY[] = "QodeAssist";
+const char QODE_ASSIST_GENERAL_OPTIONS_DISPLAY_CATEGORY[] = "H2Loop Assistant";
 
 // Provider Settings Page ID
 const char QODE_ASSIST_PROVIDER_SETTINGS_PAGE_ID[] = "QodeAssist.7ProviderSettingsPageId";

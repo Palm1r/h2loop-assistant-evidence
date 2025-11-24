@@ -25,7 +25,7 @@ namespace QodeAssist::Chat {
 
 NavigationPanel::NavigationPanel()
 {
-    setDisplayName(tr("QodeAssist Chat"));
+    setDisplayName(tr("H2Loop Assistant Chat"));
     setPriority(500);
     setId("QodeAssistChat");
     setActivationSequence(QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_C));

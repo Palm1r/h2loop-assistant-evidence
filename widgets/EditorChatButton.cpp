@@ -61,7 +61,7 @@ EditorChatButton::EditorChatButton(QWidget *parent)
 
     setFixedSize(40, 40);
     setCursor(Qt::PointingHandCursor);
-    setToolTip(tr("Open QodeAssist Chat"));
+    setToolTip(tr("Open H2Loop Assistant Chat"));
 }
 
 EditorChatButton::~EditorChatButton() = default;

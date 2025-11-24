@@ -138,8 +138,8 @@ public:
 
         ActionBuilder requestAction(this, Constants::QODE_ASSIST_REQUEST_SUGGESTION);
         requestAction.setToolTip(
-            Tr::tr("Generate QodeAssist suggestion at the current cursor position."));
-        requestAction.setText(Tr::tr("Request QodeAssist Suggestion"));
+            Tr::tr("Generate H2Loop Assistant suggestion at the current cursor position."));
+        requestAction.setText(Tr::tr("Request H2Loop Assistant Suggestion"));
         requestAction.setIcon(QCODEASSIST_ICON.icon());
         const QKeySequence defaultShortcut = QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_Q);
         requestAction.setDefaultKeySequence(defaultShortcut);
@@ -152,7 +152,7 @@ public:
                         m_qodeAssistClient->requestCompletions(editor);
                     }
                 } else
-                    qWarning() << "The QodeAssist is not ready. Please check your connection and "
+                    qWarning() << "The H2Loop Assistant is not ready. Please check your connection and "
                                   "settings.";
             }
         });
@@ -182,8 +182,8 @@ public:
         ActionBuilder quickRefactorAction(this, "QodeAssist.QuickRefactor");
         const QKeySequence quickRefactorShortcut = QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_R);
         quickRefactorAction.setDefaultKeySequence(quickRefactorShortcut);
-        quickRefactorAction.setToolTip(Tr::tr("Refactor code using QodeAssist"));
-        quickRefactorAction.setText(Tr::tr("Quick Refactor with QodeAssist"));
+        quickRefactorAction.setToolTip(Tr::tr("Refactor code using H2Loop Assistant"));
+        quickRefactorAction.setText(Tr::tr("Quick Refactor with H2Loop Assistant"));
         quickRefactorAction.setIcon(QCODEASSIST_ICON.icon());
         quickRefactorAction.addOnTriggered(this, [this] {
             if (auto editor = TextEditor::TextEditorWidget::currentTextEditorWidget()) {
@@ -199,7 +199,7 @@ public:
                         }
                     }
                 } else {
-                    qWarning() << "The QodeAssist is not ready. Please check your connection and "
+                    qWarning() << "The H2Loop Assistant is not ready. Please check your connection and "
                                   "settings.";
                 }
             }
@@ -208,8 +208,8 @@ public:
         ActionBuilder showChatViewAction(this, "QodeAssist.ShowChatView");
         const QKeySequence showChatViewShortcut = QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_W);
         showChatViewAction.setDefaultKeySequence(showChatViewShortcut);
-        showChatViewAction.setToolTip(Tr::tr("Show QodeAssist Chat"));
-        showChatViewAction.setText(Tr::tr("Show QodeAssist Chat"));
+        showChatViewAction.setToolTip(Tr::tr("Show H2Loop Assistant Chat"));
+        showChatViewAction.setText(Tr::tr("Show H2Loop Assistant Chat"));
         showChatViewAction.setIcon(QCODEASSIST_CHAT_ICON.icon());
         showChatViewAction.addOnTriggered(this, [this] {
             if (!m_chatView) {
@@ -228,8 +228,8 @@ public:
         ActionBuilder closeChatViewAction(this, "QodeAssist.CloseChatView");
         const QKeySequence closeChatViewShortcut = QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_S);
         closeChatViewAction.setDefaultKeySequence(closeChatViewShortcut);
-        closeChatViewAction.setToolTip(Tr::tr("Close QodeAssist Chat"));
-        closeChatViewAction.setText(Tr::tr("Close QodeAssist Chat"));
+        closeChatViewAction.setToolTip(Tr::tr("Close H2Loop Assistant Chat"));
+        closeChatViewAction.setText(Tr::tr("Close H2Loop Assistant Chat"));
         closeChatViewAction.setIcon(QCODEASSIST_CHAT_ICON.icon());
         closeChatViewAction.addOnTriggered(this, [this] {
             if (m_chatView->isVisible()) {
