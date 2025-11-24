@@ -43,7 +43,8 @@ class ChatRootView : public QQuickItem
     Q_PROPERTY(int codeFontSize READ codeFontSize NOTIFY codeFontSizeChanged FINAL)
     Q_PROPERTY(int textFontSize READ textFontSize NOTIFY textFontSizeChanged FINAL)
     Q_PROPERTY(int textFormat READ textFormat NOTIFY textFormatChanged FINAL)
-    Q_PROPERTY(bool isRequestInProgress READ isRequestInProgress NOTIFY isRequestInProgressChanged FINAL)
+    Q_PROPERTY(
+        bool isRequestInProgress READ isRequestInProgress NOTIFY isRequestInProgressChanged FINAL)
     Q_PROPERTY(QString lastErrorMessage READ lastErrorMessage NOTIFY lastErrorMessageChanged FINAL)
     Q_PROPERTY(QString lastInfoMessage READ lastInfoMessage NOTIFY lastInfoMessageChanged FINAL)
     Q_PROPERTY(QVariantList activeRules READ activeRules NOTIFY activeRulesChanged FINAL)
@@ -51,11 +52,19 @@ class ChatRootView : public QQuickItem
     Q_PROPERTY(bool isAgentMode READ isAgentMode WRITE setIsAgentMode NOTIFY isAgentModeChanged FINAL)
     Q_PROPERTY(
         bool toolsSupportEnabled READ toolsSupportEnabled NOTIFY toolsSupportEnabledChanged FINAL)
-    
-    Q_PROPERTY(int currentMessageTotalEdits READ currentMessageTotalEdits NOTIFY currentMessageEditsStatsChanged FINAL)
-    Q_PROPERTY(int currentMessageAppliedEdits READ currentMessageAppliedEdits NOTIFY currentMessageEditsStatsChanged FINAL)
-    Q_PROPERTY(int currentMessagePendingEdits READ currentMessagePendingEdits NOTIFY currentMessageEditsStatsChanged FINAL)
-    Q_PROPERTY(int currentMessageRejectedEdits READ currentMessageRejectedEdits NOTIFY currentMessageEditsStatsChanged FINAL)
+
+    Q_PROPERTY(
+        int currentMessageTotalEdits READ currentMessageTotalEdits NOTIFY
+            currentMessageEditsStatsChanged FINAL)
+    Q_PROPERTY(
+        int currentMessageAppliedEdits READ currentMessageAppliedEdits NOTIFY
+            currentMessageEditsStatsChanged FINAL)
+    Q_PROPERTY(
+        int currentMessagePendingEdits READ currentMessagePendingEdits NOTIFY
+            currentMessageEditsStatsChanged FINAL)
+    Q_PROPERTY(
+        int currentMessageRejectedEdits READ currentMessageRejectedEdits NOTIFY
+            currentMessageEditsStatsChanged FINAL)
 
     QML_ELEMENT
 
@@ -110,7 +119,7 @@ public:
     void setRequestProgressStatus(bool state);
 
     QString lastErrorMessage() const;
-    
+
     QVariantList activeRules() const;
     int activeRulesCount() const;
     Q_INVOKABLE QString getRuleContent(int index);
@@ -124,12 +133,12 @@ public:
     Q_INVOKABLE void rejectFileEdit(const QString &editId);
     Q_INVOKABLE void undoFileEdit(const QString &editId);
     Q_INVOKABLE void openFileEditInEditor(const QString &editId);
-    
+
     // Mass file edit operations for current message
     Q_INVOKABLE void applyAllFileEditsForCurrentMessage();
     Q_INVOKABLE void undoAllFileEditsForCurrentMessage();
     Q_INVOKABLE void updateCurrentMessageEditsStats();
-    
+
     int currentMessageTotalEdits() const;
     int currentMessageAppliedEdits() const;
     int currentMessagePendingEdits() const;
@@ -172,6 +181,7 @@ signals:
 private:
     void updateFileEditStatus(const QString &editId, const QString &status);
     QString getChatsHistoryDir() const;
+    QString getDebugLogsDir() const;
     QString getSuggestedFileName() const;
 
     ChatModel *m_chatModel;
@@ -189,7 +199,7 @@ private:
     QString m_lastErrorMessage;
     QVariantList m_activeRules;
     bool m_isAgentMode;
-    
+
     QString m_currentMessageRequestId;
     int m_currentMessageTotalEdits{0};
     int m_currentMessageAppliedEdits{0};

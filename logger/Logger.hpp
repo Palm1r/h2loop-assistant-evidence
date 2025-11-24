@@ -18,6 +18,9 @@ public:
     void setDebugLoggingEnabled(bool enable);
     bool isDebugLoggingEnabled() const;
 
+    void setDebugLogFilePath(const QString &filePath);
+    QString debugLogFilePath() const;
+
     void log(const QString &message, bool silent = true);
     void logMessages(const QStringList &messages, bool silent = true);
 
@@ -32,6 +35,7 @@ private:
 
     bool m_loggingEnabled;
     bool m_debugLoggingEnabled;
+    QString m_debugLogFilePath;
 };
 
 #define LOG_MESSAGE(msg) QodeAssist::Logger::instance().log(msg)
