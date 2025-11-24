@@ -35,6 +35,9 @@ public:
 
     Utils::BoolAspect enableQodeAssist{this};
     Utils::BoolAspect enableLogging{this};
+#ifdef QT_DEBUG
+    Utils::BoolAspect enableDebugLogging{this};
+#endif
     Utils::BoolAspect enableCheckUpdate{this};
 
     ButtonAspect checkUpdate{this};
