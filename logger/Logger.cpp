@@ -64,7 +64,6 @@ void Logger::logMessages(const QStringList &messages, bool silent)
     }
 }
 
-#ifdef QT_DEBUG
 void Logger::debugLog(const QString &message, bool silent)
 {
     if (!m_debugLoggingEnabled)
@@ -94,5 +93,4 @@ void Logger::debugLogMessages(const QStringList &messages, bool silent)
         Core::MessageManager::writeFlashing(prefixedMessages);
     }
 }
-#endif
 } // namespace QodeAssist

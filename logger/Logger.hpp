@@ -21,10 +21,8 @@ public:
     void log(const QString &message, bool silent = true);
     void logMessages(const QStringList &messages, bool silent = true);
 
-#ifdef QT_DEBUG
     void debugLog(const QString &message, bool silent = true);
     void debugLogMessages(const QStringList &messages, bool silent = true);
-#endif
 
 private:
     Logger();

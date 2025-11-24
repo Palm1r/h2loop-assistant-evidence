@@ -75,13 +75,11 @@ GeneralSettings::GeneralSettings()
     enableLogging.setToolTip(TrConstants::ENABLE_LOG_TOOLTIP);
     enableLogging.setDefaultValue(false);
 
-#ifdef QT_DEBUG
     enableDebugLogging.setSettingsKey(Constants::ENABLE_DEBUG_LOGGING);
     enableDebugLogging.setLabelText("Enable Debug Logging");
     enableDebugLogging.setToolTip(
         "Enable detailed logging of LLM requests and responses for debugging purposes");
     enableDebugLogging.setDefaultValue(false);
-#endif
 
     resetToDefaults.m_buttonText = TrConstants::RESET_TO_DEFAULTS;
 
@@ -239,9 +237,7 @@ GeneralSettings::GeneralSettings()
     readSettings();
 
     Logger::instance().setLoggingEnabled(enableLogging());
-#ifdef QT_DEBUG
     Logger::instance().setDebugLoggingEnabled(enableDebugLogging());
-#endif
 
     setupConnections();
 
@@ -288,9 +284,7 @@ GeneralSettings::GeneralSettings()
         auto rootLayout = Column{
             Row{enableQodeAssist, Stretch{1}, resetToDefaults},
             Row{enableLogging, Stretch{1}},
-#ifdef QT_DEBUG
             Row{enableDebugLogging, Stretch{1}},
-#endif
             Space{8},
             ccGroup,
             Space{8},
@@ -483,11 +477,9 @@ void GeneralSettings::setupConnections()
     connect(&enableLogging, &Utils::BoolAspect::volatileValueChanged, this, [this]() {
         Logger::instance().setLoggingEnabled(enableLogging.volatileValue());
     });
-#ifdef QT_DEBUG
     connect(&enableDebugLogging, &Utils::BoolAspect::volatileValueChanged, this, [this]() {
         Logger::instance().setDebugLoggingEnabled(enableDebugLogging.volatileValue());
     });
-#endif
     connect(&resetToDefaults, &ButtonAspect::clicked, this, &GeneralSettings::resetPageToDefaults);
 
     connect(&specifyPreset1, &Utils::BoolAspect::volatileValueChanged, this, [this]() {
@@ -520,9 +512,7 @@ void GeneralSettings::resetPageToDefaults()
     if (reply == QMessageBox::Yes) {
         resetAspect(enableQodeAssist);
         resetAspect(enableLogging);
-#ifdef QT_DEBUG
         resetAspect(enableDebugLogging);
-#endif
         resetAspect(ccProvider);
         resetAspect(ccModel);
         resetAspect(ccTemplate);
