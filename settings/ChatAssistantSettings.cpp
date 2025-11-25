@@ -200,9 +200,9 @@ ChatAssistantSettings::ChatAssistantSettings()
         "</INTERACTION_RULES>\n\n"
         "On responses, do not provide tool calls in the format like <tool_call> or "
         "<function=any_tool_name_here");
-    -
-        // Ollama Settings
-        ollamaLivetime.setSettingsKey(Constants::CA_OLLAMA_LIVETIME);
+
+    // Ollama Settings
+    ollamaLivetime.setSettingsKey(Constants::CA_OLLAMA_LIVETIME);
     ollamaLivetime.setToolTip(
         Tr::tr(
             "Time to suspend Ollama after completion request (in minutes), "
