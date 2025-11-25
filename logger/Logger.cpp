@@ -60,6 +60,16 @@ void Logger::log(const QString &message, bool silent)
     } else {
         Core::MessageManager::writeFlashing(prefixedMessage);
     }
+
+    if (!m_debugLogFilePath.isEmpty()) {
+        QFile file(m_debugLogFilePath);
+        if (file.open(QIODevice::Append | QIODevice::Text)) {
+            QTextStream out(&file);
+            out << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz") << " "
+                << prefixedMessage << "\n";
+            file.close();
+        }
+    }
 }
 
 void Logger::logMessages(const QStringList &messages, bool silent)
@@ -76,6 +86,18 @@ void Logger::logMessages(const QStringList &messages, bool silent)
         Core::MessageManager::writeSilently(prefixedMessages);
     } else {
         Core::MessageManager::writeFlashing(prefixedMessages);
+    }
+
+    if (!m_debugLogFilePath.isEmpty()) {
+        QFile file(m_debugLogFilePath);
+        if (file.open(QIODevice::Append | QIODevice::Text)) {
+            QTextStream out(&file);
+            for (const QString &message : prefixedMessages) {
+                out << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz") << " "
+                    << message << "\n";
+            }
+            file.close();
+        }
     }
 }
 
@@ -119,7 +141,6 @@ void Logger::debugLogMessages(const QStringList &messages, bool silent)
         Core::MessageManager::writeFlashing(prefixedMessages);
     }
 
-    // Also write to file if file path is set
     if (!m_debugLogFilePath.isEmpty()) {
         QFile file(m_debugLogFilePath);
         if (file.open(QIODevice::Append | QIODevice::Text)) {
