@@ -62,6 +62,7 @@ private slots:
 
 private:
     void handleLLMResponse(const QString &response, const QJsonObject &request, bool isComplete);
+    QString filterToolCallSyntax(const QString &response) const;
     QString getCurrentFileContext() const;
     QString getSystemPromptWithLinkedFiles(
         const QString &basePrompt, const QList<QString> &linkedFiles) const;
