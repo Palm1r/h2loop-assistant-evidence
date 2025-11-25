@@ -219,6 +219,12 @@ void OpenAIProvider::sendRequest(
 
     LOG_MESSAGE(QString("OpenAIProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
+    DEBUG_LOG_MESSAGE(
+        QString("OpenAIProvider DEBUG: Request %1 payload: %2")
+            .arg(
+                requestId,
+                QString::fromUtf8(QJsonDocument(payload).toJson(QJsonDocument::Indented))));
+
     emit httpClient() -> sendRequest(request);
 }
 
@@ -237,6 +243,9 @@ void OpenAIProvider::cancelRequest(const LLMCore::RequestID &requestId)
 void OpenAIProvider::onDataReceived(
     const QodeAssist::LLMCore::RequestID &requestId, const QByteArray &data)
 {
+    DEBUG_LOG_MESSAGE(QString("OpenAIProvider DEBUG: Received data for request %1: %2")
+                          .arg(requestId, QString::fromUtf8(data)));
+
     LLMCore::DataBuffers &buffers = m_dataBuffers[requestId];
     QStringList lines = buffers.rawStreamBuffer.processData(data);
 
@@ -293,6 +302,17 @@ void OpenAIProvider::onToolExecutionComplete(
     }
 
     LOG_MESSAGE(QString("Tool execution complete for OpenAI request %1").arg(requestId));
+
+    QVariantMap variantToolResults;
+    for (auto it = toolResults.begin(); it != toolResults.end(); ++it) {
+        variantToolResults[it.key()] = it.value();
+    }
+    DEBUG_LOG_MESSAGE(
+        QString("OpenAIProvider DEBUG: Tool results for request %1: %2")
+            .arg(
+                requestId,
+                QString::fromUtf8(
+                    QJsonDocument::fromVariant(variantToolResults).toJson(QJsonDocument::Indented))));
 
     for (auto it = toolResults.begin(); it != toolResults.end(); ++it) {
         OpenAIMessage *message = m_messages[requestId];

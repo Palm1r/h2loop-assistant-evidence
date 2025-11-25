@@ -35,6 +35,7 @@ public:
 
     Utils::BoolAspect enableQodeAssist{this};
     Utils::BoolAspect enableLogging{this};
+    Utils::BoolAspect enableDebugLogging{this};
     Utils::BoolAspect enableCheckUpdate{this};
 
     ButtonAspect checkUpdate{this};

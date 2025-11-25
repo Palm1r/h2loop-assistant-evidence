@@ -75,6 +75,12 @@ GeneralSettings::GeneralSettings()
     enableLogging.setToolTip(TrConstants::ENABLE_LOG_TOOLTIP);
     enableLogging.setDefaultValue(false);
 
+    enableDebugLogging.setSettingsKey(Constants::ENABLE_DEBUG_LOGGING);
+    enableDebugLogging.setLabelText("Enable Debug Logging");
+    enableDebugLogging.setToolTip(
+        "Enable detailed logging of LLM requests and responses for debugging purposes");
+    enableDebugLogging.setDefaultValue(false);
+
     resetToDefaults.m_buttonText = TrConstants::RESET_TO_DEFAULTS;
 
     initStringAspect(ccProvider, Constants::CC_PROVIDER, TrConstants::PROVIDER, "OpenAI Compatible");
@@ -231,6 +237,7 @@ GeneralSettings::GeneralSettings()
     readSettings();
 
     Logger::instance().setLoggingEnabled(enableLogging());
+    Logger::instance().setDebugLoggingEnabled(enableDebugLogging());
 
     setupConnections();
 
@@ -277,6 +284,7 @@ GeneralSettings::GeneralSettings()
         auto rootLayout = Column{
             Row{enableQodeAssist, Stretch{1}, resetToDefaults},
             Row{enableLogging, Stretch{1}},
+            Row{enableDebugLogging, Stretch{1}},
             Space{8},
             ccGroup,
             Space{8},
@@ -469,6 +477,9 @@ void GeneralSettings::setupConnections()
     connect(&enableLogging, &Utils::BoolAspect::volatileValueChanged, this, [this]() {
         Logger::instance().setLoggingEnabled(enableLogging.volatileValue());
     });
+    connect(&enableDebugLogging, &Utils::BoolAspect::volatileValueChanged, this, [this]() {
+        Logger::instance().setDebugLoggingEnabled(enableDebugLogging.volatileValue());
+    });
     connect(&resetToDefaults, &ButtonAspect::clicked, this, &GeneralSettings::resetPageToDefaults);
 
     connect(&specifyPreset1, &Utils::BoolAspect::volatileValueChanged, this, [this]() {
@@ -501,6 +512,7 @@ void GeneralSettings::resetPageToDefaults()
     if (reply == QMessageBox::Yes) {
         resetAspect(enableQodeAssist);
         resetAspect(enableLogging);
+        resetAspect(enableDebugLogging);
         resetAspect(ccProvider);
         resetAspect(ccModel);
         resetAspect(ccTemplate);
