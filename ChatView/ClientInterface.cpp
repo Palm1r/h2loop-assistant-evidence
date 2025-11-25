@@ -23,6 +23,7 @@
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QRegularExpression>
 #include <QUuid>
 
 #include <coreplugin/editormanager/editormanager.h>
@@ -37,12 +38,12 @@
 
 #include "ChatAssistantSettings.hpp"
 #include "GeneralSettings.hpp"
-#include "ToolsSettings.hpp"
 #include "Logger.hpp"
 #include "ProvidersManager.hpp"
 #include "RequestConfig.hpp"
-#include <context/ChangesManager.h>
+#include "ToolsSettings.hpp"
 #include <RulesLoader.hpp>
+#include <context/ChangesManager.h>
 
 namespace QodeAssist::Chat {
 
@@ -67,7 +68,7 @@ void ClientInterface::sendMessage(
 {
     cancelRequest();
     m_accumulatedResponses.clear();
-    
+
     Context::ChangesManager::instance().archiveAllNonArchivedEdits();
 
     auto attachFiles = m_contextManager->getContentFiles(attachments);
@@ -150,7 +151,7 @@ void ClientInterface::sendMessage(
     QJsonObject request{{"id", requestId}};
 
     m_activeRequests[requestId] = {request, provider};
-    
+
     emit requestStarted(requestId);
 
     connect(
@@ -228,7 +229,8 @@ void ClientInterface::cancelRequest()
 void ClientInterface::handleLLMResponse(
     const QString &response, const QJsonObject &request, bool isComplete)
 {
-    const auto message = response.trimmed();
+    QString filteredResponse = filterToolCallSyntax(response);
+    const auto message = filteredResponse.trimmed();
 
     if (!message.isEmpty()) {
         QString messageId = request["id"].toString();
@@ -264,6 +266,24 @@ QString ClientInterface::getCurrentFileContext() const
     LOG_MESSAGE(QString("Got context from file: %1").arg(textDocument->filePath().toFSPathString()));
 
     return QString("Current file context:\n%1\nFile content:\n%2").arg(fileInfo, content);
+}
+
+QString ClientInterface::filterToolCallSyntax(const QString &response) const
+{
+    QString filtered = response;
+
+    // Remove <tool_call> <function=... patterns (with any tool name)
+    QRegularExpression toolCallRegex(R"(<tool_call>\s*<function=[^>]*)");
+    filtered = filtered.replace(toolCallRegex, "");
+
+    // Remove any remaining <function=... patterns (with any tool name)
+    QRegularExpression functionRegex(R"(<function=[^>]*)");
+    filtered = filtered.replace(functionRegex, "");
+
+    // Remove any remaining <tool_call> tags
+    filtered = filtered.replace("<tool_call>", "");
+
+    return filtered;
 }
 
 QString ClientInterface::getSystemPromptWithLinkedFiles(
@@ -309,16 +329,16 @@ void ClientInterface::handleFullResponse(const QString &requestId, const QString
     const RequestContext &ctx = it.value();
 
     QString finalText = !fullText.isEmpty() ? fullText : m_accumulatedResponses[requestId];
-    
+
     QString applyError;
-    bool applySuccess = Context::ChangesManager::instance()
-                           .applyPendingEditsForRequest(requestId, &applyError);
-    
+    bool applySuccess
+        = Context::ChangesManager::instance().applyPendingEditsForRequest(requestId, &applyError);
+
     if (!applySuccess) {
         LOG_MESSAGE(QString("Some edits for request %1 were not auto-applied: %2")
-                       .arg(requestId, applyError));
+                        .arg(requestId, applyError));
     }
-    
+
     handleLLMResponse(finalText, ctx.originalRequest, true);
 
     m_activeRequests.erase(it);
