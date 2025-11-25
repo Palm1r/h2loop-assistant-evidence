@@ -667,7 +667,7 @@ bool ChatRootView::shouldIgnoreFileForAttach(const Utils::FilePath &filePath)
         && m_clientInterface->contextManager()
                ->ignoreManager()
                ->shouldIgnore(filePath.toFSPathString(), project)) {
-        LOG_MESSAGE(QString("Ignoring file for attachment due to .qodeassistignore: %1")
+        LOG_MESSAGE(QString("Ignoring file for attachment due to .h2loopignore: %1")
                         .arg(filePath.toFSPathString()));
         return true;
     }
