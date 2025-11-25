@@ -316,7 +316,9 @@ private:
                 config.useStdio = false; // Default to HTTP/SSE transport
 
                 m_mcpClientManager->addServer(config);
-                m_mcpClientManager->connectToServer(config.name);
+                // Run connection in background to avoid blocking app startup
+                QThreadPool::globalInstance()->start(
+                    [this, config]() { m_mcpClientManager->connectToServer(config.name); });
             }
         }
     }

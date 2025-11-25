@@ -246,9 +246,18 @@ ChatRootView {
 
                 onTextChanged: root.calculateMessageTokensCount(messageInput.text)
 
-                Keys.onReturnPressed: {
-                    root.sendChatMessage()
-                    event.accepted = true
+                Keys.onPressed: (event) => {
+                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        if (event.modifiers & (Qt.ControlModifier | Qt.MetaModifier)) {
+                            // Ctrl+Enter (Linux/Windows) or Cmd+Enter (macOS)
+                            messageInput.insert(messageInput.cursorPosition, "\n")
+                            event.accepted = true
+                        } else {
+                            // Only Enter -> send message
+                            root.sendChatMessage()
+                            event.accepted = true
+                        }
+                    }
                 }
 
                 MouseArea {
@@ -351,18 +360,6 @@ ChatRootView {
             }
             attachFiles.onClicked: root.showAttachFilesDialog()
             linkFiles.onClicked: root.showLinkFilesDialog()
-        }
-    }
-
-    Shortcut {
-        id: sendMessageShortcut
-
-        sequences: ["Return", "Enter"]
-        context: Qt.WindowShortcut
-        onActivated: {
-            if (messageInput.activeFocus && !Qt.inputMethod.visible) {
-                root.sendChatMessage()
-            }
         }
     }
 

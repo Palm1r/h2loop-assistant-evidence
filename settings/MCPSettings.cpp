@@ -180,9 +180,13 @@ public:
 
         auto *buttonLayout = new QHBoxLayout();
         m_addButton = new QPushButton("Add Server");
+        m_refreshButton = new QPushButton("Refresh Servers");
         buttonLayout->addWidget(m_addButton);
+        buttonLayout->addWidget(m_refreshButton);
         buttonLayout->addStretch();
         layout->addLayout(buttonLayout);
+
+        connect(m_refreshButton, &QPushButton::clicked, this, &MCPServersWidget::onRefreshClicked);
 
         connect(m_addButton, &QPushButton::clicked, this, &MCPServersWidget::onAddClicked);
 
@@ -204,6 +208,7 @@ public:
 
 signals:
     void urlsChanged();
+    void refreshRequested();
 
 private slots:
     void onAddClicked()
@@ -229,6 +234,52 @@ private slots:
         m_urls.removeAll(url);
         updateList();
         emit urlsChanged();
+    }
+
+    void onRefreshClicked()
+    {
+        // Check if MCP is enabled
+        if (!Settings::mcpSettings().enableMCP()) {
+            QMessageBox::information(
+                this,
+                tr("MCP Not Enabled"),
+                tr("MCP integration is not enabled. Please enable it in the settings first."));
+            return;
+        }
+
+        auto mcpManager = LLMCore::ProvidersManager::instance().mcpClientManager();
+        if (!mcpManager) {
+            QMessageBox::information(
+                this,
+                tr("MCP Not Initialized"),
+                tr("MCP manager is not initialized. Please restart Qt Creator."));
+            return;
+        }
+
+        // Get current URLs from settings
+        auto currentUrls = Settings::mcpSettings().getServerUrls();
+
+        // Get list of currently managed servers
+        QStringList managedServers = mcpManager->getServerNames();
+
+        // Add any new servers from settings that aren't managed yet
+        for (const auto &url : currentUrls) {
+            if (!url.isEmpty() && !managedServers.contains(url)) {
+                MCP::MCPServerConfig config;
+                config.name = url;
+                config.url = url;
+                config.useStdio = false; // Default to HTTP/SSE transport
+
+                mcpManager->addServer(config);
+                mcpManager->connectToServer(config.name);
+            }
+        }
+
+        // Refresh all connected servers
+        mcpManager->refreshServers();
+
+        // Emit signal to refresh tools widget
+        emit refreshRequested();
     }
 
 private:
@@ -259,6 +310,7 @@ private:
 
     QListWidget *m_listWidget;
     QPushButton *m_addButton;
+    QPushButton *m_refreshButton;
     QList<QString> m_urls;
 };
 
@@ -308,6 +360,11 @@ MCPSettings::MCPSettings()
 
         // Populate tools synchronously
         populateToolsWidget(mcpToolsWidget);
+
+        // Connect to refresh tools when refresh is requested
+        connect(serversWidget, &MCPServersWidget::refreshRequested, this, [this, mcpToolsWidget]() {
+            populateToolsWidget(mcpToolsWidget);
+        });
 
         // Connect to MCP manager signals to refresh tools when they change
         auto mcpManager = LLMCore::ProvidersManager::instance().mcpClientManager();
