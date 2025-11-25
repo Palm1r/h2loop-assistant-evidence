@@ -127,6 +127,16 @@ ChatRootView {
                 height: 30
             }
 
+            footer: Item {
+                width: ListView.view.width - scroll.width
+                height: root.isRequestInProgress ? 50 : 0
+
+                BusyIndicator {
+                    anchors.centerIn: parent
+                    running: root.isRequestInProgress
+                }
+            }
+
             ScrollBar.vertical: QQC.ScrollBar {
                 id: scroll
             }
