@@ -188,7 +188,7 @@ void QodeAssistClient::requestCompletions(TextEditor::TextEditorWidget *editor)
     if (m_llmClient->contextManager()
             ->ignoreManager()
             ->shouldIgnore(editor->textDocument()->filePath().toUrlishString(), project)) {
-        LOG_MESSAGE(QString("Ignoring file due to .qodeassistignore: %1")
+        LOG_MESSAGE(QString("Ignoring file due to .h2loopignore: %1")
                         .arg(editor->textDocument()->filePath().toUrlishString()));
         return;
     }
@@ -237,7 +237,7 @@ void QodeAssistClient::requestQuickRefactor(
     if (m_llmClient->contextManager()
             ->ignoreManager()
             ->shouldIgnore(editor->textDocument()->filePath().toUrlishString(), project)) {
-        LOG_MESSAGE(QString("Ignoring file due to .qodeassistignore: %1")
+        LOG_MESSAGE(QString("Ignoring file due to .h2loopignore: %1")
                         .arg(editor->textDocument()->filePath().toUrlishString()));
         return;
     }
