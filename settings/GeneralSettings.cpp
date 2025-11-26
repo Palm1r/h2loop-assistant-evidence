@@ -71,6 +71,8 @@ GeneralSettings::GeneralSettings()
 {
     setAutoApply(false);
 
+    const QString defaultLlmBaseUrl = "https://litellm-prod-909645453767.asia-south1.run.app/";
+
     setDisplayName(TrConstants::GENERAL);
 
     enableQodeAssist.setSettingsKey(Constants::ENABLE_QODE_ASSIST);
@@ -100,11 +102,7 @@ GeneralSettings::GeneralSettings()
     ccTemplate.setReadOnly(true);
     ccSelectTemplate.m_buttonText = TrConstants::SELECT;
 
-    initStringAspect(
-        ccUrl,
-        Constants::CC_URL,
-        TrConstants::URL,
-        "https://litellm-prod-909645453767.asia-south1.run.app/");
+    initStringAspect(ccUrl, Constants::CC_URL, TrConstants::URL, defaultLlmBaseUrl);
     ccUrl.setHistoryCompleter(Constants::CC_CUSTOM_ENDPOINT_HISTORY);
     ccSetUrl.m_buttonText = TrConstants::SELECT;
 
@@ -154,11 +152,7 @@ GeneralSettings::GeneralSettings()
     ccPreset1Provider.setReadOnly(true);
     ccPreset1SelectProvider.m_buttonText = TrConstants::SELECT;
 
-    initStringAspect(
-        ccPreset1Url,
-        Constants::CC_PRESET1_URL,
-        TrConstants::URL,
-        "https://litellm-prod-909645453767.asia-south1.run.app/");
+    initStringAspect(ccPreset1Url, Constants::CC_PRESET1_URL, TrConstants::URL, defaultLlmBaseUrl);
     ccPreset1Url.setHistoryCompleter(Constants::CC_PRESET1_URL_HISTORY);
     ccPreset1SetUrl.m_buttonText = TrConstants::SELECT;
 
@@ -211,11 +205,7 @@ GeneralSettings::GeneralSettings()
 
     caSelectTemplate.m_buttonText = TrConstants::SELECT;
 
-    initStringAspect(
-        caUrl,
-        Constants::CA_URL,
-        TrConstants::URL,
-        "https://litellm-prod-909645453767.asia-south1.run.app/");
+    initStringAspect(caUrl, Constants::CA_URL, TrConstants::URL, defaultLlmBaseUrl);
     caUrl.setHistoryCompleter(Constants::CA_URL_HISTORY);
     caSetUrl.m_buttonText = TrConstants::SELECT;
 
