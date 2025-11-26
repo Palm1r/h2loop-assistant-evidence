@@ -43,23 +43,38 @@ class ChatRootView : public QQuickItem
     Q_PROPERTY(int codeFontSize READ codeFontSize NOTIFY codeFontSizeChanged FINAL)
     Q_PROPERTY(int textFontSize READ textFontSize NOTIFY textFontSizeChanged FINAL)
     Q_PROPERTY(int textFormat READ textFormat NOTIFY textFormatChanged FINAL)
-    Q_PROPERTY(bool isRequestInProgress READ isRequestInProgress NOTIFY isRequestInProgressChanged FINAL)
+    Q_PROPERTY(
+        bool isRequestInProgress READ isRequestInProgress NOTIFY isRequestInProgressChanged FINAL)
     Q_PROPERTY(QString lastErrorMessage READ lastErrorMessage NOTIFY lastErrorMessageChanged FINAL)
     Q_PROPERTY(QString lastInfoMessage READ lastInfoMessage NOTIFY lastInfoMessageChanged FINAL)
     Q_PROPERTY(QVariantList activeRules READ activeRules NOTIFY activeRulesChanged FINAL)
     Q_PROPERTY(int activeRulesCount READ activeRulesCount NOTIFY activeRulesCountChanged FINAL)
     Q_PROPERTY(bool isAgentMode READ isAgentMode WRITE setIsAgentMode NOTIFY isAgentModeChanged FINAL)
-    Q_PROPERTY(bool isThinkingMode READ isThinkingMode WRITE setIsThinkingMode NOTIFY isThinkingModeChanged FINAL)
+    Q_PROPERTY(
+        bool isThinkingMode READ isThinkingMode WRITE setIsThinkingMode NOTIFY isThinkingModeChanged
+            FINAL)
     Q_PROPERTY(
         bool toolsSupportEnabled READ toolsSupportEnabled NOTIFY toolsSupportEnabledChanged FINAL)
-    
-    Q_PROPERTY(int currentMessageTotalEdits READ currentMessageTotalEdits NOTIFY currentMessageEditsStatsChanged FINAL)
-    Q_PROPERTY(int currentMessageAppliedEdits READ currentMessageAppliedEdits NOTIFY currentMessageEditsStatsChanged FINAL)
-    Q_PROPERTY(int currentMessagePendingEdits READ currentMessagePendingEdits NOTIFY currentMessageEditsStatsChanged FINAL)
-    Q_PROPERTY(int currentMessageRejectedEdits READ currentMessageRejectedEdits NOTIFY currentMessageEditsStatsChanged FINAL)
+
+    Q_PROPERTY(
+        int currentMessageTotalEdits READ currentMessageTotalEdits NOTIFY
+            currentMessageEditsStatsChanged FINAL)
+    Q_PROPERTY(
+        int currentMessageAppliedEdits READ currentMessageAppliedEdits NOTIFY
+            currentMessageEditsStatsChanged FINAL)
+    Q_PROPERTY(
+        int currentMessagePendingEdits READ currentMessagePendingEdits NOTIFY
+            currentMessageEditsStatsChanged FINAL)
+    Q_PROPERTY(
+        int currentMessageRejectedEdits READ currentMessageRejectedEdits NOTIFY
+            currentMessageEditsStatsChanged FINAL)
     Q_PROPERTY(bool isThinkingSupport READ isThinkingSupport NOTIFY isThinkingSupportChanged FINAL)
-    Q_PROPERTY(QStringList availableConfigurations READ availableConfigurations NOTIFY availableConfigurationsChanged FINAL)
-    Q_PROPERTY(QString currentConfiguration READ currentConfiguration NOTIFY currentConfigurationChanged FINAL)
+    Q_PROPERTY(
+        QStringList availableConfigurations READ availableConfigurations NOTIFY
+            availableConfigurationsChanged FINAL)
+    Q_PROPERTY(
+        QString currentConfiguration READ currentConfiguration NOTIFY currentConfigurationChanged
+            FINAL)
 
     QML_ELEMENT
 
@@ -121,7 +136,7 @@ public:
     void setRequestProgressStatus(bool state);
 
     QString lastErrorMessage() const;
-    
+
     QVariantList activeRules() const;
     int activeRulesCount() const;
     Q_INVOKABLE QString getRuleContent(int index);
@@ -137,7 +152,7 @@ public:
     Q_INVOKABLE void rejectFileEdit(const QString &editId);
     Q_INVOKABLE void undoFileEdit(const QString &editId);
     Q_INVOKABLE void openFileEditInEditor(const QString &editId);
-    
+
     Q_INVOKABLE void applyAllFileEditsForCurrentMessage();
     Q_INVOKABLE void undoAllFileEditsForCurrentMessage();
     Q_INVOKABLE void updateCurrentMessageEditsStats();
@@ -146,7 +161,7 @@ public:
     Q_INVOKABLE void applyConfiguration(const QString &configName);
     QStringList availableConfigurations() const;
     QString currentConfiguration() const;
-    
+
     int currentMessageTotalEdits() const;
     int currentMessageAppliedEdits() const;
     int currentMessagePendingEdits() const;
@@ -196,6 +211,7 @@ signals:
 private:
     void updateFileEditStatus(const QString &editId, const QString &status);
     QString getChatsHistoryDir() const;
+    QString getDebugLogsDir() const;
     QString getSuggestedFileName() const;
     QString generateChatFileName(const QString &shortMessage, const QString &dir) const;
     bool hasImageAttachments(const QStringList &attachments) const;
@@ -216,14 +232,14 @@ private:
     QVariantList m_activeRules;
     bool m_isAgentMode;
     bool m_isThinkingMode;
-    
+
     QString m_currentMessageRequestId;
     int m_currentMessageTotalEdits{0};
     int m_currentMessageAppliedEdits{0};
     int m_currentMessagePendingEdits{0};
     int m_currentMessageRejectedEdits{0};
     QString m_lastInfoMessage;
-    
+
     QStringList m_availableConfigurations;
     QString m_currentConfiguration;
 };

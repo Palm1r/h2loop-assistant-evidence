@@ -78,6 +78,7 @@ const char CC_AUTO_COMPLETION[] = "QodeAssist.ccAutoCompletion";
 const char CC_SHOW_PROGRESS_WIDGET[] = "QodeAssist.ccShowProgressWidget";
 const char CC_USE_OPEN_FILES_CONTEXT[] = "QodeAssist.ccUseOpenFilesContext";
 const char ENABLE_LOGGING[] = "QodeAssist.enableLogging";
+const char ENABLE_DEBUG_LOGGING[] = "QodeAssist.enableDebugLogging";
 const char ENABLE_CHECK_UPDATE[] = "QodeAssist.enableCheckUpdate";
 
 const char PROVIDER_PATHS[] = "QodeAssist.providerPaths";

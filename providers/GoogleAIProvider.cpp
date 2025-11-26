@@ -260,6 +260,12 @@ void GoogleAIProvider::sendRequest(
     LOG_MESSAGE(
         QString("GoogleAIProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
+    DEBUG_LOG_MESSAGE(
+        QString("GoogleAIProvider DEBUG: Request %1 payload: %2")
+            .arg(
+                requestId,
+                QString::fromUtf8(QJsonDocument(payload).toJson(QJsonDocument::Indented))));
+
     emit httpClient() -> sendRequest(request);
 }
 
@@ -298,6 +304,9 @@ void GoogleAIProvider::onDataReceived(
     if (data.isEmpty()) {
         return;
     }
+
+    DEBUG_LOG_MESSAGE(QString("GoogleAIProvider DEBUG: Received data for request %1: %2")
+                          .arg(requestId, QString::fromUtf8(data)));
 
     QJsonParseError parseError;
     QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
@@ -384,6 +393,19 @@ void GoogleAIProvider::onToolExecutionComplete(
         cleanupRequest(requestId);
         return;
     }
+
+    LOG_MESSAGE(QString("Tool execution complete for Google AI request %1").arg(requestId));
+
+    QVariantMap variantToolResults;
+    for (auto it = toolResults.begin(); it != toolResults.end(); ++it) {
+        variantToolResults[it.key()] = it.value();
+    }
+    DEBUG_LOG_MESSAGE(
+        QString("GoogleAIProvider DEBUG: Tool results for request %1: %2")
+            .arg(
+                requestId,
+                QString::fromUtf8(
+                    QJsonDocument::fromVariant(variantToolResults).toJson(QJsonDocument::Indented))));
 
     for (auto it = toolResults.begin(); it != toolResults.end(); ++it) {
         GoogleMessage *message = m_messages[requestId];

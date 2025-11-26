@@ -49,6 +49,11 @@ void HttpClient::onSendRequest(const HttpRequest &request)
     QJsonDocument doc(request.payload);
     LOG_MESSAGE(QString("HttpClient: data: %1").arg(doc.toJson(QJsonDocument::Indented)));
 
+    DEBUG_LOG_MESSAGE(QString("HttpClient DEBUG: Sending HTTP request to %1 with headers:")
+                          .arg(request.networkRequest.url().toString()));
+    DEBUG_LOG_MESSAGE(
+        QString("HttpClient DEBUG: Request payload: %1").arg(doc.toJson(QJsonDocument::Indented)));
+
     QNetworkReply *reply
         = m_manager->post(request.networkRequest, doc.toJson(QJsonDocument::Compact));
     addActiveRequest(reply, request.requestId);
@@ -90,6 +95,8 @@ void HttpClient::onReadyRead()
 
     QByteArray data = reply->readAll();
     if (!data.isEmpty()) {
+        DEBUG_LOG_MESSAGE(QString("HttpClient DEBUG: Received response data for request %1: %2")
+                              .arg(requestId, QString::fromUtf8(data)));
         emit dataReceived(requestId, data);
     }
 }

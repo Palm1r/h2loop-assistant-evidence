@@ -55,7 +55,16 @@ ChatRootView::ChatRootView(QQuickItem *parent)
     , m_clientInterface(new ClientInterface(m_chatModel, &m_promptProvider, this))
     , m_isRequestInProgress(false)
 {
+    // Set initial debug log file path for the chat
+    QString debugLogsDir = getDebugLogsDir();
+    if (!debugLogsDir.isEmpty()) {
+        QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+        QString logFilePath = QDir(debugLogsDir).filePath("chat_" + timestamp + "_debug.log");
+        Logger::instance().setDebugLogFilePath(logFilePath);
+    }
+
     m_isSyncOpenFiles = Settings::chatAssistantSettings().linkOpenFiles();
+
     connect(
         &Settings::chatAssistantSettings().linkOpenFiles,
         &Utils::BaseAspect::changed,
@@ -101,6 +110,14 @@ ChatRootView::ChatRootView(QQuickItem *parent)
         setRecentFilePath(QString{});
         m_currentMessageRequestId.clear();
         updateCurrentMessageEditsStats();
+
+        // Set new debug log file path for new chat
+        QString debugLogsDir = getDebugLogsDir();
+        if (!debugLogsDir.isEmpty()) {
+            QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+            QString logFilePath = QDir(debugLogsDir).filePath("chat_" + timestamp + "_debug.log");
+            Logger::instance().setDebugLogFilePath(logFilePath);
+        }
     });
     connect(this, &ChatRootView::attachmentFilesChanged, &ChatRootView::updateInputTokensCount);
     connect(this, &ChatRootView::linkedFilesChanged, &ChatRootView::updateInputTokensCount);
@@ -313,6 +330,28 @@ QString ChatRootView::getChatsHistoryDir() const
     QDir dir(path);
     if (!dir.exists() && !dir.mkpath(".")) {
         LOG_MESSAGE(QString("Failed to create directory: %1").arg(path));
+        return QString();
+    }
+
+    return path;
+}
+
+QString ChatRootView::getDebugLogsDir() const
+{
+    QString path;
+
+    if (auto project = ProjectExplorer::ProjectManager::startupProject()) {
+        Settings::ProjectSettings projectSettings(project);
+        QString chatHistoryPath = projectSettings.chatHistoryPath().toFSPathString();
+        path = QDir(chatHistoryPath).absoluteFilePath("debug_logs");
+    } else {
+        path = QString("%1/h2loopassistant/debug_logs")
+                   .arg(Core::ICore::userResourcePath().toFSPathString());
+    }
+
+    QDir dir(path);
+    if (!dir.exists() && !dir.mkpath(".")) {
+        LOG_MESSAGE(QString("Failed to create debug logs directory: %1").arg(path));
         return QString();
     }
 
