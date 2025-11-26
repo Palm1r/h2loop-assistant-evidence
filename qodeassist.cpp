@@ -59,6 +59,7 @@
 #include "settings/ProjectSettingsPanel.hpp"
 #include "settings/SettingsConstants.hpp"
 #include "templates/Templates.hpp"
+#include "widgets/CustomInstructionsManager.hpp"
 #include "widgets/QuickRefactorDialog.hpp"
 #include <ChatView/ChatView.hpp>
 #include <coreplugin/actionmanager/actioncontainer.h>
@@ -142,6 +143,9 @@ public:
                     onMCPServerUrlsChanged();
                 });
         }
+        CustomInstructionsManager::instance().loadInstructions();
+
+        CustomInstructionsManager::instance().loadInstructions();
 
         Utils::Icon QCODEASSIST_ICON(
             {{":/resources/images/h2loop-icon.png", Utils::Theme::IconsBaseColor}});
@@ -157,7 +161,11 @@ public:
         requestAction.addOnTriggered(this, [this] {
             if (auto editor = TextEditor::TextEditorWidget::currentTextEditorWidget()) {
                 if (m_qodeAssistClient && m_qodeAssistClient->reachable()) {
-                    m_qodeAssistClient->requestCompletions(editor);
+                    if (m_qodeAssistClient->isHintVisible()) {
+                        m_qodeAssistClient->hideHintAndRequestCompletion(editor);
+                    } else {
+                        m_qodeAssistClient->requestCompletions(editor);
+                    }
                 } else
                     qWarning()
                         << "The H2Loop Assistant is not ready. Please check your connection and "

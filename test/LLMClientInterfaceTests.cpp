@@ -68,7 +68,9 @@ public:
         QJsonObject &request,
         LLMCore::PromptTemplate *promptTemplate,
         LLMCore::ContextData context,
-        LLMCore::RequestType requestType) override
+        LLMCore::RequestType requestType,
+        bool isToolsEnabled,
+        bool isThinkingEnabled) override
     {
         promptTemplate->prepareRequest(request, context);
     }
@@ -208,7 +210,7 @@ TEST_F(LLMClientInterfaceTest, initialize)
 
 TEST_F(LLMClientInterfaceTest, ServerDeviceTemplate)
 {
-    EXPECT_EQ(m_client->serverDeviceTemplate().toFSPathString(), "QodeAssist");
+    EXPECT_EQ(m_client->serverDeviceTemplate().toFSPathString(), "H2LoopAssistant");
 }
 
 } // namespace QodeAssist

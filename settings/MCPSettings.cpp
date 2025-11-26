@@ -21,11 +21,246 @@
 #include "logger/Logger.hpp"
 #include <coreplugin/dialogs/ioptionspage.h>
 #include <llmcore/ProvidersManager.hpp>
+#include <mcp_sse_client.h>
+#include <mcp_stdio_client.h>
 #include <utils/layoutbuilder.h>
+#include <QDialog>
+#include <QFormLayout>
+#include <QFutureWatcher>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QListWidgetItem>
+#include <QMessageBox>
+#include <QProgressBar>
+#include <QPushButton>
+#include <QTimer>
+#include <QVBoxLayout>
+#include <QtConcurrent>
 
 #include "SettingsConstants.hpp"
 
 namespace QodeAssist::Settings {
+
+// Dialog for adding MCP server URL
+class AddMCPUrlDialog : public QDialog
+{
+    Q_OBJECT
+
+public:
+    explicit AddMCPUrlDialog(QWidget *parent = nullptr)
+        : QDialog(parent)
+    {
+        setWindowTitle("Add MCP Server");
+        setModal(true);
+        setMinimumSize(400, 200);
+        setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
+
+        auto *layout = new QVBoxLayout(this);
+
+        auto *formLayout = new QFormLayout();
+        m_urlEdit = new QLineEdit();
+        m_urlEdit->setPlaceholderText("Enter MCP server URL");
+        formLayout->addRow("URL:", m_urlEdit);
+        layout->addLayout(formLayout);
+
+        m_progressBar = new QProgressBar();
+        m_progressBar->setVisible(false);
+        layout->addWidget(m_progressBar);
+
+        m_statusLabel = new QLabel();
+        m_statusLabel->setVisible(false);
+        layout->addWidget(m_statusLabel);
+
+        auto *buttonLayout = new QHBoxLayout();
+        m_addButton = new QPushButton("Add");
+        m_cancelButton = new QPushButton("Cancel");
+        buttonLayout->addStretch();
+        buttonLayout->addWidget(m_cancelButton);
+        buttonLayout->addWidget(m_addButton);
+        layout->addLayout(buttonLayout);
+
+        connect(m_addButton, &QPushButton::clicked, this, &AddMCPUrlDialog::onAddClicked);
+        connect(m_cancelButton, &QPushButton::clicked, this, &QDialog::reject);
+        connect(m_urlEdit, &QLineEdit::textChanged, this, &AddMCPUrlDialog::onUrlChanged);
+
+        m_addButton->setDefault(true);
+        m_addButton->setFocus();
+
+        onUrlChanged();
+    }
+
+    QString getUrl() const { return m_urlEdit->text().trimmed(); }
+
+private slots:
+    void onUrlChanged() { m_addButton->setEnabled(!m_urlEdit->text().trimmed().isEmpty()); }
+
+    void onAddClicked()
+    {
+        QString url = getUrl();
+        if (url.isEmpty()) {
+            return;
+        }
+
+        // Start validation
+        m_progressBar->setVisible(true);
+        m_progressBar->setRange(0, 0); // Indeterminate
+        m_statusLabel->setText("Validating connection...");
+        m_statusLabel->setVisible(true);
+        m_addButton->setEnabled(false);
+        m_cancelButton->setEnabled(false);
+        m_urlEdit->setEnabled(false);
+
+        // Run validation in background
+        m_validationWatcher = new QFutureWatcher<bool>(this);
+        connect(m_validationWatcher, &QFutureWatcher<bool>::finished, this, [this, url]() {
+            bool success = m_validationWatcher->result();
+            m_validationWatcher->deleteLater();
+            m_validationWatcher = nullptr;
+
+            if (success) {
+                accept();
+            } else {
+                m_progressBar->setVisible(false);
+                m_statusLabel->setText("Failed to connect to MCP server");
+                m_addButton->setEnabled(true);
+                m_cancelButton->setEnabled(true);
+                m_urlEdit->setEnabled(true);
+            }
+        });
+
+        auto future = QtConcurrent::run([url]() -> bool {
+            try {
+                QString normalizedUrl = url;
+                if (normalizedUrl.endsWith('/')) {
+                    normalizedUrl.chop(1);
+                }
+                auto sseClient = std::make_unique<mcp::sse_client>(normalizedUrl.toStdString());
+
+                // Set client capabilities
+                nlohmann::json clientCapabilities
+                    = {{"experimental", nlohmann::json::object()},
+                       {"sampling", nlohmann::json::object()}};
+                sseClient->set_capabilities(clientCapabilities);
+
+                return sseClient->initialize("H2LoopAssistant", "1.0.0");
+            } catch (const std::exception &e) {
+                return false;
+            }
+        });
+
+        m_validationWatcher->setFuture(future);
+    }
+
+private:
+    QLineEdit *m_urlEdit;
+    QProgressBar *m_progressBar;
+    QLabel *m_statusLabel;
+    QPushButton *m_addButton;
+    QPushButton *m_cancelButton;
+    QFutureWatcher<bool> *m_validationWatcher = nullptr;
+};
+
+// Custom widget for MCP servers list
+class MCPServersWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit MCPServersWidget(QWidget *parent = nullptr)
+        : QWidget(parent)
+    {
+        auto *layout = new QVBoxLayout(this);
+        layout->setContentsMargins(0, 0, 0, 0);
+
+        m_listWidget = new QListWidget();
+        m_listWidget->setMinimumHeight(150);
+        layout->addWidget(m_listWidget);
+
+        auto *buttonLayout = new QHBoxLayout();
+        m_addButton = new QPushButton("Add Server");
+        buttonLayout->addWidget(m_addButton);
+        buttonLayout->addStretch();
+        layout->addLayout(buttonLayout);
+
+        connect(m_addButton, &QPushButton::clicked, this, &MCPServersWidget::onAddClicked);
+
+        updateList();
+    }
+
+    void setUrls(const QList<QString> &urls)
+    {
+        m_urls.clear();
+        for (const QString &url : urls) {
+            if (!url.isEmpty()) {
+                m_urls.append(url);
+            }
+        }
+        updateList();
+    }
+
+    QList<QString> getUrls() const { return m_urls; }
+
+signals:
+    void urlsChanged();
+
+private slots:
+    void onAddClicked()
+    {
+        AddMCPUrlDialog dialog(this);
+        if (dialog.exec() == QDialog::Accepted) {
+            QString url = dialog.getUrl();
+            if (!m_urls.contains(url)) {
+                m_urls.append(url);
+                updateList();
+                emit urlsChanged();
+            }
+        }
+    }
+
+    void onRemoveClicked()
+    {
+        QPushButton *button = qobject_cast<QPushButton *>(sender());
+        if (!button)
+            return;
+
+        QString url = button->property("url").toString();
+        m_urls.removeAll(url);
+        updateList();
+        emit urlsChanged();
+    }
+
+private:
+    void updateList()
+    {
+        m_listWidget->clear();
+        for (const QString &url : m_urls) {
+            auto *item = new QListWidgetItem();
+            auto *widget = new QWidget();
+            auto *layout = new QHBoxLayout(widget);
+            layout->setContentsMargins(5, 5, 5, 5);
+
+            auto *label = new QLabel(url);
+            layout->addWidget(label);
+
+            layout->addStretch();
+
+            auto *removeButton = new QPushButton("Remove");
+            removeButton->setProperty("url", url);
+            connect(removeButton, &QPushButton::clicked, this, &MCPServersWidget::onRemoveClicked);
+            layout->addWidget(removeButton);
+
+            item->setSizeHint(widget->sizeHint());
+            m_listWidget->addItem(item);
+            m_listWidget->setItemWidget(item, widget);
+        }
+    }
+
+    QListWidget *m_listWidget;
+    QPushButton *m_addButton;
+    QList<QString> m_urls;
+};
 
 MCPSettings::MCPSettings()
 {
@@ -49,6 +284,17 @@ MCPSettings::MCPSettings()
 
     setLayouter([this]() {
         using namespace Layouting;
+
+        // Create custom servers widget
+        auto *serversWidget = new MCPServersWidget();
+        serversWidget->setUrls(getServerUrls());
+
+        // Connect to update settings when URLs change
+        connect(serversWidget, &MCPServersWidget::urlsChanged, this, [this, serversWidget]() {
+            setServerUrls(serversWidget->getUrls());
+            writeSettings();
+            emit serverUrlsChanged();
+        });
 
         // Create fresh tree widget each time the layout is built
         auto *mcpToolsWidget = new QTreeWidget();
@@ -86,7 +332,7 @@ MCPSettings::MCPSettings()
         return Column{
             enableMCP,
             Space{8},
-            Group{title("MCP Servers"), Column{mcpServerUrls}},
+            Group{title("MCP Servers"), Column{Layouting::Widget(serversWidget)}},
             Space{8},
             Group{title("Available MCP Tools"), Column{Layouting::Widget(mcpToolsWidget)}}};
     });
@@ -135,7 +381,8 @@ void MCPSettings::populateToolsWidget(QTreeWidget *treeWidget)
         treeWidget->collapseAll();
 
     } catch (const std::exception &e) {
-        LOG_MESSAGE(QString("Exception in populateToolsWidget: %1").arg(e.what()));
+        LOG_MESSAGE(
+            QString("Exception in populateToolsWidget: %1").arg(QString::fromUtf8(e.what())));
         auto *item = new QTreeWidgetItem(treeWidget);
         item->setText(0, "Error loading MCP tools");
         treeWidget->addTopLevelItem(item);
@@ -154,7 +401,13 @@ QList<QString> MCPSettings::getServerUrls() const
 
 void MCPSettings::setServerUrls(const QList<QString> &urls)
 {
-    mcpServerUrls.setValue(urls);
+    QList<QString> filteredUrls;
+    for (const QString &url : urls) {
+        if (!url.isEmpty()) {
+            filteredUrls.append(url);
+        }
+    }
+    mcpServerUrls.setValue(filteredUrls);
 }
 
 void MCPSettings::addServerUrl(const QString &url)
@@ -194,3 +447,5 @@ public:
 const MCPSettingsPage mcpSettingsPage;
 
 } // namespace QodeAssist::Settings
+
+#include "MCPSettings.moc"

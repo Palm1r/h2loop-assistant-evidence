@@ -24,6 +24,7 @@
 #include "settings/ChatAssistantSettings.hpp"
 #include "settings/CodeCompletionSettings.hpp"
 #include "settings/GeneralSettings.hpp"
+#include "settings/QuickRefactorSettings.hpp"
 #include <mcp/MCPClientManager.hpp>
 
 #include <QEventLoop>
@@ -75,7 +76,8 @@ void LlamaCppProvider::prepareRequest(
     LLMCore::PromptTemplate *prompt,
     LLMCore::ContextData context,
     LLMCore::RequestType type,
-    bool isToolsEnabled)
+    bool isToolsEnabled,
+    bool isThinkingEnabled)
 {
     if (!prompt->isSupportProvider(providerID())) {
         LOG_MESSAGE(QString("Template %1 doesn't support %2 provider").arg(name(), prompt->name()));
@@ -99,13 +101,20 @@ void LlamaCppProvider::prepareRequest(
 
     if (type == LLMCore::RequestType::CodeCompletion) {
         applyModelParams(Settings::codeCompletionSettings());
+    } else if (type == LLMCore::RequestType::QuickRefactoring) {
+        applyModelParams(Settings::quickRefactorSettings());
     } else {
         applyModelParams(Settings::chatAssistantSettings());
     }
 
     if (isToolsEnabled) {
-        auto toolsDefinitions = m_toolsManager->getToolsDefinitions(
-            LLMCore::ToolSchemaFormat::OpenAI);
+        LLMCore::RunToolsFilter filter = LLMCore::RunToolsFilter::ALL;
+        if (type == LLMCore::RequestType::QuickRefactoring) {
+            filter = LLMCore::RunToolsFilter::OnlyRead;
+        }
+
+        auto toolsDefinitions
+            = m_toolsManager->getToolsDefinitions(LLMCore::ToolSchemaFormat::OpenAI, filter);
         if (!toolsDefinitions.isEmpty()) {
             request["tools"] = toolsDefinitions;
             LOG_MESSAGE(QString("Added %1 tools to llama.cpp request").arg(toolsDefinitions.size()));
@@ -203,6 +212,11 @@ void LlamaCppProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
     if (mcpManager) {
         m_toolsManager->setMCPClientManager(mcpManager);
     }
+}
+
+bool LlamaCppProvider::supportImage() const
+{
+    return true;
 }
 
 void LlamaCppProvider::cancelRequest(const LLMCore::RequestID &requestId)
