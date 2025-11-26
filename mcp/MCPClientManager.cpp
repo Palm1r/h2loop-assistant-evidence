@@ -57,13 +57,9 @@ void MCPClientManager::addServer(const MCPServerConfig &config)
 void MCPClientManager::removeServer(const QString &serverName)
 {
     if (m_servers.contains(serverName)) {
-        // Pass a lambda to disconnectFromServer to clean up after disconnect
-        disconnectFromServer(serverName, [this, serverName]() {
-            if (m_servers.contains(serverName)) {
-                delete m_servers[serverName];
-                m_servers.remove(serverName);
-            }
-        });
+        disconnectFromServer(serverName);
+        delete m_servers[serverName];
+        m_servers.remove(serverName);
     }
 }
 
