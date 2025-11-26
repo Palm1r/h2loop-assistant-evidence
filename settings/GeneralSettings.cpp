@@ -71,6 +71,8 @@ GeneralSettings::GeneralSettings()
 {
     setAutoApply(false);
 
+    const QString defaultLlmBaseUrl = "https://litellm-prod-909645453767.asia-south1.run.app/";
+
     setDisplayName(TrConstants::GENERAL);
 
     enableQodeAssist.setSettingsKey(Constants::ENABLE_QODE_ASSIST);
@@ -84,19 +86,23 @@ GeneralSettings::GeneralSettings()
 
     resetToDefaults.m_buttonText = TrConstants::RESET_TO_DEFAULTS;
 
-    initStringAspect(ccProvider, Constants::CC_PROVIDER, TrConstants::PROVIDER, "Ollama");
+    initStringAspect(ccProvider, Constants::CC_PROVIDER, TrConstants::PROVIDER, "OpenAI Compatible");
     ccProvider.setReadOnly(true);
     ccSelectProvider.m_buttonText = TrConstants::SELECT;
 
-    initStringAspect(ccModel, Constants::CC_MODEL, TrConstants::MODEL, "qwen2.5-coder:7b");
+    initStringAspect(
+        ccModel,
+        Constants::CC_MODEL,
+        TrConstants::MODEL,
+        "qwen/qwen3-coder-480b-a35b-instruct-maas");
     ccModel.setHistoryCompleter(Constants::CC_MODEL_HISTORY);
     ccSelectModel.m_buttonText = TrConstants::SELECT;
 
-    initStringAspect(ccTemplate, Constants::CC_TEMPLATE, TrConstants::TEMPLATE, "Ollama FIM");
+    initStringAspect(ccTemplate, Constants::CC_TEMPLATE, TrConstants::TEMPLATE, "OpenAI Compatible");
     ccTemplate.setReadOnly(true);
     ccSelectTemplate.m_buttonText = TrConstants::SELECT;
 
-    initStringAspect(ccUrl, Constants::CC_URL, TrConstants::URL, "http://localhost:11434");
+    initStringAspect(ccUrl, Constants::CC_URL, TrConstants::URL, defaultLlmBaseUrl);
     ccUrl.setHistoryCompleter(Constants::CC_CUSTOM_ENDPOINT_HISTORY);
     ccSetUrl.m_buttonText = TrConstants::SELECT;
 
@@ -139,12 +145,14 @@ GeneralSettings::GeneralSettings()
     preset1Language.addOption("python");
 
     initStringAspect(
-        ccPreset1Provider, Constants::CC_PRESET1_PROVIDER, TrConstants::PROVIDER, "Ollama");
+        ccPreset1Provider,
+        Constants::CC_PRESET1_PROVIDER,
+        TrConstants::PROVIDER,
+        "OpenAI Compatible");
     ccPreset1Provider.setReadOnly(true);
     ccPreset1SelectProvider.m_buttonText = TrConstants::SELECT;
 
-    initStringAspect(
-        ccPreset1Url, Constants::CC_PRESET1_URL, TrConstants::URL, "http://localhost:11434");
+    initStringAspect(ccPreset1Url, Constants::CC_PRESET1_URL, TrConstants::URL, defaultLlmBaseUrl);
     ccPreset1Url.setHistoryCompleter(Constants::CC_PRESET1_URL_HISTORY);
     ccPreset1SetUrl.m_buttonText = TrConstants::SELECT;
 
@@ -164,30 +172,40 @@ GeneralSettings::GeneralSettings()
     ccPreset1CustomEndpoint.setHistoryCompleter(Constants::CC_PRESET1_CUSTOM_ENDPOINT_HISTORY);
 
     initStringAspect(
-        ccPreset1Model, Constants::CC_PRESET1_MODEL, TrConstants::MODEL, "qwen2.5-coder:7b");
+        ccPreset1Model,
+        Constants::CC_PRESET1_MODEL,
+        TrConstants::MODEL,
+        "qwen/qwen3-coder-480b-a35b-instruct-maas");
     ccPreset1Model.setHistoryCompleter(Constants::CC_PRESET1_MODEL_HISTORY);
     ccPreset1SelectModel.m_buttonText = TrConstants::SELECT;
 
     initStringAspect(
-        ccPreset1Template, Constants::CC_PRESET1_TEMPLATE, TrConstants::TEMPLATE, "Ollama FIM");
+        ccPreset1Template,
+        Constants::CC_PRESET1_TEMPLATE,
+        TrConstants::TEMPLATE,
+        "OpenAI Compatible");
     ccPreset1Template.setReadOnly(true);
     ccPreset1SelectTemplate.m_buttonText = TrConstants::SELECT;
 
     // chat assistance
-    initStringAspect(caProvider, Constants::CA_PROVIDER, TrConstants::PROVIDER, "Ollama");
+    initStringAspect(caProvider, Constants::CA_PROVIDER, TrConstants::PROVIDER, "OpenAI Compatible");
     caProvider.setReadOnly(true);
     caSelectProvider.m_buttonText = TrConstants::SELECT;
 
-    initStringAspect(caModel, Constants::CA_MODEL, TrConstants::MODEL, "qwen2.5-coder:7b");
+    initStringAspect(
+        caModel,
+        Constants::CA_MODEL,
+        TrConstants::MODEL,
+        "qwen/qwen3-coder-480b-a35b-instruct-maas");
     caModel.setHistoryCompleter(Constants::CA_MODEL_HISTORY);
     caSelectModel.m_buttonText = TrConstants::SELECT;
 
-    initStringAspect(caTemplate, Constants::CA_TEMPLATE, TrConstants::TEMPLATE, "Ollama Chat");
+    initStringAspect(caTemplate, Constants::CA_TEMPLATE, TrConstants::TEMPLATE, "OpenAI Compatible");
     caTemplate.setReadOnly(true);
 
     caSelectTemplate.m_buttonText = TrConstants::SELECT;
 
-    initStringAspect(caUrl, Constants::CA_URL, TrConstants::URL, "http://localhost:11434");
+    initStringAspect(caUrl, Constants::CA_URL, TrConstants::URL, defaultLlmBaseUrl);
     caUrl.setHistoryCompleter(Constants::CA_URL_HISTORY);
     caSetUrl.m_buttonText = TrConstants::SELECT;
 
