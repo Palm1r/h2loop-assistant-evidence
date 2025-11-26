@@ -42,7 +42,8 @@ public:
         LLMCore::PromptTemplate *prompt,
         LLMCore::ContextData context,
         LLMCore::RequestType type,
-        bool isToolsEnabled) override;
+        bool isToolsEnabled,
+        bool isThinkingEnabled) override;
     QList<QString> getInstalledModels(const QString &url) override;
     QList<QString> validateRequest(const QJsonObject &request, LLMCore::TemplateType type) override;
     QString apiKey() const override;
@@ -54,6 +55,8 @@ public:
 
     bool supportsTools() const override;
     void setMCPClientManager(MCP::MCPClientManager *mcpManager) override;
+    bool supportThinking() const override;
+    bool supportImage() const override;
     void cancelRequest(const LLMCore::RequestID &requestId) override;
 
 public slots:

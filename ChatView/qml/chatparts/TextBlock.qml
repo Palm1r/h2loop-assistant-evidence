@@ -29,11 +29,13 @@ TextEdit {
     selectionColor: palette.highlight
     color: palette.text
 
+    onLinkActivated: (link) => Qt.openUrlExternally(link)
+
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.RightButton
         onClicked: contextMenu.open()
-        propagateComposedEvents: true
+        cursorShape: root.hoveredLink ? Qt.PointingHandCursor : Qt.IBeamCursor
     }
 
     Platform.Menu {

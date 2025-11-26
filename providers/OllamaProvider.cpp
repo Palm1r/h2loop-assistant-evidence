@@ -31,6 +31,7 @@
 #include "settings/CodeCompletionSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include "settings/QuickRefactorSettings.hpp"
 #include <mcp/MCPClientManager.hpp>
 
 namespace QodeAssist::Providers {
@@ -76,7 +77,8 @@ void OllamaProvider::prepareRequest(
     LLMCore::PromptTemplate *prompt,
     LLMCore::ContextData context,
     LLMCore::RequestType type,
-    bool isToolsEnabled)
+    bool isToolsEnabled,
+    bool isThinkingEnabled)
 {
     if (!prompt->isSupportProvider(providerID())) {
         LOG_MESSAGE(QString("Template %1 doesn't support %2 provider").arg(name(), prompt->name()));
@@ -105,13 +107,20 @@ void OllamaProvider::prepareRequest(
 
     if (type == LLMCore::RequestType::CodeCompletion) {
         applySettings(Settings::codeCompletionSettings());
+    } else if (type == LLMCore::RequestType::QuickRefactoring) {
+        applySettings(Settings::quickRefactorSettings());
     } else {
         applySettings(Settings::chatAssistantSettings());
     }
 
     if (isToolsEnabled) {
-        auto toolsDefinitions = m_toolsManager->toolsFactory()->getToolsDefinitions(
-            LLMCore::ToolSchemaFormat::Ollama);
+        LLMCore::RunToolsFilter filter = LLMCore::RunToolsFilter::ALL;
+        if (type == LLMCore::RequestType::QuickRefactoring) {
+            filter = LLMCore::RunToolsFilter::OnlyRead;
+        }
+
+        auto toolsDefinitions = m_toolsManager->toolsFactory()
+                                    ->getToolsDefinitions(LLMCore::ToolSchemaFormat::Ollama, filter);
         if (!toolsDefinitions.isEmpty()) {
             request["tools"] = toolsDefinitions;
             LOG_MESSAGE(
@@ -160,6 +169,7 @@ QList<QString> OllamaProvider::validateRequest(const QJsonObject &request, LLMCo
         {"prompt", {}},
         {"suffix", {}},
         {"system", {}},
+        {"images", QJsonArray{}},
         {"options",
          QJsonObject{
              {"temperature", {}},
@@ -174,7 +184,8 @@ QList<QString> OllamaProvider::validateRequest(const QJsonObject &request, LLMCo
         {"keep_alive", {}},
         {"model", {}},
         {"stream", {}},
-        {"messages", QJsonArray{{QJsonObject{{"role", {}}, {"content", {}}}}}},
+        {"messages",
+         QJsonArray{{QJsonObject{{"role", {}}, {"content", {}}, {"images", QJsonArray{}}}}}},
         {"tools", QJsonArray{}},
         {"options",
          QJsonObject{
@@ -238,6 +249,11 @@ void OllamaProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
     if (mcpManager) {
         m_toolsManager->setMCPClientManager(mcpManager);
     }
+}
+
+bool OllamaProvider::supportImage() const
+{
+    return true;
 }
 
 void OllamaProvider::cancelRequest(const LLMCore::RequestID &requestId)

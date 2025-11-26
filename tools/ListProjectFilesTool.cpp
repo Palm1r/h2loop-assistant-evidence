@@ -49,7 +49,8 @@ QString ListProjectFilesTool::stringName() const
 
 QString ListProjectFilesTool::description() const
 {
-    return "Get a list of all source files in the current project with absolute and relative paths. "
+    return "Get a list of all source files in the current project with absolute and relative "
+           "paths. "
            "Useful for understanding project structure. No parameters required.";
 }
 
@@ -86,7 +87,7 @@ QFuture<QString> ListProjectFilesTool::executeAsync(const QJsonObject &input)
     return QtConcurrent::run([this]() -> QString {
         QList<ProjectExplorer::Project *> projects = ProjectExplorer::ProjectManager::projects();
         if (projects.isEmpty()) {
-            QString error = "Error: No projects found";
+            QString error = "No projects found";
             throw ToolRuntimeError(error);
         }
 
@@ -112,8 +113,7 @@ QFuture<QString> ListProjectFilesTool::executeAsync(const QJsonObject &input)
                 QString absolutePath = filePath.toUrlishString();
 
                 if (m_ignoreManager->shouldIgnore(absolutePath, project)) {
-                    LOG_MESSAGE(
-                        QString("Ignoring file due to .qodeassistignore: %1").arg(absolutePath));
+                    LOG_MESSAGE(QString("Ignoring file due to .h2loopignore: %1").arg(absolutePath));
                     continue;
                 }
 
@@ -122,7 +122,7 @@ QFuture<QString> ListProjectFilesTool::executeAsync(const QJsonObject &input)
             }
 
             if (fileList.isEmpty()) {
-                result += QString("Project '%1': No files after applying .qodeassistignore\n\n")
+                result += QString("Project '%1': No files after applying .h2loopignore\n\n")
                               .arg(project->displayName());
                 continue;
             }

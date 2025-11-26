@@ -38,6 +38,7 @@ struct RefactorResult
     Utils::Text::Range insertRange;
     bool success;
     QString errorMessage;
+    TextEditor::TextEditorWidget *editor{nullptr};
 };
 
 class QuickRefactorHandler : public QObject
@@ -51,6 +52,7 @@ public:
     void sendRefactorRequest(TextEditor::TextEditorWidget *editor, const QString &instructions);
 
     void cancelRequest();
+    bool isProcessing() const { return m_isRefactoringInProgress; }
 
 signals:
     void refactoringCompleted(const QodeAssist::RefactorResult &result);

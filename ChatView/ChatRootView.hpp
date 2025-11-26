@@ -51,6 +51,9 @@ class ChatRootView : public QQuickItem
     Q_PROPERTY(int activeRulesCount READ activeRulesCount NOTIFY activeRulesCountChanged FINAL)
     Q_PROPERTY(bool isAgentMode READ isAgentMode WRITE setIsAgentMode NOTIFY isAgentModeChanged FINAL)
     Q_PROPERTY(
+        bool isThinkingMode READ isThinkingMode WRITE setIsThinkingMode NOTIFY isThinkingModeChanged
+            FINAL)
+    Q_PROPERTY(
         bool toolsSupportEnabled READ toolsSupportEnabled NOTIFY toolsSupportEnabledChanged FINAL)
 
     Q_PROPERTY(
@@ -65,6 +68,13 @@ class ChatRootView : public QQuickItem
     Q_PROPERTY(
         int currentMessageRejectedEdits READ currentMessageRejectedEdits NOTIFY
             currentMessageEditsStatsChanged FINAL)
+    Q_PROPERTY(bool isThinkingSupport READ isThinkingSupport NOTIFY isThinkingSupportChanged FINAL)
+    Q_PROPERTY(
+        QStringList availableConfigurations READ availableConfigurations NOTIFY
+            availableConfigurationsChanged FINAL)
+    Q_PROPERTY(
+        QString currentConfiguration READ currentConfiguration NOTIFY currentConfigurationChanged
+            FINAL)
 
     QML_ELEMENT
 
@@ -82,14 +92,20 @@ public:
 
     void autosave();
     QString getAutosaveFilePath() const;
+    QString getAutosaveFilePath(const QString &firstMessage, const QStringList &attachments) const;
 
     QStringList attachmentFiles() const;
     QStringList linkedFiles() const;
 
     Q_INVOKABLE void showAttachFilesDialog();
+    Q_INVOKABLE void addFilesToAttachList(const QStringList &filePaths);
     Q_INVOKABLE void removeFileFromAttachList(int index);
     Q_INVOKABLE void showLinkFilesDialog();
+    Q_INVOKABLE void addFilesToLinkList(const QStringList &filePaths);
     Q_INVOKABLE void removeFileFromLinkList(int index);
+    Q_INVOKABLE QStringList convertUrlsToLocalPaths(const QVariantList &urls) const;
+    Q_INVOKABLE void showAddImageDialog();
+    Q_INVOKABLE bool isImageFile(const QString &filePath) const;
     Q_INVOKABLE void calculateMessageTokensCount(const QString &message);
     Q_INVOKABLE void setIsSyncOpenFiles(bool state);
     Q_INVOKABLE void openChatHistoryFolder();
@@ -105,6 +121,7 @@ public:
     void onEditorCreated(Core::IEditor *editor, const Utils::FilePath &filePath);
 
     QString chatFileName() const;
+    Q_INVOKABLE QString chatFilePath() const;
     void setRecentFilePath(const QString &filePath);
     bool shouldIgnoreFileForAttach(const Utils::FilePath &filePath);
 
@@ -127,6 +144,8 @@ public:
 
     bool isAgentMode() const;
     void setIsAgentMode(bool newIsAgentMode);
+    bool isThinkingMode() const;
+    void setIsThinkingMode(bool newIsThinkingMode);
     bool toolsSupportEnabled() const;
 
     Q_INVOKABLE void applyFileEdit(const QString &editId);
@@ -134,10 +153,14 @@ public:
     Q_INVOKABLE void undoFileEdit(const QString &editId);
     Q_INVOKABLE void openFileEditInEditor(const QString &editId);
 
-    // Mass file edit operations for current message
     Q_INVOKABLE void applyAllFileEditsForCurrentMessage();
     Q_INVOKABLE void undoAllFileEditsForCurrentMessage();
     Q_INVOKABLE void updateCurrentMessageEditsStats();
+
+    Q_INVOKABLE void loadAvailableConfigurations();
+    Q_INVOKABLE void applyConfiguration(const QString &configName);
+    QStringList availableConfigurations() const;
+    QString currentConfiguration() const;
 
     int currentMessageTotalEdits() const;
     int currentMessageAppliedEdits() const;
@@ -145,6 +168,8 @@ public:
     int currentMessageRejectedEdits() const;
 
     QString lastInfoMessage() const;
+
+    bool isThinkingSupport() const;
 
 public slots:
     void sendMessage(const QString &message);
@@ -175,14 +200,21 @@ signals:
     void activeRulesCountChanged();
 
     void isAgentModeChanged();
+    void isThinkingModeChanged();
     void toolsSupportEnabledChanged();
     void currentMessageEditsStatsChanged();
+
+    void isThinkingSupportChanged();
+    void availableConfigurationsChanged();
+    void currentConfigurationChanged();
 
 private:
     void updateFileEditStatus(const QString &editId, const QString &status);
     QString getChatsHistoryDir() const;
     QString getDebugLogsDir() const;
     QString getSuggestedFileName() const;
+    QString generateChatFileName(const QString &shortMessage, const QString &dir) const;
+    bool hasImageAttachments(const QStringList &attachments) const;
 
     ChatModel *m_chatModel;
     LLMCore::PromptProviderChat m_promptProvider;
@@ -199,6 +231,7 @@ private:
     QString m_lastErrorMessage;
     QVariantList m_activeRules;
     bool m_isAgentMode;
+    bool m_isThinkingMode;
 
     QString m_currentMessageRequestId;
     int m_currentMessageTotalEdits{0};
@@ -206,6 +239,9 @@ private:
     int m_currentMessagePendingEdits{0};
     int m_currentMessageRejectedEdits{0};
     QString m_lastInfoMessage;
+
+    QStringList m_availableConfigurations;
+    QString m_currentConfiguration;
 };
 
 } // namespace QodeAssist::Chat
