@@ -53,7 +53,16 @@ void CompletionProgressHandler::showProgress(TextEditor::TextEditorWidget *widge
 
 void CompletionProgressHandler::hideProgress()
 {
+    if (m_progressWidget) {
+        m_progressWidget->deleteLater();
+        m_progressWidget = nullptr;
+    }
     Utils::ToolTip::hideImmediately();
+}
+
+void CompletionProgressHandler::setCancelCallback(std::function<void()> callback)
+{
+    m_cancelCallback = callback;
 }
 
 void CompletionProgressHandler::identifyMatch(
@@ -73,12 +82,28 @@ void CompletionProgressHandler::operateTooltip(
     if (!editorWidget)
         return;
 
-    auto progressWidget = new ProgressWidget(editorWidget);
+    if (m_progressWidget) {
+        delete m_progressWidget;
+    }
 
-    QPoint showPoint = point;
-    showPoint.ry() -= progressWidget->height();
+    m_progressWidget = new ProgressWidget(editorWidget);
+    if (m_cancelCallback) {
+        m_progressWidget->setCancelCallback(m_cancelCallback);
+    }
 
-    Utils::ToolTip::show(showPoint, progressWidget, editorWidget);
+    const QRect cursorRect = editorWidget->cursorRect(editorWidget->textCursor());
+    QPoint globalPos = editorWidget->viewport()->mapToGlobal(cursorRect.topLeft());
+    QPoint localPos = editorWidget->mapFromGlobal(globalPos);
+    localPos.rx() += 5;
+    localPos.ry() -= m_progressWidget->height() + 5;
+
+    if (localPos.y() < 0) {
+        localPos.ry() = cursorRect.bottom() + 5;
+    }
+
+    m_progressWidget->move(localPos);
+    m_progressWidget->show();
+    m_progressWidget->raise();
 }
 
 } // namespace QodeAssist

@@ -48,6 +48,9 @@ public:
     void cancelRequest();
 
     Context::ContextManager *contextManager() const;
+    
+    void setChatFilePath(const QString &filePath);
+    QString chatFilePath() const;
 
 signals:
     void errorOccurred(const QString &error);
@@ -61,10 +64,14 @@ private slots:
     void handleCleanAccumulatedData(const QString &requestId);
 
 private:
-    void handleLLMResponse(const QString &response, const QJsonObject &request, bool isComplete);
+    void handleLLMResponse(const QString &response, const QJsonObject &request);
     QString getCurrentFileContext() const;
     QString getSystemPromptWithLinkedFiles(
         const QString &basePrompt, const QList<QString> &linkedFiles) const;
+    bool isImageFile(const QString &filePath) const;
+    QString getMediaTypeForImage(const QString &filePath) const;
+    QString encodeImageToBase64(const QString &filePath) const;
+    QVector<LLMCore::ImageAttachment> loadImagesFromStorage(const QList<ChatModel::ImageAttachment> &storedImages) const;
 
     struct RequestContext
     {
@@ -75,6 +82,7 @@ private:
     LLMCore::IPromptProvider *m_promptProvider = nullptr;
     ChatModel *m_chatModel;
     Context::ContextManager *m_contextManager;
+    QString m_chatFilePath;
 
     QHash<QString, RequestContext> m_activeRequests;
     QHash<QString, QString> m_accumulatedResponses;

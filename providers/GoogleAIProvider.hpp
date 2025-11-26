@@ -41,7 +41,8 @@ public:
         LLMCore::PromptTemplate *prompt,
         LLMCore::ContextData context,
         LLMCore::RequestType type,
-        bool isToolsEnabled) override;
+        bool isToolsEnabled,
+        bool isThinkingEnabled) override;
     QList<QString> getInstalledModels(const QString &url) override;
     QList<QString> validateRequest(const QJsonObject &request, LLMCore::TemplateType type) override;
     QString apiKey() const override;
@@ -53,6 +54,8 @@ public:
 
     bool supportsTools() const override;
     void setMCPClientManager(MCP::MCPClientManager *mcpManager) override;
+    bool supportThinking() const override;
+    bool supportImage() const override;
     void cancelRequest(const LLMCore::RequestID &requestId) override;
 
 public slots:
@@ -70,11 +73,14 @@ private slots:
 private:
     void processStreamChunk(const QString &requestId, const QJsonObject &chunk);
     void handleMessageComplete(const QString &requestId);
+    void emitPendingThinkingBlocks(const QString &requestId);
     void cleanupRequest(const LLMCore::RequestID &requestId);
 
     QHash<LLMCore::RequestID, GoogleMessage *> m_messages;
     QHash<LLMCore::RequestID, QUrl> m_requestUrls;
     QHash<LLMCore::RequestID, QJsonObject> m_originalRequests;
+    QHash<LLMCore::RequestID, int> m_emittedThinkingBlocksCount;
+    QSet<LLMCore::RequestID> m_failedRequests;
     Tools::ToolsManager *m_toolsManager;
 };
 

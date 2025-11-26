@@ -32,6 +32,7 @@
 #include "settings/CodeCompletionSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include "settings/QuickRefactorSettings.hpp"
 #include <mcp/MCPClientManager.hpp>
 
 namespace QodeAssist::Providers {
@@ -77,7 +78,8 @@ void ClaudeProvider::prepareRequest(
     LLMCore::PromptTemplate *prompt,
     LLMCore::ContextData context,
     LLMCore::RequestType type,
-    bool isToolsEnabled)
+    bool isToolsEnabled,
+    bool isThinkingEnabled)
 {
     if (!prompt->isSupportProvider(providerID())) {
         LOG_MESSAGE(QString("Template %1 doesn't support %2 provider").arg(name(), prompt->name()));
@@ -87,7 +89,6 @@ void ClaudeProvider::prepareRequest(
 
     auto applyModelParams = [&request](const auto &settings) {
         request["max_tokens"] = settings.maxTokens();
-        request["temperature"] = settings.temperature();
         if (settings.useTopP())
             request["top_p"] = settings.topP();
         if (settings.useTopK())
@@ -95,15 +96,46 @@ void ClaudeProvider::prepareRequest(
         request["stream"] = true;
     };
 
+    auto applyThinkingMode = [&request](const auto &settings) {
+        QJsonObject thinkingObj;
+        thinkingObj["type"] = "enabled";
+        thinkingObj["budget_tokens"] = settings.thinkingBudgetTokens();
+        request["thinking"] = thinkingObj;
+        request["max_tokens"] = settings.thinkingMaxTokens();
+        request["temperature"] = 1.0;
+    };
+
     if (type == LLMCore::RequestType::CodeCompletion) {
         applyModelParams(Settings::codeCompletionSettings());
+        request["temperature"] = Settings::codeCompletionSettings().temperature();
+    } else if (type == LLMCore::RequestType::QuickRefactoring) {
+        const auto &qrSettings = Settings::quickRefactorSettings();
+        applyModelParams(qrSettings);
+
+        if (isThinkingEnabled) {
+            applyThinkingMode(qrSettings);
+        } else {
+            request["temperature"] = qrSettings.temperature();
+        }
     } else {
-        applyModelParams(Settings::chatAssistantSettings());
+        const auto &chatSettings = Settings::chatAssistantSettings();
+        applyModelParams(chatSettings);
+
+        if (isThinkingEnabled) {
+            applyThinkingMode(chatSettings);
+        } else {
+            request["temperature"] = chatSettings.temperature();
+        }
     }
 
     if (isToolsEnabled) {
-        auto toolsDefinitions = m_toolsManager->getToolsDefinitions(
-            LLMCore::ToolSchemaFormat::Claude);
+        LLMCore::RunToolsFilter filter = LLMCore::RunToolsFilter::ALL;
+        if (type == LLMCore::RequestType::QuickRefactoring) {
+            filter = LLMCore::RunToolsFilter::OnlyRead;
+        }
+
+        auto toolsDefinitions
+            = m_toolsManager->getToolsDefinitions(LLMCore::ToolSchemaFormat::Claude, filter);
         if (!toolsDefinitions.isEmpty()) {
             request["tools"] = toolsDefinitions;
             LOG_MESSAGE(QString("Added %1 tools to Claude request").arg(toolsDefinitions.size()));
@@ -170,7 +202,8 @@ QList<QString> ClaudeProvider::validateRequest(const QJsonObject &request, LLMCo
         {"top_k", {}},
         {"stop", QJsonArray{}},
         {"stream", {}},
-        {"tools", {}}};
+        {"tools", {}},
+        {"thinking", QJsonObject{{"type", {}}, {"budget_tokens", {}}}}};
 
     return LLMCore::ValidationUtils::validateRequestFields(request, templateReq);
 }
@@ -227,6 +260,16 @@ void ClaudeProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
         m_toolsManager->setMCPClientManager(mcpManager);
     }
 }
+
+bool ClaudeProvider::supportThinking() const
+{
+    return true;
+};
+
+bool ClaudeProvider::supportImage() const
+{
+    return true;
+};
 
 void ClaudeProvider::cancelRequest(const LLMCore::RequestID &requestId)
 {
@@ -317,6 +360,13 @@ void ClaudeProvider::onToolExecutionComplete(
 
     continuationRequest["messages"] = messages;
 
+    if (continuationRequest.contains("thinking")) {
+        QJsonObject thinkingObj = continuationRequest["thinking"].toObject();
+        LOG_MESSAGE(QString("Thinking mode preserved for continuation: type=%1, budget=%2 tokens")
+                        .arg(thinkingObj["type"].toString())
+                        .arg(thinkingObj["budget_tokens"].toInt()));
+    }
+
     LOG_MESSAGE(QString("Sending continuation request for %1 with %2 tool results")
                     .arg(requestId)
                     .arg(toolResults.size()));
@@ -356,6 +406,13 @@ void ClaudeProvider::processStreamEvent(const QString &requestId, const QJsonObj
         LOG_MESSAGE(
             QString("Adding new content block: type=%1, index=%2").arg(blockType).arg(index));
 
+        if (blockType == "thinking" || blockType == "redacted_thinking") {
+            QJsonDocument eventDoc(event);
+            LOG_MESSAGE(QString("content_block_start event for %1: %2")
+                            .arg(blockType)
+                            .arg(QString::fromUtf8(eventDoc.toJson(QJsonDocument::Compact))));
+        }
+
         message->handleContentBlockStart(index, blockType, contentBlock);
 
     } else if (eventType == "content_block_delta") {
@@ -370,11 +427,94 @@ void ClaudeProvider::processStreamEvent(const QString &requestId, const QJsonObj
             LLMCore::DataBuffers &buffers = m_dataBuffers[requestId];
             buffers.responseContent += text;
             emit partialResponseReceived(requestId, text);
+        } else if (deltaType == "signature_delta") {
+            QString signature = delta["signature"].toString();
         }
 
     } else if (eventType == "content_block_stop") {
         int index = event["index"].toInt();
+
+        auto allBlocks = message->getCurrentBlocks();
+        if (index < allBlocks.size()) {
+            QString blockType = allBlocks[index]->type();
+            if (blockType == "thinking" || blockType == "redacted_thinking") {
+                QJsonDocument eventDoc(event);
+                LOG_MESSAGE(QString("content_block_stop event for %1 at index %2: %3")
+                                .arg(blockType)
+                                .arg(index)
+                                .arg(QString::fromUtf8(eventDoc.toJson(QJsonDocument::Compact))));
+            }
+        }
+
+        if (event.contains("content_block")) {
+            QJsonObject contentBlock = event["content_block"].toObject();
+            QString blockType = contentBlock["type"].toString();
+
+            if (blockType == "thinking") {
+                QString signature = contentBlock["signature"].toString();
+                if (!signature.isEmpty()) {
+                    auto allBlocks = message->getCurrentBlocks();
+                    if (index < allBlocks.size()) {
+                        if (auto thinkingContent = qobject_cast<LLMCore::ThinkingContent *>(
+                                allBlocks[index])) {
+                            thinkingContent->setSignature(signature);
+                            LOG_MESSAGE(
+                                QString(
+                                    "Updated thinking block signature from content_block_stop, "
+                                    "signature length=%1")
+                                    .arg(signature.length()));
+                        }
+                    }
+                }
+            } else if (blockType == "redacted_thinking") {
+                QString signature = contentBlock["signature"].toString();
+                if (!signature.isEmpty()) {
+                    auto allBlocks = message->getCurrentBlocks();
+                    if (index < allBlocks.size()) {
+                        if (auto redactedContent = qobject_cast<LLMCore::RedactedThinkingContent *>(
+                                allBlocks[index])) {
+                            redactedContent->setSignature(signature);
+                            LOG_MESSAGE(QString(
+                                            "Updated redacted_thinking block signature from "
+                                            "content_block_stop, "
+                                            "signature length=%1")
+                                            .arg(signature.length()));
+                        }
+                    }
+                }
+            }
+        }
+
         message->handleContentBlockStop(index);
+
+        auto thinkingBlocks = message->getCurrentThinkingContent();
+        for (auto thinkingContent : thinkingBlocks) {
+            auto allBlocks = message->getCurrentBlocks();
+            if (index < allBlocks.size() && allBlocks[index] == thinkingContent) {
+                emit thinkingBlockReceived(
+                    requestId, thinkingContent->thinking(), thinkingContent->signature());
+                LOG_MESSAGE(QString(
+                                "Emitted thinking block for request %1, thinking length=%2, "
+                                "signature length=%3")
+                                .arg(requestId)
+                                .arg(thinkingContent->thinking().length())
+                                .arg(thinkingContent->signature().length()));
+                break;
+            }
+        }
+
+        auto redactedBlocks = message->getCurrentRedactedThinkingContent();
+        for (auto redactedContent : redactedBlocks) {
+            auto allBlocks = message->getCurrentBlocks();
+            if (index < allBlocks.size() && allBlocks[index] == redactedContent) {
+                emit redactedThinkingBlockReceived(requestId, redactedContent->signature());
+                LOG_MESSAGE(
+                    QString("Emitted redacted thinking block for request %1, signature length=%2")
+                        .arg(requestId)
+                        .arg(redactedContent->signature().length()));
+                break;
+            }
+        }
 
     } else if (eventType == "message_delta") {
         QJsonObject delta = event["delta"].toObject();

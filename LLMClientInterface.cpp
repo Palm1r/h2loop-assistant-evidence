@@ -85,7 +85,22 @@ void LLMClientInterface::handleRequestFailed(const QString &requestId, const QSt
         return;
 
     LOG_MESSAGE(QString("Request %1 failed: %2").arg(requestId, error));
+    
+    // Send LSP error response to client
+    const RequestContext &ctx = it.value();
+    QJsonObject response;
+    response["jsonrpc"] = "2.0";
+    response[LanguageServerProtocol::idKey] = ctx.originalRequest["id"];
+    
+    QJsonObject errorObject;
+    errorObject["code"] = -32603; // Internal error code
+    errorObject["message"] = error;
+    response["error"] = errorObject;
+    
+    emit messageReceived(LanguageServerProtocol::JsonRpcMessage(response));
+    
     m_activeRequests.erase(it);
+    m_performanceLogger.endTimeMeasurement(requestId);
 }
 
 void LLMClientInterface::sendData(const QByteArray &data)
@@ -109,7 +124,8 @@ void LLMClientInterface::sendData(const QByteArray &data)
         QString requestId = request["id"].toString();
         m_performanceLogger.startTimeMeasurement(requestId);
         handleCompletion(request);
-    } else if (method == "$/cancelRequest") {
+    } else if (method == "cancelRequest") {
+        qDebug() << "Cancelling request";
         handleCancelRequest();
     } else if (method == "exit") {
         // TODO make exit handler
@@ -193,12 +209,32 @@ void LLMClientInterface::handleExit(const QJsonObject &request)
     emit finished();
 }
 
+void LLMClientInterface::sendErrorResponse(const QJsonObject &request, const QString &errorMessage)
+{
+    QJsonObject response;
+    response["jsonrpc"] = "2.0";
+    response[LanguageServerProtocol::idKey] = request["id"];
+    
+    QJsonObject errorObject;
+    errorObject["code"] = -32603; // Internal error code
+    errorObject["message"] = errorMessage;
+    response["error"] = errorObject;
+    
+    emit messageReceived(LanguageServerProtocol::JsonRpcMessage(response));
+    
+    // End performance measurement if it was started
+    QString requestId = request["id"].toString();
+    m_performanceLogger.endTimeMeasurement(requestId);
+}
+
 void LLMClientInterface::handleCompletion(const QJsonObject &request)
 {
     auto filePath = Context::extractFilePathFromRequest(request);
     auto documentInfo = m_documentReader.readDocument(filePath);
     if (!documentInfo.document) {
-        LOG_MESSAGE("Error: Document is not available for" + filePath);
+        QString error = QString("Document is not available: %1").arg(filePath);
+        LOG_MESSAGE("Error: " + error);
+        sendErrorResponse(request, error);
         return;
     }
 
@@ -216,7 +252,9 @@ void LLMClientInterface::handleCompletion(const QJsonObject &request)
     const auto provider = m_providerRegistry.getProviderByName(providerName);
 
     if (!provider) {
-        LOG_MESSAGE(QString("No provider found with name: %1").arg(providerName));
+        QString error = QString("No provider found with name: %1").arg(providerName);
+        LOG_MESSAGE(error);
+        sendErrorResponse(request, error);
         return;
     }
 
@@ -226,7 +264,9 @@ void LLMClientInterface::handleCompletion(const QJsonObject &request)
     auto promptTemplate = m_promptProvider->getTemplateByName(templateName);
 
     if (!promptTemplate) {
-        LOG_MESSAGE(QString("No template found with name: %1").arg(templateName));
+        QString error = QString("No template found with name: %1").arg(templateName);
+        LOG_MESSAGE(error);
+        sendErrorResponse(request, error);
         return;
     }
 
@@ -308,12 +348,15 @@ void LLMClientInterface::handleCompletion(const QJsonObject &request)
         promptTemplate,
         updatedContext,
         LLMCore::RequestType::CodeCompletion,
+        false,
         false);
 
     auto errors = config.provider->validateRequest(config.providerRequest, promptTemplate->type());
     if (!errors.isEmpty()) {
-        LOG_MESSAGE("Validate errors for fim request:");
+        QString error = QString("Request validation failed: %1").arg(errors.join("; "));
+        LOG_MESSAGE("Validate errors for request:");
         LOG_MESSAGES(errors);
+        sendErrorResponse(request, error);
         return;
     }
 
@@ -416,12 +459,20 @@ void LLMClientInterface::sendCompletionToClient(
                   : completion;
     }
 
+    if (processedCompletion.endsWith('\n')) {
+        QString withoutTrailing = processedCompletion.chopped(1);
+        if (!withoutTrailing.contains('\n')) {
+            LOG_MESSAGE(QString("Removed trailing newline from single-line completion"));
+            processedCompletion = withoutTrailing;
+        }
+    }
+
     completionItem[LanguageServerProtocol::textKey] = processedCompletion;
+    
     QJsonObject range;
     range["start"] = position;
-    QJsonObject end = position;
-    end["character"] = position["character"].toInt() + processedCompletion.length();
-    range["end"] = end;
+    range["end"] = position;
+    
     completionItem[LanguageServerProtocol::rangeKey] = range;
     completionItem[LanguageServerProtocol::positionKey] = position;
     completions.append(completionItem);

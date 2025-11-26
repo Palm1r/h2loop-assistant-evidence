@@ -29,6 +29,9 @@
 #include "LLMClientInterface.hpp"
 #include "LSPCompletion.hpp"
 #include "QuickRefactorHandler.hpp"
+#include "RefactorSuggestionHoverHandler.hpp"
+#include "widgets/CompletionErrorHandler.hpp"
+#include "widgets/CompletionHintHandler.hpp"
 #include "widgets/CompletionProgressHandler.hpp"
 #include "widgets/EditorChatButtonHandler.hpp"
 #include <languageclient/client.h>
@@ -51,6 +54,12 @@ public:
     void requestQuickRefactor(
         TextEditor::TextEditorWidget *editor, const QString &instructions = QString());
 
+    bool isHintVisible() const;
+    void hideHintAndRequestCompletion(TextEditor::TextEditorWidget *editor);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
     void scheduleRequest(TextEditor::TextEditorWidget *editor);
     void handleCompletions(
@@ -62,6 +71,14 @@ private:
     void cleanupConnections();
     void handleRefactoringResult(const RefactorResult &result);
 
+    void handleAutoRequestTrigger(
+        TextEditor::TextEditorWidget *widget, int charsAdded, bool isSpaceOrTab);
+    void handleHintBasedTrigger(
+        TextEditor::TextEditorWidget *widget,
+        int charsAdded,
+        bool isSpaceOrTab,
+        QTextCursor &cursor);
+
     QHash<TextEditor::TextEditorWidget *, GetCompletionRequest> m_runningRequests;
     QHash<TextEditor::TextEditorWidget *, QTimer *> m_scheduledRequests;
     QMetaObject::Connection m_documentOpenedConnection;
@@ -69,9 +86,13 @@ private:
 
     QElapsedTimer m_typingTimer;
     int m_recentCharCount;
+    QTimer m_hintHideTimer;
     CompletionProgressHandler m_progressHandler;
+    CompletionErrorHandler m_errorHandler;
+    CompletionHintHandler m_hintHandler;
     EditorChatButtonHandler m_chatButtonHandler;
     QuickRefactorHandler *m_refactorHandler{nullptr};
+    RefactorSuggestionHoverHandler *m_refactorHoverHandler{nullptr};
     LLMClientInterface *m_llmClient;
 };
 
