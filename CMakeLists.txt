@@ -112,8 +112,6 @@ add_qtc_plugin(QodeAssist
     providers/LlamaCppProvider.hpp providers/LlamaCppProvider.cpp
     providers/CodestralProvider.hpp providers/CodestralProvider.cpp
     settings/MCPSettings.hpp settings/MCPSettings.cpp
-    mcp/MCPClientManager.hpp mcp/MCPClientManager.cpp
-    mcp/MCPToolAdapter.hpp mcp/MCPToolAdapter.cpp
     QodeAssist.qrc
     LSPCompletion.hpp
     LLMSuggestion.hpp LLMSuggestion.cpp
