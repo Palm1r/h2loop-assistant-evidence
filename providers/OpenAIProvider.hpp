@@ -23,6 +23,10 @@
 #include "tools/ToolsManager.hpp"
 #include <llmcore/Provider.hpp>
 
+namespace QodeAssist::MCP {
+class MCPClientManager;
+}
+
 namespace QodeAssist::Providers {
 
 class OpenAIProvider : public LLMCore::Provider
@@ -55,6 +59,8 @@ public:
     bool supportsTools() const override;
     bool supportImage() const override;
     void cancelRequest(const LLMCore::RequestID &requestId) override;
+
+    void setMCPClientManager(MCP::MCPClientManager *mcpManager);
 
 public slots:
     void onDataReceived(

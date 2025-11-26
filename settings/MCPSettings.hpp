@@ -1,5 +1,5 @@
-/* 
- * Copyright (C) 2024-2025 Petr Mironychev
+/*
+ * Copyright (C) 2025 Petr Mironychev
  *
  * This file is part of QodeAssist.
  *
@@ -17,41 +17,38 @@
  * along with QodeAssist. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "OpenRouterAIProvider.hpp"
+#pragma once
 
-#include "settings/ProviderSettings.hpp"
 #include <mcp/MCPClientManager.hpp>
-
+#include <utils/aspects.h>
 #include <QJsonArray>
-#include <QJsonDocument>
 #include <QJsonObject>
-#include <QNetworkReply>
+#include <QTreeWidget>
 
-namespace QodeAssist::Providers {
+namespace QodeAssist::Settings {
 
-QString OpenRouterProvider::name() const
+class MCPSettings : public Utils::AspectContainer
 {
-    return "OpenRouter";
-}
+    Q_OBJECT
+public:
+    MCPSettings();
 
-QString OpenRouterProvider::url() const
-{
-    return "https://openrouter.ai/api";
-}
+    Utils::BoolAspect enableMCP{this};
+    Utils::StringListAspect mcpServerUrls{this}; // List of MCP server URLs
 
-QString OpenRouterProvider::apiKey() const
-{
-    return Settings::providerSettings().openRouterApiKey();
-}
+    // Helper methods
+    QList<QString> getServerUrls() const;
+    void setServerUrls(const QList<QString> &urls);
+    void addServerUrl(const QString &url);
+    void removeServerUrl(const QString &url);
 
-LLMCore::ProviderID OpenRouterProvider::providerID() const
-{
-    return LLMCore::ProviderID::OpenRouter;
-}
+signals:
+    void serverUrlsChanged();
 
-void OpenRouterProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
-{
-    OpenAICompatProvider::setMCPClientManager(mcpManager);
-}
+private:
+    void populateToolsWidget(QTreeWidget *treeWidget);
+};
 
-} // namespace QodeAssist::Providers
+MCPSettings &mcpSettings();
+
+} // namespace QodeAssist::Settings

@@ -30,9 +30,10 @@
 #include "logger/Logger.hpp"
 #include "settings/ChatAssistantSettings.hpp"
 #include "settings/CodeCompletionSettings.hpp"
-#include "settings/QuickRefactorSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include "settings/QuickRefactorSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 namespace QodeAssist::Providers {
 
@@ -133,8 +134,8 @@ void ClaudeProvider::prepareRequest(
             filter = LLMCore::RunToolsFilter::OnlyRead;
         }
 
-        auto toolsDefinitions = m_toolsManager->getToolsDefinitions(
-            LLMCore::ToolSchemaFormat::Claude, filter);
+        auto toolsDefinitions
+            = m_toolsManager->getToolsDefinitions(LLMCore::ToolSchemaFormat::Claude, filter);
         if (!toolsDefinitions.isEmpty()) {
             request["tools"] = toolsDefinitions;
             LOG_MESSAGE(QString("Added %1 tools to Claude request").arg(toolsDefinitions.size()));
@@ -245,7 +246,7 @@ void ClaudeProvider::sendRequest(
 
     LOG_MESSAGE(QString("ClaudeProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool ClaudeProvider::supportsTools() const
@@ -253,11 +254,20 @@ bool ClaudeProvider::supportsTools() const
     return true;
 }
 
-bool ClaudeProvider::supportThinking() const {
+void ClaudeProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->setMCPClientManager(mcpManager);
+    }
+}
+
+bool ClaudeProvider::supportThinking() const
+{
     return true;
 };
 
-bool ClaudeProvider::supportImage() const {
+bool ClaudeProvider::supportImage() const
+{
     return true;
 };
 
@@ -349,14 +359,14 @@ void ClaudeProvider::onToolExecutionComplete(
     messages.append(userMessage);
 
     continuationRequest["messages"] = messages;
-    
+
     if (continuationRequest.contains("thinking")) {
         QJsonObject thinkingObj = continuationRequest["thinking"].toObject();
         LOG_MESSAGE(QString("Thinking mode preserved for continuation: type=%1, budget=%2 tokens")
                         .arg(thinkingObj["type"].toString())
                         .arg(thinkingObj["budget_tokens"].toInt()));
     }
-    
+
     LOG_MESSAGE(QString("Sending continuation request for %1 with %2 tool results")
                     .arg(requestId)
                     .arg(toolResults.size()));
@@ -395,7 +405,7 @@ void ClaudeProvider::processStreamEvent(const QString &requestId, const QJsonObj
 
         LOG_MESSAGE(
             QString("Adding new content block: type=%1, index=%2").arg(blockType).arg(index));
-        
+
         if (blockType == "thinking" || blockType == "redacted_thinking") {
             QJsonDocument eventDoc(event);
             LOG_MESSAGE(QString("content_block_start event for %1: %2")
@@ -423,7 +433,7 @@ void ClaudeProvider::processStreamEvent(const QString &requestId, const QJsonObj
 
     } else if (eventType == "content_block_stop") {
         int index = event["index"].toInt();
-        
+
         auto allBlocks = message->getCurrentBlocks();
         if (index < allBlocks.size()) {
             QString blockType = allBlocks[index]->type();
@@ -435,21 +445,23 @@ void ClaudeProvider::processStreamEvent(const QString &requestId, const QJsonObj
                                 .arg(QString::fromUtf8(eventDoc.toJson(QJsonDocument::Compact))));
             }
         }
-        
+
         if (event.contains("content_block")) {
             QJsonObject contentBlock = event["content_block"].toObject();
             QString blockType = contentBlock["type"].toString();
-            
+
             if (blockType == "thinking") {
                 QString signature = contentBlock["signature"].toString();
                 if (!signature.isEmpty()) {
                     auto allBlocks = message->getCurrentBlocks();
                     if (index < allBlocks.size()) {
-                        if (auto thinkingContent = qobject_cast<LLMCore::ThinkingContent *>(allBlocks[index])) {
+                        if (auto thinkingContent = qobject_cast<LLMCore::ThinkingContent *>(
+                                allBlocks[index])) {
                             thinkingContent->setSignature(signature);
                             LOG_MESSAGE(
-                                QString("Updated thinking block signature from content_block_stop, "
-                                        "signature length=%1")
+                                QString(
+                                    "Updated thinking block signature from content_block_stop, "
+                                    "signature length=%1")
                                     .arg(signature.length()));
                         }
                     }
@@ -459,18 +471,20 @@ void ClaudeProvider::processStreamEvent(const QString &requestId, const QJsonObj
                 if (!signature.isEmpty()) {
                     auto allBlocks = message->getCurrentBlocks();
                     if (index < allBlocks.size()) {
-                        if (auto redactedContent = qobject_cast<LLMCore::RedactedThinkingContent *>(allBlocks[index])) {
+                        if (auto redactedContent = qobject_cast<LLMCore::RedactedThinkingContent *>(
+                                allBlocks[index])) {
                             redactedContent->setSignature(signature);
-                            LOG_MESSAGE(
-                                QString("Updated redacted_thinking block signature from content_block_stop, "
-                                        "signature length=%1")
-                                    .arg(signature.length()));
+                            LOG_MESSAGE(QString(
+                                            "Updated redacted_thinking block signature from "
+                                            "content_block_stop, "
+                                            "signature length=%1")
+                                            .arg(signature.length()));
                         }
                     }
                 }
             }
         }
-        
+
         message->handleContentBlockStop(index);
 
         auto thinkingBlocks = message->getCurrentThinkingContent();
@@ -479,11 +493,12 @@ void ClaudeProvider::processStreamEvent(const QString &requestId, const QJsonObj
             if (index < allBlocks.size() && allBlocks[index] == thinkingContent) {
                 emit thinkingBlockReceived(
                     requestId, thinkingContent->thinking(), thinkingContent->signature());
-                LOG_MESSAGE(
-                    QString("Emitted thinking block for request %1, thinking length=%2, signature length=%3")
-                        .arg(requestId)
-                        .arg(thinkingContent->thinking().length())
-                        .arg(thinkingContent->signature().length()));
+                LOG_MESSAGE(QString(
+                                "Emitted thinking block for request %1, thinking length=%2, "
+                                "signature length=%3")
+                                .arg(requestId)
+                                .arg(thinkingContent->thinking().length())
+                                .arg(thinkingContent->signature().length()));
                 break;
             }
         }

@@ -14,6 +14,15 @@ find_package(QtCreator REQUIRED COMPONENTS Core)
 find_package(Qt6 COMPONENTS Core Gui Quick Widgets Network Test LinguistTools REQUIRED)
 find_package(GTest)
 
+# Add cpp-mcp library
+include(FetchContent)
+FetchContent_Declare(
+    cpp-mcp
+    GIT_REPOSITORY https://github.com/hkr04/cpp-mcp.git
+    GIT_TAG main
+)
+FetchContent_MakeAvailable(cpp-mcp)
+
 qt_standard_project_setup(I18N_TRANSLATED_LANGUAGES en)
 
 # IDE_VERSION is defined by QtCreator package
@@ -40,6 +49,7 @@ add_subdirectory(logger)
 add_subdirectory(UIControls)
 add_subdirectory(ChatView)
 add_subdirectory(context)
+add_subdirectory(mcp)
 if(GTest_FOUND)
   add_subdirectory(test)
 endif()
@@ -61,6 +71,8 @@ add_qtc_plugin(QodeAssist
     QtCreator::Utils
     QtCreator::CPlusPlus
     QodeAssistChatViewplugin
+    mcp
+    qodeassist-mcp
   SOURCES
     .github/workflows/build_cmake.yml
     .github/workflows/README.md
@@ -99,6 +111,7 @@ add_qtc_plugin(QodeAssist
     providers/GoogleAIProvider.hpp providers/GoogleAIProvider.cpp
     providers/LlamaCppProvider.hpp providers/LlamaCppProvider.cpp
     providers/CodestralProvider.hpp providers/CodestralProvider.cpp
+    settings/MCPSettings.hpp settings/MCPSettings.cpp
     QodeAssist.qrc
     LSPCompletion.hpp
     LLMSuggestion.hpp LLMSuggestion.cpp

@@ -55,6 +55,7 @@
 #include "providers/Providers.hpp"
 #include "settings/ChatAssistantSettings.hpp"
 #include "settings/GeneralSettings.hpp"
+#include "settings/MCPSettings.hpp"
 #include "settings/ProjectSettingsPanel.hpp"
 #include "settings/SettingsConstants.hpp"
 #include "templates/Templates.hpp"
@@ -63,6 +64,7 @@
 #include <ChatView/ChatView.hpp>
 #include <coreplugin/actionmanager/actioncontainer.h>
 #include <coreplugin/actionmanager/actionmanager.h>
+#include <mcp/MCPClientManager.hpp>
 #include <texteditor/textdocument.h>
 #include <texteditor/texteditor.h>
 #include <texteditor/texteditorconstants.h>
@@ -129,6 +131,18 @@ public:
         Providers::registerProviders();
         Templates::registerTemplates();
 
+        // Initialize MCP client manager if MCP is enabled
+        if (Settings::mcpSettings().enableMCP()) {
+            m_mcpClientManager.reset(new MCP::MCPClientManager(this));
+            initializeMCPServers();
+            LLMCore::ProvidersManager::instance().setMCPClientManager(m_mcpClientManager.get());
+
+            // Connect to MCP settings changes to handle new server URLs
+            connect(
+                &Settings::mcpSettings(), &Settings::MCPSettings::serverUrlsChanged, this, [this]() {
+                    onMCPServerUrlsChanged();
+                });
+        }
         CustomInstructionsManager::instance().loadInstructions();
 
         CustomInstructionsManager::instance().loadInstructions();
@@ -295,6 +309,60 @@ private:
         m_updater->checkForUpdates();
     }
 
+    void initializeMCPServers()
+    {
+        if (!m_mcpClientManager) {
+            return;
+        }
+
+        auto serverUrls = Settings::mcpSettings().getServerUrls();
+        for (const auto &url : serverUrls) {
+            if (!url.isEmpty()) {
+                MCP::MCPServerConfig config;
+                config.name = url; // Use URL as name for simplicity
+                config.url = url;
+                config.useStdio = false; // Default to HTTP/SSE transport
+
+                m_mcpClientManager->addServer(config);
+                m_mcpClientManager->connectToServer(config.name);
+            }
+        }
+    }
+
+    void onMCPServerUrlsChanged()
+    {
+        if (!m_mcpClientManager) {
+            return;
+        }
+
+        // Get current URLs from settings
+        auto currentUrls = Settings::mcpSettings().getServerUrls();
+
+        // Get list of currently managed servers
+        QStringList managedServers = m_mcpClientManager->getServerNames();
+
+        // Remove servers that are no longer in settings
+        for (const auto &serverName : managedServers) {
+            if (!currentUrls.contains(serverName)) {
+                m_mcpClientManager->disconnectFromServer(serverName);
+                m_mcpClientManager->removeServer(serverName);
+            }
+        }
+
+        // Check for new URLs that aren't already managed
+        for (const auto &url : currentUrls) {
+            if (!url.isEmpty() && !managedServers.contains(url)) {
+                MCP::MCPServerConfig config;
+                config.name = url;
+                config.url = url;
+                config.useStdio = false; // Default to HTTP/SSE transport
+
+                m_mcpClientManager->addServer(config);
+                m_mcpClientManager->connectToServer(config.name);
+            }
+        }
+    }
+
     void handleUpdateCheckResult(const PluginUpdater::UpdateInfo &info)
     {
         if (!info.isUpdateAvailable)
@@ -314,6 +382,7 @@ private:
     UpdateStatusWidget *m_statusWidget{nullptr};
     QString m_lastRefactorInstructions;
     QScopedPointer<Chat::ChatView> m_chatView;
+    QScopedPointer<MCP::MCPClientManager> m_mcpClientManager;
 };
 
 } // namespace QodeAssist::Internal

@@ -30,6 +30,10 @@
 #include "PromptTemplate.hpp"
 #include "RequestType.hpp"
 
+namespace QodeAssist::MCP {
+class MCPClientManager;
+}
+
 class QNetworkReply;
 class QJsonObject;
 
@@ -68,6 +72,8 @@ public:
     virtual bool supportsTools() const { return false; };
     virtual bool supportThinking() const { return false; };
     virtual bool supportImage() const { return false; };
+
+    virtual void setMCPClientManager(MCP::MCPClientManager *mcpManager) { Q_UNUSED(mcpManager) };
 
     virtual void cancelRequest(const RequestID &requestId);
 

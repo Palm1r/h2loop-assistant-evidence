@@ -23,8 +23,9 @@
 #include "logger/Logger.hpp"
 #include "settings/ChatAssistantSettings.hpp"
 #include "settings/CodeCompletionSettings.hpp"
-#include "settings/QuickRefactorSettings.hpp"
 #include "settings/GeneralSettings.hpp"
+#include "settings/QuickRefactorSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 #include <QEventLoop>
 #include <QJsonArray>
@@ -112,8 +113,8 @@ void LlamaCppProvider::prepareRequest(
             filter = LLMCore::RunToolsFilter::OnlyRead;
         }
 
-        auto toolsDefinitions = m_toolsManager->getToolsDefinitions(
-            LLMCore::ToolSchemaFormat::OpenAI, filter);
+        auto toolsDefinitions
+            = m_toolsManager->getToolsDefinitions(LLMCore::ToolSchemaFormat::OpenAI, filter);
         if (!toolsDefinitions.isEmpty()) {
             request["tools"] = toolsDefinitions;
             LOG_MESSAGE(QString("Added %1 tools to llama.cpp request").arg(toolsDefinitions.size()));
@@ -198,12 +199,19 @@ void LlamaCppProvider::sendRequest(
     LOG_MESSAGE(
         QString("LlamaCppProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool LlamaCppProvider::supportsTools() const
 {
     return true;
+}
+
+void LlamaCppProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->setMCPClientManager(mcpManager);
+    }
 }
 
 bool LlamaCppProvider::supportImage() const

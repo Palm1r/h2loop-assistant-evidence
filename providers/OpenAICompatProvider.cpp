@@ -23,9 +23,10 @@
 #include "logger/Logger.hpp"
 #include "settings/ChatAssistantSettings.hpp"
 #include "settings/CodeCompletionSettings.hpp"
-#include "settings/QuickRefactorSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include "settings/QuickRefactorSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -112,8 +113,8 @@ void OpenAICompatProvider::prepareRequest(
             filter = LLMCore::RunToolsFilter::OnlyRead;
         }
 
-        auto toolsDefinitions = m_toolsManager->getToolsDefinitions(
-            LLMCore::ToolSchemaFormat::OpenAI, filter);
+        auto toolsDefinitions
+            = m_toolsManager->getToolsDefinitions(LLMCore::ToolSchemaFormat::OpenAI, filter);
         if (!toolsDefinitions.isEmpty()) {
             request["tools"] = toolsDefinitions;
             LOG_MESSAGE(
@@ -184,12 +185,19 @@ void OpenAICompatProvider::sendRequest(
     LOG_MESSAGE(
         QString("OpenAICompatProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool OpenAICompatProvider::supportsTools() const
 {
     return true;
+}
+
+void OpenAICompatProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->setMCPClientManager(mcpManager);
+    }
 }
 
 bool OpenAICompatProvider::supportImage() const

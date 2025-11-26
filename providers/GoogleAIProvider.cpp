@@ -30,9 +30,10 @@
 #include "logger/Logger.hpp"
 #include "settings/ChatAssistantSettings.hpp"
 #include "settings/CodeCompletionSettings.hpp"
-#include "settings/QuickRefactorSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include "settings/QuickRefactorSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 namespace QodeAssist::Providers {
 
@@ -147,8 +148,8 @@ void GoogleAIProvider::prepareRequest(
             filter = LLMCore::RunToolsFilter::OnlyRead;
         }
 
-        auto toolsDefinitions = m_toolsManager->getToolsDefinitions(
-            LLMCore::ToolSchemaFormat::Google, filter);
+        auto toolsDefinitions
+            = m_toolsManager->getToolsDefinitions(LLMCore::ToolSchemaFormat::Google, filter);
         if (!toolsDefinitions.isEmpty()) {
             request["tools"] = toolsDefinitions;
             LOG_MESSAGE(QString("Added %1 tools to Google AI request").arg(toolsDefinitions.size()));
@@ -212,8 +213,7 @@ QList<QString> GoogleAIProvider::validateRequest(
              {"maxOutputTokens", {}},
              {"topP", {}},
              {"topK", {}},
-             {"thinkingConfig",
-              QJsonObject{{"thinkingBudget", {}}, {"includeThoughts", {}}}}}},
+             {"thinkingConfig", QJsonObject{{"thinkingBudget", {}}, {"includeThoughts", {}}}}}},
         {"safetySettings", QJsonArray{}},
         {"tools", QJsonArray{}}};
 
@@ -260,12 +260,19 @@ void GoogleAIProvider::sendRequest(
     LOG_MESSAGE(
         QString("GoogleAIProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool GoogleAIProvider::supportsTools() const
 {
     return true;
+}
+
+void GoogleAIProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->setMCPClientManager(mcpManager);
+    }
 }
 
 bool GoogleAIProvider::supportThinking() const
@@ -345,9 +352,9 @@ void GoogleAIProvider::onRequestFinished(
 
     if (m_messages.contains(requestId)) {
         GoogleMessage *message = m_messages[requestId];
-        
+
         handleMessageComplete(requestId);
-        
+
         if (message->state() == LLMCore::MessageState::RequiresToolExecution) {
             LOG_MESSAGE(QString("Waiting for tools to complete for %1").arg(requestId));
             m_dataBuffers.remove(requestId);
@@ -445,17 +452,17 @@ void GoogleAIProvider::processStreamChunk(const QString &requestId, const QJsonO
                     if (partObj.contains("text")) {
                         QString text = partObj["text"].toString();
                         bool isThought = partObj.value("thought").toBool(false);
-                        
+
                         if (isThought) {
                             message->handleThoughtDelta(text);
-                            
+
                             if (partObj.contains("signature")) {
                                 QString signature = partObj["signature"].toString();
                                 message->handleThoughtSignature(signature);
                             }
                         } else {
                             emitPendingThinkingBlocks(requestId);
-                            
+
                             message->handleContentDelta(text);
 
                             LLMCore::DataBuffers &buffers = m_dataBuffers[requestId];
@@ -463,15 +470,15 @@ void GoogleAIProvider::processStreamChunk(const QString &requestId, const QJsonO
                             emit partialResponseReceived(requestId, text);
                         }
                     }
-                    
+
                     if (partObj.contains("thoughtSignature")) {
                         QString signature = partObj["thoughtSignature"].toString();
                         message->handleThoughtSignature(signature);
                     }
-                    
+
                     if (partObj.contains("functionCall")) {
                         emitPendingThinkingBlocks(requestId);
-                        
+
                         QJsonObject functionCall = partObj["functionCall"].toObject();
                         QString name = functionCall["name"].toString();
                         QJsonObject args = functionCall["args"].toObject();
@@ -488,7 +495,7 @@ void GoogleAIProvider::processStreamChunk(const QString &requestId, const QJsonO
         if (candidateObj.contains("finishReason")) {
             QString finishReason = candidateObj["finishReason"].toString();
             message->handleFinishReason(finishReason);
-            
+
             if (message->isErrorFinishReason()) {
                 QString errorMessage = message->getErrorMessage();
                 LOG_MESSAGE(QString("Google AI error: %1").arg(errorMessage));
@@ -498,13 +505,13 @@ void GoogleAIProvider::processStreamChunk(const QString &requestId, const QJsonO
             }
         }
     }
-    
+
     if (chunk.contains("usageMetadata")) {
         QJsonObject usageMetadata = chunk["usageMetadata"].toObject();
         int thoughtsTokenCount = usageMetadata.value("thoughtsTokenCount").toInt(0);
         int candidatesTokenCount = usageMetadata.value("candidatesTokenCount").toInt(0);
         int totalTokenCount = usageMetadata.value("totalTokenCount").toInt(0);
-        
+
         if (totalTokenCount > 0) {
             LOG_MESSAGE(QString("Google AI tokens: %1 (thoughts: %2, output: %3)")
                             .arg(totalTokenCount)
@@ -521,7 +528,7 @@ void GoogleAIProvider::emitPendingThinkingBlocks(const QString &requestId)
 
     GoogleMessage *message = m_messages[requestId];
     auto thinkingBlocks = message->getCurrentThinkingContent();
-    
+
     if (thinkingBlocks.isEmpty())
         return;
 
@@ -530,15 +537,13 @@ void GoogleAIProvider::emitPendingThinkingBlocks(const QString &requestId)
 
     for (int i = alreadyEmitted; i < totalBlocks; ++i) {
         auto thinkingContent = thinkingBlocks[i];
-        
+
         if (thinkingContent->thinking().trimmed().isEmpty()) {
             continue;
         }
-        
+
         emit thinkingBlockReceived(
-            requestId, 
-            thinkingContent->thinking(), 
-            thinkingContent->signature());
+            requestId, thinkingContent->thinking(), thinkingContent->signature());
     }
 
     m_emittedThinkingBlocksCount[requestId] = totalBlocks;

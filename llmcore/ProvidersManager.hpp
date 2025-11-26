@@ -24,6 +24,10 @@
 #include "IProviderRegistry.hpp"
 #include <QMap>
 
+namespace QodeAssist::MCP {
+class MCPClientManager;
+}
+
 namespace QodeAssist::LLMCore {
 
 class ProvidersManager : public IProviderRegistry
@@ -45,12 +49,16 @@ public:
 
     QStringList providersNames() const override;
 
+    void setMCPClientManager(MCP::MCPClientManager *mcpManager);
+    MCP::MCPClientManager *mcpClientManager() const;
+
 private:
     ProvidersManager() = default;
     ProvidersManager(const ProvidersManager &) = delete;
     ProvidersManager &operator=(const ProvidersManager &) = delete;
 
     QMap<QString, Provider *> m_providers;
+    MCP::MCPClientManager *m_mcpClientManager = nullptr;
 };
 
 } // namespace QodeAssist::LLMCore

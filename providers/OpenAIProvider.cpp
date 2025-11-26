@@ -26,6 +26,7 @@
 #include "settings/QuickRefactorSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 #include <QEventLoop>
 #include <QJsonArray>
@@ -44,6 +45,13 @@ OpenAIProvider::OpenAIProvider(QObject *parent)
         &Tools::ToolsManager::toolExecutionComplete,
         this,
         &OpenAIProvider::onToolExecutionComplete);
+}
+
+void OpenAIProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->setMCPClientManager(mcpManager);
+    }
 }
 
 QString OpenAIProvider::name() const
@@ -240,7 +248,7 @@ void OpenAIProvider::sendRequest(
 
     LOG_MESSAGE(QString("OpenAIProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool OpenAIProvider::supportsTools() const

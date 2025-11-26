@@ -28,6 +28,10 @@
 #include "ToolsFactory.hpp"
 #include <llmcore/BaseTool.hpp>
 
+namespace QodeAssist::MCP {
+class MCPClientManager;
+}
+
 namespace QodeAssist::Tools {
 
 struct PendingTool
@@ -66,8 +70,11 @@ public:
 
     ToolsFactory *toolsFactory() const;
 
+    void setMCPClientManager(MCP::MCPClientManager *mcpManager);
+
 signals:
     void toolExecutionComplete(const QString &requestId, const QHash<QString, QString> &toolResults);
+    void toolsChanged();
 
 private slots:
     void onToolFinished(

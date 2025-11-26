@@ -29,9 +29,10 @@
 #include "logger/Logger.hpp"
 #include "settings/ChatAssistantSettings.hpp"
 #include "settings/CodeCompletionSettings.hpp"
-#include "settings/QuickRefactorSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include "settings/QuickRefactorSettings.hpp"
+#include <mcp/MCPClientManager.hpp>
 
 namespace QodeAssist::Providers {
 
@@ -118,8 +119,8 @@ void OllamaProvider::prepareRequest(
             filter = LLMCore::RunToolsFilter::OnlyRead;
         }
 
-        auto toolsDefinitions = m_toolsManager->toolsFactory()->getToolsDefinitions(
-            LLMCore::ToolSchemaFormat::Ollama, filter);
+        auto toolsDefinitions = m_toolsManager->toolsFactory()
+                                    ->getToolsDefinitions(LLMCore::ToolSchemaFormat::Ollama, filter);
         if (!toolsDefinitions.isEmpty()) {
             request["tools"] = toolsDefinitions;
             LOG_MESSAGE(
@@ -183,7 +184,8 @@ QList<QString> OllamaProvider::validateRequest(const QJsonObject &request, LLMCo
         {"keep_alive", {}},
         {"model", {}},
         {"stream", {}},
-        {"messages", QJsonArray{{QJsonObject{{"role", {}}, {"content", {}}, {"images", QJsonArray{}}}}}},
+        {"messages",
+         QJsonArray{{QJsonObject{{"role", {}}, {"content", {}}, {"images", QJsonArray{}}}}}},
         {"tools", QJsonArray{}},
         {"options",
          QJsonObject{
@@ -234,12 +236,19 @@ void OllamaProvider::sendRequest(
 
     LOG_MESSAGE(QString("OllamaProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
-    emit httpClient()->sendRequest(request);
+    emit httpClient() -> sendRequest(request);
 }
 
 bool OllamaProvider::supportsTools() const
 {
     return true;
+}
+
+void OllamaProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
+{
+    if (mcpManager) {
+        m_toolsManager->setMCPClientManager(mcpManager);
+    }
 }
 
 bool OllamaProvider::supportImage() const
@@ -437,8 +446,7 @@ void OllamaProvider::processStreamData(const QString &requestId, const QJsonObje
                 message->handleToolCall(toolCallValue.toObject());
             }
         }
-    }
-    else if (data.contains("response")) {
+    } else if (data.contains("response")) {
         QString content = data["response"].toString();
         if (!content.isEmpty()) {
             message->handleContentDelta(content);

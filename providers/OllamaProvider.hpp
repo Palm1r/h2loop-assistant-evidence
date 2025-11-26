@@ -54,6 +54,7 @@ public:
         const LLMCore::RequestID &requestId, const QUrl &url, const QJsonObject &payload) override;
 
     bool supportsTools() const override;
+    void setMCPClientManager(MCP::MCPClientManager *mcpManager) override;
     bool supportImage() const override;
     void cancelRequest(const LLMCore::RequestID &requestId) override;
 

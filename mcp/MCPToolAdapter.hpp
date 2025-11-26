@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2025 Petr Mironychev
  *
  * This file is part of QodeAssist.
@@ -19,37 +19,31 @@
 
 #pragma once
 
-#include <QObject>
-
+#include "MCPClientManager.hpp"
 #include <llmcore/BaseTool.hpp>
 
 namespace QodeAssist::MCP {
-class MCPClientManager;
-}
 
-namespace QodeAssist::Tools {
-
-class ToolsFactory : public QObject
+class MCPToolAdapter : public LLMCore::BaseTool
 {
     Q_OBJECT
+
 public:
-    ToolsFactory(QObject *parent = nullptr);
-    ~ToolsFactory() override = default;
+    explicit MCPToolAdapter(
+        const MCPToolInfo &toolInfo, MCPClientManager *clientManager, QObject *parent = nullptr);
+    ~MCPToolAdapter() override = default;
 
-    QList<LLMCore::BaseTool *> getAvailableTools() const;
-    LLMCore::BaseTool *getToolByName(const QString &name) const;
-    QJsonArray getToolsDefinitions(
-        LLMCore::ToolSchemaFormat format,
-        LLMCore::RunToolsFilter filter = LLMCore::RunToolsFilter::ALL) const;
-    QString getStringName(const QString &name) const;
+    QString name() const override;
+    QString stringName() const override;
+    QString description() const override;
+    QJsonObject getDefinition(LLMCore::ToolSchemaFormat format) const override;
+    LLMCore::ToolPermissions requiredPermissions() const override;
 
-    void registerMCPTools(MCP::MCPClientManager *mcpManager);
+    QFuture<QString> executeAsync(const QJsonObject &input = QJsonObject()) override;
 
 private:
-    void registerTools();
-    void registerTool(LLMCore::BaseTool *tool);
-
-    QHash<QString, LLMCore::BaseTool *> m_tools;
-    QList<LLMCore::BaseTool *> m_mcpTools; // Keep track of MCP tools for cleanup
+    MCPToolInfo m_toolInfo;
+    MCPClientManager *m_clientManager;
 };
-} // namespace QodeAssist::Tools
+
+} // namespace QodeAssist::MCP

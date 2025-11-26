@@ -35,6 +35,9 @@
 #include "ProjectSearchTool.hpp"
 #include "ReadVisibleFilesTool.hpp"
 
+#include <mcp/MCPClientManager.hpp>
+#include <mcp/MCPToolAdapter.hpp>
+
 namespace QodeAssist::Tools {
 
 ToolsFactory::ToolsFactory(QObject *parent)
@@ -178,6 +181,33 @@ QJsonArray ToolsFactory::getToolsDefinitions(
 QString ToolsFactory::getStringName(const QString &name) const
 {
     return m_tools.contains(name) ? m_tools.value(name)->stringName() : QString("Unknown tools");
+}
+
+void ToolsFactory::registerMCPTools(MCP::MCPClientManager *mcpManager)
+{
+    if (!mcpManager) {
+        LOG_MESSAGE("Warning: MCP manager is null, cannot register MCP tools");
+        return;
+    }
+
+    // Clear existing MCP tools
+    for (auto tool : m_mcpTools) {
+        if (tool) {
+            m_tools.remove(tool->name());
+            delete tool;
+        }
+    }
+    m_mcpTools.clear();
+
+    // Get available MCP tools and create adapters
+    auto mcpTools = mcpManager->getAvailableTools();
+    for (const auto &toolInfo : mcpTools) {
+        auto adapter = new MCP::MCPToolAdapter(toolInfo, mcpManager, this);
+        m_mcpTools.append(adapter);
+        registerTool(adapter);
+    }
+
+    LOG_MESSAGE(QString("Registered %1 MCP tools").arg(m_mcpTools.size()));
 }
 
 } // namespace QodeAssist::Tools

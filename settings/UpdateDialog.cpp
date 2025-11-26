@@ -65,22 +65,6 @@ UpdateDialog::UpdateDialog(QWidget *parent)
 
     m_layout->addSpacing(20);
 
-    auto *updaterInfoLabel = new QLabel(
-        tr("QodeAssistUpdater - convenient tool for plugin installation and updates"), this);
-    updaterInfoLabel->setAlignment(Qt::AlignCenter);
-    updaterInfoLabel->setWordWrap(true);
-    m_layout->addWidget(updaterInfoLabel);
-
-    m_buttonOpenUpdaterRelease = new QPushButton(tr("Download QodeAssistUpdater"), this);
-    m_buttonOpenUpdaterRelease->setMaximumWidth(250);
-    auto *updaterButtonLayout = new QHBoxLayout;
-    updaterButtonLayout->addStretch();
-    updaterButtonLayout->addWidget(m_buttonOpenUpdaterRelease);
-    updaterButtonLayout->addStretch();
-    m_layout->addLayout(updaterButtonLayout);
-
-    m_layout->addSpacing(20);
-
     m_titleLabel = new QLabel(tr("A new version of H2Loop Assistant is available!"), this);
     m_titleLabel->setStyleSheet("font-weight: bold; font-size: 14px;");
     m_titleLabel->setAlignment(Qt::AlignCenter);
