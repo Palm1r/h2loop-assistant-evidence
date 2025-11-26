@@ -178,6 +178,21 @@ ChatRootView {
                 height: 30
             }
 
+            footer: Item {
+                width: ListView.view.width - scroll.width
+                height: root.isRequestInProgress ? 50 : 0
+
+                Behavior on height {
+                    NumberAnimation { duration: 200; easing.type: Easing.InOutQuad }
+                }
+
+                BusyIndicator {
+                    anchors.centerIn: parent
+                    running: root.isRequestInProgress
+                    visible: running
+                }
+            }
+
             ScrollBar.vertical: QQC.ScrollBar {
                 id: scroll
             }
