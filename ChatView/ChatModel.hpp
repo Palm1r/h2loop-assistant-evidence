@@ -37,19 +37,29 @@ class ChatModel : public QAbstractListModel
     QML_ELEMENT
 
 public:
-    enum ChatRole { System, User, Assistant, Tool, FileEdit };
+    enum ChatRole { System, User, Assistant, Tool, FileEdit, Thinking };
     Q_ENUM(ChatRole)
 
-    enum Roles { RoleType = Qt::UserRole, Content, Attachments };
+    enum Roles { RoleType = Qt::UserRole, Content, Attachments, IsRedacted, Images };
     Q_ENUM(Roles)
+
+    struct ImageAttachment
+    {
+        QString fileName;      // Original filename
+        QString storedPath;    // Path to stored image file (relative to chat folder)
+        QString mediaType;     // MIME type
+    };
 
     struct Message
     {
         ChatRole role;
         QString content;
         QString id;
+        bool isRedacted = false;
+        QString signature = QString();
 
         QList<Context::ContentFile> attachments;
+        QList<ImageAttachment> images;
     };
 
     explicit ChatModel(QObject *parent = nullptr);
@@ -62,7 +72,8 @@ public:
         const QString &content,
         ChatRole role,
         const QString &id,
-        const QList<Context::ContentFile> &attachments = {});
+        const QList<Context::ContentFile> &attachments = {},
+        const QList<ImageAttachment> &images = {});
     Q_INVOKABLE void clear();
     Q_INVOKABLE QList<MessagePart> processMessageContent(const QString &content) const;
 
@@ -83,10 +94,16 @@ public:
         const QString &toolId,
         const QString &toolName,
         const QString &result);
+    void addThinkingBlock(
+        const QString &requestId, const QString &thinking, const QString &signature);
+    void addRedactedThinkingBlock(const QString &requestId, const QString &signature);
     void updateMessageContent(const QString &messageId, const QString &newContent);
 
     void setLoadingFromHistory(bool loading);
     bool isLoadingFromHistory() const;
+    
+    void setChatFilePath(const QString &filePath);
+    QString chatFilePath() const;
 
 signals:
     void tokensThresholdChanged();
@@ -104,6 +121,7 @@ private:
 
     QVector<Message> m_messages;
     bool m_loadingFromHistory = false;
+    QString m_chatFilePath;
 };
 
 } // namespace QodeAssist::Chat

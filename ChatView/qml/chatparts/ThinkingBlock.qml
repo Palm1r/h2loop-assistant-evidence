@@ -23,12 +23,12 @@ import Qt.labs.platform as Platform
 Rectangle {
     id: root
 
-    property string toolContent: ""
+    property string thinkingContent: ""
+    // property string signature: ""
+    property bool isRedacted: false
     property bool expanded: false
-
-    readonly property int firstNewline: toolContent.indexOf('\n')
-    readonly property string toolName: firstNewline > 0 ? toolContent.substring(0, firstNewline) : toolContent
-    readonly property string toolResult: firstNewline > 0 ? toolContent.substring(firstNewline + 1) : ""
+    
+    property alias headerOpacity: headerRow.opacity
 
     radius: 6
     color: palette.base
@@ -58,7 +58,8 @@ Rectangle {
             spacing: 8
 
             Text {
-                text: qsTr("Tool: %1").arg(root.toolName)
+                text: root.isRedacted ? qsTr("Thinking (Redacted)")
+                                      : qsTr("Thinking")
                 font.pixelSize: 13
                 font.bold: true
                 color: palette.text
@@ -84,11 +85,22 @@ Rectangle {
         }
         spacing: 8
 
-        TextEdit {
-            id: resultText
-
+        Text {
+            visible: root.isRedacted
             width: parent.width
-            text: root.toolResult
+            text: qsTr("Thinking content was redacted by safety systems")
+            font.pixelSize: 11
+            font.italic: true
+            color: Qt.rgba(0.8, 0.4, 0.4, 1.0)
+            wrapMode: Text.WordWrap
+        }
+
+        TextEdit {
+            id: thinkingText
+
+            visible: !root.isRedacted
+            width: parent.width
+            text: root.thinkingContent
             readOnly: true
             selectByMouse: true
             color: palette.text
@@ -97,6 +109,30 @@ Rectangle {
             font.pixelSize: 11
             selectionColor: palette.highlight
         }
+
+        // Rectangle {
+        //     visible: root.signature.length > 0 && root.expanded
+        //     width: parent.width
+        //     height: signatureText.height + 10
+        //     color: palette.alternateBase
+        //     radius: 4
+
+        //     Text {
+        //         id: signatureText
+
+        //         anchors {
+        //             left: parent.left
+        //             right: parent.right
+        //             verticalCenter: parent.verticalCenter
+        //             margins: 5
+        //         }
+        //         text: qsTr("Signature: %1").arg(root.signature.substring(0, Math.min(40, root.signature.length)) + "...")
+        //         font.pixelSize: 9
+        //         font.family: "monospace"
+        //         color: palette.mid
+        //         elide: Text.ElideRight
+        //     }
+        // }
     }
 
     MouseArea {
@@ -110,36 +146,22 @@ Rectangle {
         id: contextMenu
 
         Platform.MenuItem {
-            text: qsTr("Copy")
-            enabled: resultText.selectedText.length > 0
-            onTriggered: resultText.copy()
-        }
-
-        Platform.MenuItem {
-            text: qsTr("Select All")
-            enabled: resultText.text.length > 0
-            onTriggered: resultText.selectAll()
-        }
-
-        Platform.MenuSeparator {}
-
-        Platform.MenuItem {
             text: root.expanded ? qsTr("Collapse") : qsTr("Expand")
             onTriggered: root.expanded = !root.expanded
         }
     }
 
     Rectangle {
-        id: messageMarker
+        id: thinkingMarker
 
         anchors.verticalCenter: parent.verticalCenter
         width: 3
         height: root.height - root.radius
-        color: root.color.hslLightness > 0.5 ? Qt.darker(palette.alternateBase, 1.3)
-                                             : Qt.lighter(palette.alternateBase, 1.3)
+        color: root.isRedacted ? Qt.rgba(0.8, 0.3, 0.3, 0.9)
+                               : (root.color.hslLightness > 0.5 ? Qt.darker(palette.alternateBase, 1.3)
+                                                                : Qt.lighter(palette.alternateBase, 1.3))
         radius: root.radius
     }
-
 
     states: [
         State {
@@ -158,3 +180,4 @@ Rectangle {
         }
     ]
 }
+

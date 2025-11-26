@@ -25,6 +25,7 @@
 #include "settings/CodeCompletionSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
+#include "settings/QuickRefactorSettings.hpp"
 #include <mcp/MCPClientManager.hpp>
 
 #include <QEventLoop>
@@ -170,6 +171,11 @@ void LMStudioProvider::setMCPClientManager(MCP::MCPClientManager *mcpManager)
     }
 }
 
+bool LMStudioProvider::supportImage() const
+{
+    return true;
+}
+
 void LMStudioProvider::cancelRequest(const LLMCore::RequestID &requestId)
 {
     LOG_MESSAGE(QString("LMStudioProvider: Cancelling request %1").arg(requestId));
@@ -231,7 +237,8 @@ void LMStudioProvider::prepareRequest(
     LLMCore::PromptTemplate *prompt,
     LLMCore::ContextData context,
     LLMCore::RequestType type,
-    bool isToolsEnabled)
+    bool isToolsEnabled,
+    bool isThinkingEnabled)
 {
     if (!prompt->isSupportProvider(providerID())) {
         LOG_MESSAGE(QString("Template %1 doesn't support %2 provider").arg(name(), prompt->name()));
@@ -255,13 +262,20 @@ void LMStudioProvider::prepareRequest(
 
     if (type == LLMCore::RequestType::CodeCompletion) {
         applyModelParams(Settings::codeCompletionSettings());
+    } else if (type == LLMCore::RequestType::QuickRefactoring) {
+        applyModelParams(Settings::quickRefactorSettings());
     } else {
         applyModelParams(Settings::chatAssistantSettings());
     }
 
     if (isToolsEnabled) {
-        auto toolsDefinitions = m_toolsManager->getToolsDefinitions(
-            LLMCore::ToolSchemaFormat::OpenAI);
+        LLMCore::RunToolsFilter filter = LLMCore::RunToolsFilter::ALL;
+        if (type == LLMCore::RequestType::QuickRefactoring) {
+            filter = LLMCore::RunToolsFilter::OnlyRead;
+        }
+
+        auto toolsDefinitions
+            = m_toolsManager->getToolsDefinitions(LLMCore::ToolSchemaFormat::OpenAI, filter);
         if (!toolsDefinitions.isEmpty()) {
             request["tools"] = toolsDefinitions;
             LOG_MESSAGE(QString("Added %1 tools to LMStudio request").arg(toolsDefinitions.size()));

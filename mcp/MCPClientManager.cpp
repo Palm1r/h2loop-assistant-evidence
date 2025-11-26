@@ -59,6 +59,7 @@ void MCPClientManager::removeServer(const QString &serverName)
 {
     if (m_servers.contains(serverName)) {
         disconnectFromServer(serverName);
+        delete m_servers[serverName];
         m_servers.remove(serverName);
     }
 }

@@ -59,32 +59,106 @@ CodeCompletionSettings::CodeCompletionSettings()
     modelOutputHandler.addOption("Raw text");
     modelOutputHandler.setDefaultValue("Auto");
     modelOutputHandler.setToolTip(
-        Tr::tr("Auto: Automatically detects codeblock and applies processing when found, other "
-               "text as comments\n"
-               "Force Processing: Always processes text with codeblock formatting and other text "
-               "as comments\n"
-               "Raw Text: Shows unprocessed text without any formatting"));
+        Tr::tr(
+            "Auto: Automatically detects codeblock and applies processing when found, other "
+            "text as comments\n"
+            "Force Processing: Always processes text with codeblock formatting and other text "
+            "as comments\n"
+            "Raw Text: Shows unprocessed text without any formatting"));
+
+    completionTriggerMode.setLabelText(Tr::tr("Completion trigger mode:"));
+    completionTriggerMode.setSettingsKey(Constants::CC_COMPLETION_TRIGGER_MODE);
+    completionTriggerMode.setDisplayStyle(Utils::SelectionAspect::DisplayStyle::ComboBox);
+    completionTriggerMode.addOption("Hint-based (Tab to trigger)");
+    completionTriggerMode.addOption("Automatic");
+    completionTriggerMode.setDefaultValue("Automatic");
+    completionTriggerMode.setToolTip(
+        Tr::tr(
+            "Hint-based: Shows a hint when typing, press Tab to request completion\n"
+            "Automatic: Automatically requests completion after typing threshold"));
+
+    completionTriggerMode.setLabelText(Tr::tr("Completion trigger mode:"));
+    completionTriggerMode.setSettingsKey(Constants::CC_COMPLETION_TRIGGER_MODE);
+    completionTriggerMode.setDisplayStyle(Utils::SelectionAspect::DisplayStyle::ComboBox);
+    completionTriggerMode.addOption("Hint-based (Tab to trigger)");
+    completionTriggerMode.addOption("Automatic");
+    completionTriggerMode.setDefaultValue("Hint-based (Tab to trigger)");
+    completionTriggerMode.setToolTip(
+        Tr::tr(
+            "Hint-based: Shows a hint when typing, press Tab to request completion\n"
+            "Automatic: Automatically requests completion after typing threshold"));
 
     startSuggestionTimer.setSettingsKey(Constants::СС_START_SUGGESTION_TIMER);
     startSuggestionTimer.setLabelText(Tr::tr("with delay(ms)"));
+    startSuggestionTimer.setToolTip(
+        Tr::tr(
+            "Delay before sending the completion request.\n"
+            "(Only for Automatic trigger mode)"));
     startSuggestionTimer.setRange(10, 10000);
     startSuggestionTimer.setDefaultValue(350);
 
     autoCompletionCharThreshold.setSettingsKey(Constants::СС_AUTO_COMPLETION_CHAR_THRESHOLD);
     autoCompletionCharThreshold.setLabelText(Tr::tr("AI suggestion triggers after typing"));
     autoCompletionCharThreshold.setToolTip(
-        Tr::tr("The number of characters that need to be typed within the typing interval "
-               "before an AI suggestion request is sent."));
+        Tr::tr(
+            "The number of characters that need to be typed within the typing interval "
+            "before an AI suggestion request is sent automatically.\n"
+            "(Only for Automatic trigger mode)"));
     autoCompletionCharThreshold.setRange(0, 10);
     autoCompletionCharThreshold.setDefaultValue(1);
 
     autoCompletionTypingInterval.setSettingsKey(Constants::СС_AUTO_COMPLETION_TYPING_INTERVAL);
     autoCompletionTypingInterval.setLabelText(Tr::tr("character(s) within(ms)"));
     autoCompletionTypingInterval.setToolTip(
-        Tr::tr("The time window (in milliseconds) during which the character threshold "
-               "must be met to trigger an AI suggestion request."));
+        Tr::tr(
+            "The time window (in milliseconds) during which the character threshold "
+            "must be met to trigger an AI suggestion request automatically.\n"
+            "(Only for Automatic trigger mode)"));
     autoCompletionTypingInterval.setRange(500, 5000);
     autoCompletionTypingInterval.setDefaultValue(1200);
+
+    hintCharThreshold.setSettingsKey(Constants::CC_HINT_CHAR_THRESHOLD);
+    hintCharThreshold.setLabelText(Tr::tr("Hint shows after typing"));
+    hintCharThreshold.setToolTip(
+        Tr::tr(
+            "The number of characters that need to be typed before the hint widget appears "
+            "(only for Hint-based trigger mode)."));
+    hintCharThreshold.setRange(1, 10);
+    hintCharThreshold.setDefaultValue(3);
+
+    hintHideTimeout.setSettingsKey(Constants::CC_HINT_HIDE_TIMEOUT);
+    hintHideTimeout.setLabelText(Tr::tr("Hint auto-hide timeout (ms)"));
+    hintHideTimeout.setToolTip(
+        Tr::tr(
+            "Time in milliseconds after which the hint widget will automatically hide "
+            "(only for Hint-based trigger mode)."));
+    hintHideTimeout.setRange(500, 10000);
+    hintHideTimeout.setDefaultValue(4000);
+
+    hintTriggerKey.setLabelText(Tr::tr("Trigger key:"));
+    hintTriggerKey.setSettingsKey(Constants::CC_HINT_TRIGGER_KEY);
+    hintTriggerKey.setDisplayStyle(Utils::SelectionAspect::DisplayStyle::ComboBox);
+    hintTriggerKey.addOption("Space");
+    hintTriggerKey.addOption("Ctrl+Space");
+    hintTriggerKey.addOption("Alt+Space");
+    hintTriggerKey.addOption("Ctrl+Enter");
+    hintTriggerKey.addOption("Tab");
+    hintTriggerKey.addOption("Enter");
+    hintTriggerKey.setDefaultValue("Tab");
+    hintTriggerKey.setToolTip(
+        Tr::tr(
+            "Key to press for requesting completion when hint is visible.\n"
+            "Space is recommended as least conflicting with context menu.\n"
+            "(Only for Hint-based trigger mode)"));
+
+    ignoreWhitespaceInCharCount.setSettingsKey(Constants::CC_IGNORE_WHITESPACE_IN_CHAR_COUNT);
+    ignoreWhitespaceInCharCount.setLabelText(Tr::tr("Ignore spaces and tabs in character count"));
+    ignoreWhitespaceInCharCount.setDefaultValue(true);
+    ignoreWhitespaceInCharCount.setToolTip(
+        Tr::tr(
+            "When enabled, spaces and tabs are not counted towards the character threshold "
+            "for triggering completions. This helps trigger completions based on actual code "
+            "characters only."));
 
     // General Parameters Settings
     temperature.setSettingsKey(Constants::CC_TEMPERATURE);
@@ -201,16 +275,27 @@ CodeCompletionSettings::CodeCompletionSettings()
     customLanguages.setSettingsKey(Constants::CC_CUSTOM_LANGUAGES);
     customLanguages.setLabelText(
         Tr::tr("Additional Programming Languages for handling: Example: rust,//,rust rs,rs"));
-    customLanguages.setToolTip(Tr::tr("Specify additional programming languages in format: "
-                                      "name,comment_style,model_names,extensions\n"
-                                      "Example: rust,//,rust rs,rs\n"
-                                      "Fields: language name, comment prefix, names from LLM "
-                                      "(space-separated), file extensions (space-separated)"));
+    customLanguages.setToolTip(
+        Tr::tr(
+            "Specify additional programming languages in format: "
+            "name,comment_style,model_names,extensions\n"
+            "Example: rust,//,rust rs,rs\n"
+            "Fields: language name, comment prefix, names from LLM "
+            "(space-separated), file extensions (space-separated)"));
     customLanguages.setDefaultValue({{"cmake,#,cmake,CMakeLists.txt"}, {"qmake,#,qmake,pro pri"}});
 
     showProgressWidget.setSettingsKey(Constants::CC_SHOW_PROGRESS_WIDGET);
     showProgressWidget.setLabelText(Tr::tr("Show progress indicator during code completion"));
     showProgressWidget.setDefaultValue(true);
+
+    abortAssistOnRequest.setSettingsKey(Constants::CC_ABORT_ASSIST_ON_REQUEST);
+    abortAssistOnRequest.setLabelText(Tr::tr("Abort existing assist on new completion request"));
+    abortAssistOnRequest.setToolTip(
+        Tr::tr(
+            "When enabled, cancels any active Qt Creator code assist popup "
+            "before requesting LLM completion.\n"
+            "(Only for Automatic trigger mode)"));
+    abortAssistOnRequest.setDefaultValue(true);
 
     useOpenFilesContext.setSettingsKey(Constants::CC_USE_OPEN_FILES_CONTEXT);
     useOpenFilesContext.setLabelText(Tr::tr("Include context from open files"));
@@ -239,8 +324,9 @@ CodeCompletionSettings::CodeCompletionSettings()
     // Ollama Settings
     ollamaLivetime.setSettingsKey(Constants::CC_OLLAMA_LIVETIME);
     ollamaLivetime.setToolTip(
-        Tr::tr("Time to suspend Ollama after completion request (in minutes), "
-               "Only Ollama,  -1 to disable"));
+        Tr::tr(
+            "Time to suspend Ollama after completion request (in minutes), "
+            "Only Ollama,  -1 to disable"));
     ollamaLivetime.setLabelText("Livetime:");
     ollamaLivetime.setDefaultValue("5m");
     ollamaLivetime.setDisplayStyle(Utils::StringAspect::LineEditDisplay);
@@ -293,35 +379,53 @@ CodeCompletionSettings::CodeCompletionSettings()
                 }},
             Row{useProjectChangesCache, maxChangesCacheSize, Stretch{1}}};
 
-        return Column{Row{Stretch{1}, resetToDefaults},
-                      Space{8},
-                      Group{title(TrConstants::AUTO_COMPLETION_SETTINGS),
-                            Column{autoCompletion,
-                                   Space{8},
-                                   multiLineCompletion,
-                                   Row{modelOutputHandler, Stretch{1}},
-                                   Row{autoCompletionCharThreshold,
-                                       autoCompletionTypingInterval,
-                                       startSuggestionTimer,
-                                       Stretch{1}},
-                                   showProgressWidget,
-                                   useOpenFilesContext}},
-                      Space{8},
-                      Group{title(Tr::tr("General Parameters")),
-                            Column{
-                                Row{genGrid, Stretch{1}},
-                            }},
-                      Space{8},
-                      Group{title(Tr::tr("Advanced Parameters")),
-                            Column{Row{advancedGrid, Stretch{1}}}},
-                      Space{8},
-                      Group{title(Tr::tr("Context Settings")), contextItem},
-                      Space{8},
-                      Group{title(Tr::tr("Quick Refactor Settings")),
-                            Column{useOpenFilesInQuickRefactor, quickRefactorSystemPrompt}},
-                      Space{8},
-                      Group{title(Tr::tr("Ollama Settings")), Column{Row{ollamaGrid, Stretch{1}}}},
-                      Stretch{1}};
+        auto generalSettings = Column{
+            autoCompletion,
+            multiLineCompletion,
+            Row{modelOutputHandler, Stretch{1}},
+            Row{completionTriggerMode, Stretch{1}},
+            showProgressWidget,
+            useOpenFilesContext,
+            abortAssistOnRequest,
+            ignoreWhitespaceInCharCount};
+
+        auto autoTriggerSettings = Column{
+            Row{autoCompletionCharThreshold,
+                autoCompletionTypingInterval,
+                startSuggestionTimer,
+                Stretch{1}}};
+
+        auto hintTriggerSettings = Column{
+            Row{hintCharThreshold, hintHideTimeout, Stretch{1}}, Row{hintTriggerKey, Stretch{1}}};
+
+        return Column{
+            Row{Stretch{1}, resetToDefaults},
+            Space{8},
+            Group{
+                title(TrConstants::AUTO_COMPLETION_SETTINGS),
+                Column{
+                    Group{title(Tr::tr("General Settings")), generalSettings},
+                    Space{8},
+                    Group{title(Tr::tr("Automatic Trigger Mode")), autoTriggerSettings},
+                    Space{8},
+                    Group{title(Tr::tr("Hint-based Trigger Mode")), hintTriggerSettings}}},
+            Space{8},
+            Group{
+                title(Tr::tr("General Parameters")),
+                Column{
+                    Row{genGrid, Stretch{1}},
+                }},
+            Space{8},
+            Group{title(Tr::tr("Advanced Parameters")), Column{Row{advancedGrid, Stretch{1}}}},
+            Space{8},
+            Group{title(Tr::tr("Context Settings")), contextItem},
+            Space{8},
+            Group{
+                title(Tr::tr("Quick Refactor Settings")),
+                Column{useOpenFilesInQuickRefactor, quickRefactorSystemPrompt}},
+            Space{8},
+            Group{title(Tr::tr("Ollama Settings")), Column{Row{ollamaGrid, Stretch{1}}}},
+            Stretch{1}};
     });
 }
 
@@ -389,6 +493,13 @@ void CodeCompletionSettings::resetSettingsToDefaults()
         resetAspect(useOpenFilesInQuickRefactor);
         resetAspect(quickRefactorSystemPrompt);
         resetAspect(modelOutputHandler);
+        resetAspect(completionTriggerMode);
+        resetAspect(hintCharThreshold);
+        resetAspect(hintHideTimeout);
+        resetAspect(hintTriggerKey);
+        resetAspect(ignoreWhitespaceInCharCount);
+        resetAspect(abortAssistOnRequest);
+        writeSettings();
     }
 }
 
