@@ -119,6 +119,7 @@ ChatRootView::ChatRootView(QQuickItem *parent)
             Logger::instance().setDebugLogFilePath(logFilePath);
         }
     });
+    connect(m_chatModel, &ChatModel::messageAdded, this, &ChatRootView::updateInputTokensCount);
     connect(this, &ChatRootView::attachmentFilesChanged, &ChatRootView::updateInputTokensCount);
     connect(this, &ChatRootView::linkedFilesChanged, &ChatRootView::updateInputTokensCount);
     connect(

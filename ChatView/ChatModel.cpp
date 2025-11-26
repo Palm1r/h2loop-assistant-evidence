@@ -43,21 +43,24 @@ ChatModel::ChatModel(QObject *parent)
         &Utils::BaseAspect::changed,
         this,
         &ChatModel::tokensThresholdChanged);
-    
-    connect(&Context::ChangesManager::instance(),
-            &Context::ChangesManager::fileEditApplied,
-            this,
-            &ChatModel::onFileEditApplied);
-    
-    connect(&Context::ChangesManager::instance(),
-            &Context::ChangesManager::fileEditRejected,
-            this,
-            &ChatModel::onFileEditRejected);
-    
-    connect(&Context::ChangesManager::instance(),
-            &Context::ChangesManager::fileEditArchived,
-            this,
-            &ChatModel::onFileEditArchived);
+
+    connect(
+        &Context::ChangesManager::instance(),
+        &Context::ChangesManager::fileEditApplied,
+        this,
+        &ChatModel::onFileEditApplied);
+
+    connect(
+        &Context::ChangesManager::instance(),
+        &Context::ChangesManager::fileEditRejected,
+        this,
+        &ChatModel::onFileEditRejected);
+
+    connect(
+        &Context::ChangesManager::instance(),
+        &Context::ChangesManager::fileEditArchived,
+        this,
+        &ChatModel::onFileEditArchived);
 }
 
 int ChatModel::rowCount(const QModelIndex &parent) const
@@ -157,17 +160,18 @@ void ChatModel::addMessage(
         newMessage.images = images;
         m_messages.append(newMessage);
         endInsertRows();
-        
+        emit messageAdded();
+
         if (m_loadingFromHistory && role == ChatRole::FileEdit) {
             const QString marker = "QODEASSIST_FILE_EDIT:";
             if (content.contains(marker)) {
                 int markerPos = content.indexOf(marker);
                 int jsonStart = markerPos + marker.length();
-                
+
                 if (jsonStart < content.length()) {
                     QString jsonStr = content.mid(jsonStart);
                     QJsonDocument doc = QJsonDocument::fromJson(jsonStr.toUtf8());
-                    
+
                     if (doc.isObject()) {
                         QJsonObject editData = doc.object();
                         QString editId = editData.value("edit_id").toString();
@@ -175,21 +179,26 @@ void ChatModel::addMessage(
                         QString oldContent = editData.value("old_content").toString();
                         QString newContent = editData.value("new_content").toString();
                         QString originalStatus = editData.value("status").toString();
-                        
+
                         if (!editId.isEmpty() && !filePath.isEmpty()) {
-                            Context::ChangesManager::instance().addFileEdit(
-                                editId, filePath, oldContent, newContent, false, true);
-                            
+                            Context::ChangesManager::instance()
+                                .addFileEdit(editId, filePath, oldContent, newContent, false, true);
+
                             editData["status"] = "archived";
                             editData["status_message"] = "Loaded from chat history";
-                            
-                            QString updatedContent = marker 
-                                + QString::fromUtf8(QJsonDocument(editData).toJson(QJsonDocument::Compact));
+
+                            QString updatedContent = marker
+                                                     + QString::fromUtf8(
+                                                         QJsonDocument(editData).toJson(
+                                                             QJsonDocument::Compact));
                             m_messages.last().content = updatedContent;
-                            
-                            emit dataChanged(index(m_messages.size() - 1), index(m_messages.size() - 1));
-                            
-                            LOG_MESSAGE(QString("Registered historical file edit: %1 (original status: %2, now: archived)")
+
+                            emit dataChanged(
+                                index(m_messages.size() - 1), index(m_messages.size() - 1));
+
+                            LOG_MESSAGE(QString(
+                                            "Registered historical file edit: %1 (original status: "
+                                            "%2, now: archived)")
                                             .arg(editId, originalStatus));
                         }
                     }
@@ -414,9 +423,9 @@ void ChatModel::updateToolResult(
                     QString("ERROR: Parsed JSON is not an object, is array=%1").arg(doc.isArray()));
             } else {
                 QJsonObject editData = doc.object();
-                
+
                 QString editId = editData.value("edit_id").toString();
-                
+
                 if (editId.isEmpty()) {
                     editId = QString("edit_%1").arg(QDateTime::currentMSecsSinceEpoch());
                 }
@@ -526,35 +535,37 @@ void ChatModel::onFileEditArchived(const QString &editId)
     updateFileEditStatus(editId, "archived", "Archived (from previous conversation turn)");
 }
 
-void ChatModel::updateFileEditStatus(const QString &editId, const QString &status, const QString &statusMessage)
+void ChatModel::updateFileEditStatus(
+    const QString &editId, const QString &status, const QString &statusMessage)
 {
     const QString marker = "QODEASSIST_FILE_EDIT:";
-    
+
     for (int i = 0; i < m_messages.size(); ++i) {
         if (m_messages[i].role == ChatRole::FileEdit && m_messages[i].id == editId) {
             const QString &content = m_messages[i].content;
-            
+
             if (content.contains(marker)) {
                 int markerPos = content.indexOf(marker);
                 int jsonStart = markerPos + marker.length();
-                
+
                 if (jsonStart < content.length()) {
                     QString jsonStr = content.mid(jsonStart);
                     QJsonDocument doc = QJsonDocument::fromJson(jsonStr.toUtf8());
-                    
+
                     if (doc.isObject()) {
                         QJsonObject editData = doc.object();
-                        
+
                         editData["status"] = status;
                         editData["status_message"] = statusMessage;
-                        
-                        QString updatedContent = marker 
-                            + QString::fromUtf8(QJsonDocument(editData).toJson(QJsonDocument::Compact));
-                        
+
+                        QString updatedContent = marker
+                                                 + QString::fromUtf8(QJsonDocument(editData).toJson(
+                                                     QJsonDocument::Compact));
+
                         m_messages[i].content = updatedContent;
-                        
+
                         emit dataChanged(index(i), index(i));
-                        
+
                         LOG_MESSAGE(QString("Updated FileEdit message status: editId=%1, status=%2")
                                         .arg(editId, status));
                         break;
