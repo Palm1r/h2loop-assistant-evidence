@@ -53,20 +53,6 @@ BuildProjectTool::~BuildProjectTool()
     m_activeBuilds.clear();
 }
 
-BuildProjectTool::~BuildProjectTool()
-{
-    for (auto it = m_activeBuilds.begin(); it != m_activeBuilds.end(); ++it) {
-        BuildInfo &info = it.value();
-        if (info.buildFinishedConnection) {
-            disconnect(info.buildFinishedConnection);
-        }
-        if (info.promise) {
-            info.promise->finish();
-        }
-    }
-    m_activeBuilds.clear();
-}
-
 QString BuildProjectTool::name() const
 {
     return "build_project";
