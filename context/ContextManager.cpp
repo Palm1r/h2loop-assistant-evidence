@@ -57,7 +57,7 @@ QList<ContentFile> ContextManager::getContentFiles(const QStringList &filePaths)
         auto project = ProjectExplorer::ProjectManager::projectForFile(
             Utils::FilePath::fromString(path));
         if (project && m_ignoreManager->shouldIgnore(path, project)) {
-            LOG_MESSAGE(QString("Ignoring file in context due to .qodeassistignore: %1").arg(path));
+            LOG_MESSAGE(QString("Ignoring file in context due to .h2loopignore: %1").arg(path));
             continue;
         }
 
@@ -133,8 +133,7 @@ QList<QPair<QString, QString>> ContextManager::openedFiles(const QStringList exc
 
         auto project = ProjectExplorer::ProjectManager::projectForFile(textDocument->filePath());
         if (project && m_ignoreManager->shouldIgnore(filePath, project)) {
-            LOG_MESSAGE(
-                QString("Ignoring file in context due to .qodeassistignore: %1").arg(filePath));
+            LOG_MESSAGE(QString("Ignoring file in context due to .h2loopignore: %1").arg(filePath));
             continue;
         }
 
@@ -163,8 +162,7 @@ QString ContextManager::openedFilesContext(const QStringList excludeFiles)
 
         auto project = ProjectExplorer::ProjectManager::projectForFile(textDocument->filePath());
         if (project && m_ignoreManager->shouldIgnore(filePath, project)) {
-            LOG_MESSAGE(
-                QString("Ignoring file in context due to .qodeassistignore: %1").arg(filePath));
+            LOG_MESSAGE(QString("Ignoring file in context due to .h2loopignore: %1").arg(filePath));
             continue;
         }
 

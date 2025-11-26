@@ -38,7 +38,9 @@ public:
 
     QList<LLMCore::BaseTool *> getAvailableTools() const;
     LLMCore::BaseTool *getToolByName(const QString &name) const;
-    QJsonArray getToolsDefinitions(LLMCore::ToolSchemaFormat format) const;
+    QJsonArray getToolsDefinitions(
+        LLMCore::ToolSchemaFormat format,
+        LLMCore::RunToolsFilter filter = LLMCore::RunToolsFilter::ALL) const;
     QString getStringName(const QString &name) const;
 
     void registerMCPTools(MCP::MCPClientManager *mcpManager);

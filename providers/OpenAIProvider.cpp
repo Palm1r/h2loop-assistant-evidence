@@ -23,6 +23,7 @@
 #include "logger/Logger.hpp"
 #include "settings/ChatAssistantSettings.hpp"
 #include "settings/CodeCompletionSettings.hpp"
+#include "settings/QuickRefactorSettings.hpp"
 #include "settings/GeneralSettings.hpp"
 #include "settings/ProviderSettings.hpp"
 #include <mcp/MCPClientManager.hpp>
@@ -83,7 +84,8 @@ void OpenAIProvider::prepareRequest(
     LLMCore::PromptTemplate *prompt,
     LLMCore::ContextData context,
     LLMCore::RequestType type,
-    bool isToolsEnabled)
+    bool isToolsEnabled,
+    bool isThinkingEnabled)
 {
     if (!prompt->isSupportProvider(providerID())) {
         LOG_MESSAGE(QString("Template %1 doesn't support %2 provider").arg(name(), prompt->name()));
@@ -92,13 +94,32 @@ void OpenAIProvider::prepareRequest(
     prompt->prepareRequest(request, context);
 
     auto applyModelParams = [&request](const auto &settings) {
-        request["max_tokens"] = settings.maxTokens();
-        request["temperature"] = settings.temperature();
+        QString model = request.value("model").toString().toLower();
+        bool useNewParameter = model.contains("gpt-4o") || model.contains("gpt-4-turbo")
+                               || model.contains("o1-") || model.contains("gpt-5")
+                               || model.startsWith("o1") || model.contains("o3");
 
-        if (settings.useTopP())
-            request["top_p"] = settings.topP();
-        if (settings.useTopK())
-            request["top_k"] = settings.topK();
+        bool isReasoningModel = model.contains("o1-") || model.contains("gpt-5")
+                                || model.startsWith("o1") || model.contains("o3");
+
+        if (useNewParameter) {
+            request["max_completion_tokens"] = settings.maxTokens();
+        } else {
+            request["max_tokens"] = settings.maxTokens();
+        }
+
+        if (!isReasoningModel) {
+            request["temperature"] = settings.temperature();
+
+            if (settings.useTopP())
+                request["top_p"] = settings.topP();
+            if (settings.useTopK())
+                request["top_k"] = settings.topK();
+
+        } else {
+            request["temperature"] = 1.0;
+        }
+
         if (settings.useFrequencyPenalty())
             request["frequency_penalty"] = settings.frequencyPenalty();
         if (settings.usePresencePenalty())
@@ -107,13 +128,20 @@ void OpenAIProvider::prepareRequest(
 
     if (type == LLMCore::RequestType::CodeCompletion) {
         applyModelParams(Settings::codeCompletionSettings());
+    } else if (type == LLMCore::RequestType::QuickRefactoring) {
+        applyModelParams(Settings::quickRefactorSettings());
     } else {
         applyModelParams(Settings::chatAssistantSettings());
     }
 
     if (isToolsEnabled) {
+        LLMCore::RunToolsFilter filter = LLMCore::RunToolsFilter::ALL;
+        if (type == LLMCore::RequestType::QuickRefactoring) {
+            filter = LLMCore::RunToolsFilter::OnlyRead;
+        }
+
         auto toolsDefinitions = m_toolsManager->getToolsDefinitions(
-            LLMCore::ToolSchemaFormat::OpenAI);
+            LLMCore::ToolSchemaFormat::OpenAI, filter);
         if (!toolsDefinitions.isEmpty()) {
             request["tools"] = toolsDefinitions;
             LOG_MESSAGE(QString("Added %1 tools to OpenAI request").arg(toolsDefinitions.size()));
@@ -171,6 +199,7 @@ QList<QString> OpenAIProvider::validateRequest(const QJsonObject &request, LLMCo
         {"messages", QJsonArray{{QJsonObject{{"role", {}}, {"content", {}}}}}},
         {"temperature", {}},
         {"max_tokens", {}},
+        {"max_completion_tokens", {}}, // New parameter for newer models
         {"top_p", {}},
         {"top_k", {}},
         {"frequency_penalty", {}},
@@ -219,10 +248,21 @@ void OpenAIProvider::sendRequest(
 
     LOG_MESSAGE(QString("OpenAIProvider: Sending request %1 to %2").arg(requestId, url.toString()));
 
+    DEBUG_LOG_MESSAGE(
+        QString("OpenAIProvider DEBUG: Request %1 payload: %2")
+            .arg(
+                requestId,
+                QString::fromUtf8(QJsonDocument(payload).toJson(QJsonDocument::Indented))));
+
     emit httpClient() -> sendRequest(request);
 }
 
 bool OpenAIProvider::supportsTools() const
+{
+    return true;
+}
+
+bool OpenAIProvider::supportImage() const
 {
     return true;
 }
@@ -237,6 +277,9 @@ void OpenAIProvider::cancelRequest(const LLMCore::RequestID &requestId)
 void OpenAIProvider::onDataReceived(
     const QodeAssist::LLMCore::RequestID &requestId, const QByteArray &data)
 {
+    DEBUG_LOG_MESSAGE(QString("OpenAIProvider DEBUG: Received data for request %1: %2")
+                          .arg(requestId, QString::fromUtf8(data)));
+
     LLMCore::DataBuffers &buffers = m_dataBuffers[requestId];
     QStringList lines = buffers.rawStreamBuffer.processData(data);
 
@@ -293,6 +336,17 @@ void OpenAIProvider::onToolExecutionComplete(
     }
 
     LOG_MESSAGE(QString("Tool execution complete for OpenAI request %1").arg(requestId));
+
+    QVariantMap variantToolResults;
+    for (auto it = toolResults.begin(); it != toolResults.end(); ++it) {
+        variantToolResults[it.key()] = it.value();
+    }
+    DEBUG_LOG_MESSAGE(
+        QString("OpenAIProvider DEBUG: Tool results for request %1: %2")
+            .arg(
+                requestId,
+                QString::fromUtf8(
+                    QJsonDocument::fromVariant(variantToolResults).toJson(QJsonDocument::Indented))));
 
     for (auto it = toolResults.begin(); it != toolResults.end(); ++it) {
         OpenAIMessage *message = m_messages[requestId];

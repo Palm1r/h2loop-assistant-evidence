@@ -49,6 +49,17 @@ const char CA_ENDPOINT_MODE[] = "QodeAssist.caEndpointMode";
 const char CA_CUSTOM_ENDPOINT[] = "QodeAssist.caCustomEndpoint";
 const char CA_CUSTOM_ENDPOINT_HISTORY[] = "QodeAssist.caCustomEndpointHistory";
 
+// quick refactor settings
+const char QR_PROVIDER[] = "QodeAssist.qrProvider";
+const char QR_MODEL[] = "QodeAssist.qrModel";
+const char QR_MODEL_HISTORY[] = "QodeAssist.qrModelHistory";
+const char QR_TEMPLATE[] = "QodeAssist.qrTemplate";
+const char QR_URL[] = "QodeAssist.qrUrl";
+const char QR_URL_HISTORY[] = "QodeAssist.qrUrlHistory";
+const char QR_ENDPOINT_MODE[] = "QodeAssist.qrEndpointMode";
+const char QR_CUSTOM_ENDPOINT[] = "QodeAssist.qrCustomEndpoint";
+const char QR_CUSTOM_ENDPOINT_HISTORY[] = "QodeAssist.qrCustomEndpointHistory";
+
 const char CC_SPECIFY_PRESET1[] = "QodeAssist.ccSpecifyPreset1";
 const char CC_PRESET1_LANGUAGE[] = "QodeAssist.ccPreset1Language";
 const char CC_PRESET1_PROVIDER[] = "QodeAssist.ccPreset1Provider";
@@ -67,12 +78,19 @@ const char CC_AUTO_COMPLETION[] = "QodeAssist.ccAutoCompletion";
 const char CC_SHOW_PROGRESS_WIDGET[] = "QodeAssist.ccShowProgressWidget";
 const char CC_USE_OPEN_FILES_CONTEXT[] = "QodeAssist.ccUseOpenFilesContext";
 const char ENABLE_LOGGING[] = "QodeAssist.enableLogging";
+const char ENABLE_DEBUG_LOGGING[] = "QodeAssist.enableDebugLogging";
 const char ENABLE_CHECK_UPDATE[] = "QodeAssist.enableCheckUpdate";
 
 const char PROVIDER_PATHS[] = "QodeAssist.providerPaths";
 const char СС_START_SUGGESTION_TIMER[] = "QodeAssist.startSuggestionTimer";
 const char СС_AUTO_COMPLETION_CHAR_THRESHOLD[] = "QodeAssist.autoCompletionCharThreshold";
 const char СС_AUTO_COMPLETION_TYPING_INTERVAL[] = "QodeAssist.autoCompletionTypingInterval";
+const char CC_COMPLETION_TRIGGER_MODE[] = "QodeAssist.ccCompletionTriggerMode";
+const char CC_HINT_CHAR_THRESHOLD[] = "QodeAssist.ccHintCharThreshold";
+const char CC_HINT_HIDE_TIMEOUT[] = "QodeAssist.ccHintHideTimeout";
+const char CC_HINT_TRIGGER_KEY[] = "QodeAssist.ccHintTriggerKey";
+const char CC_ABORT_ASSIST_ON_REQUEST[] = "QodeAssist.ccAbortAssistOnRequest";
+const char CC_IGNORE_WHITESPACE_IN_CHAR_COUNT[] = "QodeAssist.ccIgnoreWhitespaceInCharCount";
 const char MAX_FILE_THRESHOLD[] = "QodeAssist.maxFileThreshold";
 const char CC_MULTILINE_COMPLETION[] = "QodeAssist.ccMultilineCompletion";
 const char CC_MODEL_OUTPUT_HANDLER[] = "QodeAssist.ccModelOutputHandler";
@@ -91,6 +109,8 @@ const char CA_ALLOW_FILE_SYSTEM_WRITE[] = "QodeAssist.caAllowFileSystemWrite";
 const char CA_ALLOW_ACCESS_OUTSIDE_PROJECT[] = "QodeAssist.caAllowAccessOutsideProject";
 const char CA_ENABLE_EDIT_FILE_TOOL[] = "QodeAssist.caEnableEditFileTool";
 const char CA_ENABLE_BUILD_PROJECT_TOOL[] = "QodeAssist.caEnableBuildProjectTool";
+const char CA_ENABLE_TERMINAL_COMMAND_TOOL[] = "QodeAssist.caEnableTerminalCommandTool";
+const char CA_ALLOWED_TERMINAL_COMMANDS[] = "QodeAssist.caAllowedTerminalCommands";
 
 const char QODE_ASSIST_GENERAL_OPTIONS_ID[] = "QodeAssist.GeneralOptions";
 const char QODE_ASSIST_GENERAL_SETTINGS_PAGE_ID[] = "QodeAssist.1GeneralSettingsPageId";
@@ -98,15 +118,16 @@ const char QODE_ASSIST_CODE_COMPLETION_SETTINGS_PAGE_ID[]
     = "QodeAssist.2CodeCompletionSettingsPageId";
 const char QODE_ASSIST_CHAT_ASSISTANT_SETTINGS_PAGE_ID[]
     = "QodeAssist.3ChatAssistantSettingsPageId";
-const char QODE_ASSIST_TOOLS_SETTINGS_PAGE_ID[] = "QodeAssist.4ToolsSettingsPageId";
-const char QODE_ASSIST_CUSTOM_PROMPT_SETTINGS_PAGE_ID[] = "QodeAssist.5CustomPromptSettingsPageId";
-const char QODE_ASSIST_MCP_SETTINGS_PAGE_ID[] = "QodeAssist.7MCPSettingsPageId";
+const char QODE_ASSIST_QUICK_REFACTOR_SETTINGS_PAGE_ID[]
+    = "QodeAssist.4QuickRefactorSettingsPageId";
+const char QODE_ASSIST_TOOLS_SETTINGS_PAGE_ID[] = "QodeAssist.5ToolsSettingsPageId";
+const char QODE_ASSIST_CUSTOM_PROMPT_SETTINGS_PAGE_ID[] = "QodeAssist.6CustomPromptSettingsPageId";
+// Provider Settings Page ID
+const char QODE_ASSIST_PROVIDER_SETTINGS_PAGE_ID[] = "QodeAssist.7ProviderSettingsPageId";
+const char QODE_ASSIST_MCP_SETTINGS_PAGE_ID[] = "QodeAssist.8MCPSettingsPageId";
 
 const char QODE_ASSIST_GENERAL_OPTIONS_CATEGORY[] = "QodeAssist.Category";
 const char QODE_ASSIST_GENERAL_OPTIONS_DISPLAY_CATEGORY[] = "H2Loop Assistant";
-
-// Provider Settings Page ID
-const char QODE_ASSIST_PROVIDER_SETTINGS_PAGE_ID[] = "QodeAssist.6ProviderSettingsPageId";
 
 // Provider API Keys
 const char OPEN_ROUTER_API_KEY[] = "QodeAssist.openRouterApiKey";
@@ -169,11 +190,36 @@ const char CA_USE_FREQUENCY_PENALTY[] = "QodeAssist.chatUseFrequencyPenalty";
 const char CA_FREQUENCY_PENALTY[] = "QodeAssist.chatFrequencyPenalty";
 const char CA_OLLAMA_LIVETIME[] = "QodeAssist.chatOllamaLivetime";
 const char CA_OLLAMA_CONTEXT_WINDOW[] = "QodeAssist.caOllamaContextWindow";
+const char CA_ENABLE_THINKING_MODE[] = "QodeAssist.caEnableThinkingMode";
+const char CA_THINKING_BUDGET_TOKENS[] = "QodeAssist.caThinkingBudgetTokens";
+const char CA_THINKING_MAX_TOKENS[] = "QodeAssist.caThinkingMaxTokens";
 const char CA_TEXT_FONT_FAMILY[] = "QodeAssist.caTextFontFamily";
 const char CA_TEXT_FONT_SIZE[] = "QodeAssist.caTextFontSize";
 const char CA_CODE_FONT_FAMILY[] = "QodeAssist.caCodeFontFamily";
 const char CA_CODE_FONT_SIZE[] = "QodeAssist.caCodeFontSize";
 const char CA_TEXT_FORMAT[] = "QodeAssist.caTextFormat";
 const char CA_CHAT_RENDERER[] = "QodeAssist.caChatRenderer";
+
+// quick refactor preset prompt settings
+const char QR_TEMPERATURE[] = "QodeAssist.qrTemperature";
+const char QR_MAX_TOKENS[] = "QodeAssist.qrMaxTokens";
+const char QR_USE_TOP_P[] = "QodeAssist.qrUseTopP";
+const char QR_TOP_P[] = "QodeAssist.qrTopP";
+const char QR_USE_TOP_K[] = "QodeAssist.qrUseTopK";
+const char QR_TOP_K[] = "QodeAssist.qrTopK";
+const char QR_USE_PRESENCE_PENALTY[] = "QodeAssist.qrUsePresencePenalty";
+const char QR_PRESENCE_PENALTY[] = "QodeAssist.qrPresencePenalty";
+const char QR_USE_FREQUENCY_PENALTY[] = "QodeAssist.qrUseFrequencyPenalty";
+const char QR_FREQUENCY_PENALTY[] = "QodeAssist.qrFrequencyPenalty";
+const char QR_OLLAMA_LIVETIME[] = "QodeAssist.qrOllamaLivetime";
+const char QR_OLLAMA_CONTEXT_WINDOW[] = "QodeAssist.qrOllamaContextWindow";
+const char QR_USE_TOOLS[] = "QodeAssist.qrUseTools";
+const char QR_USE_THINKING[] = "QodeAssist.qrUseThinking";
+const char QR_THINKING_BUDGET_TOKENS[] = "QodeAssist.qrThinkingBudgetTokens";
+const char QR_THINKING_MAX_TOKENS[] = "QodeAssist.qrThinkingMaxTokens";
+const char QR_READ_FULL_FILE[] = "QodeAssist.qrReadFullFile";
+const char QR_READ_STRINGS_BEFORE_CURSOR[] = "QodeAssist.qrReadStringsBeforeCursor";
+const char QR_READ_STRINGS_AFTER_CURSOR[] = "QodeAssist.qrReadStringsAfterCursor";
+const char QR_SYSTEM_PROMPT[] = "QodeAssist.qrSystemPrompt";
 
 } // namespace QodeAssist::Constants

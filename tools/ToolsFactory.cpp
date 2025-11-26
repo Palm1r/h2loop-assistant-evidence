@@ -28,6 +28,7 @@
 #include "BuildProjectTool.hpp"
 #include "CreateNewFileTool.hpp"
 #include "EditFileTool.hpp"
+#include "ExecuteTerminalCommandTool.hpp"
 #include "FindAndReadFileTool.hpp"
 #include "GetIssuesListTool.hpp"
 #include "ListProjectFilesTool.hpp"
@@ -53,6 +54,7 @@ void ToolsFactory::registerTools()
     registerTool(new CreateNewFileTool(this));
     registerTool(new EditFileTool(this));
     registerTool(new BuildProjectTool(this));
+    registerTool(new ExecuteTerminalCommandTool(this));
     registerTool(new ProjectSearchTool(this));
     registerTool(new FindAndReadFileTool(this));
 
@@ -84,7 +86,8 @@ LLMCore::BaseTool *ToolsFactory::getToolByName(const QString &name) const
     return m_tools.value(name, nullptr);
 }
 
-QJsonArray ToolsFactory::getToolsDefinitions(LLMCore::ToolSchemaFormat format) const
+QJsonArray ToolsFactory::getToolsDefinitions(
+    LLMCore::ToolSchemaFormat format, LLMCore::RunToolsFilter filter) const
 {
     QJsonArray toolsArray;
     const auto &settings = Settings::toolsSettings();
@@ -102,7 +105,48 @@ QJsonArray ToolsFactory::getToolsDefinitions(LLMCore::ToolSchemaFormat format) c
             continue;
         }
 
+        if (it.value()->name() == "execute_terminal_command"
+            && !settings.enableTerminalCommandTool()) {
+            continue;
+        }
+
         const auto requiredPerms = it.value()->requiredPermissions();
+
+        if (filter != LLMCore::RunToolsFilter::ALL) {
+            bool matchesFilter = false;
+
+            switch (filter) {
+            case LLMCore::RunToolsFilter::OnlyRead:
+                if (requiredPerms == LLMCore::ToolPermission::None
+                    || requiredPerms.testFlag(LLMCore::ToolPermission::FileSystemRead)) {
+                    matchesFilter = true;
+                }
+                break;
+
+            case LLMCore::RunToolsFilter::OnlyWrite:
+                if (requiredPerms.testFlag(LLMCore::ToolPermission::FileSystemWrite)) {
+                    matchesFilter = true;
+                }
+                break;
+
+            case LLMCore::RunToolsFilter::OnlyNetworking:
+                if (requiredPerms.testFlag(LLMCore::ToolPermission::NetworkAccess)) {
+                    matchesFilter = true;
+                }
+                break;
+
+            case LLMCore::RunToolsFilter::ALL:
+                matchesFilter = true;
+                break;
+            }
+
+            if (!matchesFilter) {
+                LOG_MESSAGE(QString("Tool '%1' skipped by tools filter")
+                                .arg(it.value()->name()));
+                continue;
+            }
+        }
+
         bool hasPermission = true;
 
         if (requiredPerms.testFlag(LLMCore::ToolPermission::FileSystemRead)) {
