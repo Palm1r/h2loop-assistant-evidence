@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2025 Petr Mironychev
  *
  * This file is part of QodeAssist.
@@ -19,10 +19,13 @@
 
 #include "ProgressWidget.hpp"
 
+#include <QMouseEvent>
+
 namespace QodeAssist {
 
 ProgressWidget::ProgressWidget(QWidget *parent)
     : QWidget(parent)
+    , m_isHovered(false)
 {
     m_dotPosition = 0;
     m_timer.setInterval(300);
@@ -64,11 +67,17 @@ ProgressWidget::ProgressWidget(QWidget *parent)
     }
 
     setFixedSize(40, 40);
+    setMouseTracking(true);
 }
 
 ProgressWidget::~ProgressWidget()
 {
     m_timer.stop();
+}
+
+void ProgressWidget::setCancelCallback(std::function<void()> callback)
+{
+    m_cancelCallback = callback;
 }
 
 void ProgressWidget::paintEvent(QPaintEvent *)
@@ -78,37 +87,83 @@ void ProgressWidget::paintEvent(QPaintEvent *)
 
     painter.fillRect(rect(), m_backgroundColor);
 
-    if (!m_logoPixmap.isNull()) {
-        QRect logoRect(
-            (width() - m_logoPixmap.width()) / 2, 5, m_logoPixmap.width(), m_logoPixmap.height());
-        painter.drawPixmap(logoRect, m_logoPixmap);
-    }
-
-    int dotSpacing = 6;
-    int dotSize = 4;
-    int totalDotWidth = 3 * dotSize + 2 * dotSpacing;
-    int startX = (width() - totalDotWidth) / 2;
-    int dotY = height() - 8;
-
-    for (int i = 0; i < 3; ++i) {
-        QColor dotColor = m_textColor;
-
-        if (m_dotPosition == 0) {
-            dotColor.setAlpha(128);
-        } else {
-            if (i == m_dotPosition - 1) {
-                dotColor.setAlpha(255);
-            } else {
-                dotColor.setAlpha(80);
-            }
+    if (!m_isHovered) {
+        if (!m_logoPixmap.isNull()) {
+            QRect logoRect(
+                (width() - m_logoPixmap.width()) / 2,
+                5,
+                m_logoPixmap.width(),
+                m_logoPixmap.height());
+            painter.drawPixmap(logoRect, m_logoPixmap);
         }
 
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(dotColor);
+        int dotSpacing = 6;
+        int dotSize = 4;
+        int totalDotWidth = 3 * dotSize + 2 * dotSpacing;
+        int startX = (width() - totalDotWidth) / 2;
+        int dotY = height() - 8;
 
-        int x = startX + i * (dotSize + dotSpacing);
-        painter.drawEllipse(x, dotY, dotSize, dotSize);
+        for (int i = 0; i < 3; ++i) {
+            QColor dotColor = m_textColor;
+
+            if (m_dotPosition == 0) {
+                dotColor.setAlpha(128);
+            } else {
+                if (i == m_dotPosition - 1) {
+                    dotColor.setAlpha(255);
+                } else {
+                    dotColor.setAlpha(80);
+                }
+            }
+
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(dotColor);
+
+            int x = startX + i * (dotSize + dotSpacing);
+            painter.drawEllipse(x, dotY, dotSize, dotSize);
+        }
     }
+
+    if (m_isHovered) {
+        int closeSize = 14;
+        int centerX = width() / 2;
+        int centerY = height() / 2;
+
+        QPen closePen(m_textColor, 2);
+        closePen.setCapStyle(Qt::RoundCap);
+        painter.setPen(closePen);
+
+        int offset = closeSize / 2;
+        painter.drawLine(centerX - offset, centerY - offset, centerX + offset, centerY + offset);
+        painter.drawLine(centerX + offset, centerY - offset, centerX - offset, centerY + offset);
+    }
+}
+
+void ProgressWidget::enterEvent(QEnterEvent *event)
+{
+    Q_UNUSED(event);
+    m_isHovered = true;
+    setCursor(Qt::PointingHandCursor);
+    update();
+}
+
+void ProgressWidget::leaveEvent(QEvent *event)
+{
+    Q_UNUSED(event);
+    m_isHovered = false;
+    setCursor(Qt::ArrowCursor);
+    update();
+}
+
+void ProgressWidget::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton && m_isHovered) {
+        emit cancelRequested();
+        if (m_cancelCallback) {
+            m_cancelCallback();
+        }
+    }
+    QWidget::mousePressEvent(event);
 }
 
 } // namespace QodeAssist

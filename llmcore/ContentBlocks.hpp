@@ -68,6 +68,54 @@ private:
     QString m_text;
 };
 
+class ImageContent : public ContentBlock
+{
+    Q_OBJECT
+public:
+    enum class ImageSourceType { Base64, Url };
+
+    ImageContent(const QString &data, const QString &mediaType, ImageSourceType sourceType = ImageSourceType::Base64)
+        : ContentBlock()
+        , m_data(data)
+        , m_mediaType(mediaType)
+        , m_sourceType(sourceType)
+    {}
+
+    QString type() const override { return "image"; }
+    QString data() const { return m_data; }
+    QString mediaType() const { return m_mediaType; }
+    ImageSourceType sourceType() const { return m_sourceType; }
+
+    QJsonValue toJson(ProviderFormat format) const override
+    {
+        if (format == ProviderFormat::Claude) {
+            QJsonObject source;
+            if (m_sourceType == ImageSourceType::Base64) {
+                source["type"] = "base64";
+                source["media_type"] = m_mediaType;
+                source["data"] = m_data;
+            } else {
+                source["type"] = "url";
+                source["url"] = m_data;
+            }
+            return QJsonObject{{"type", "image"}, {"source", source}};
+        } else { // OpenAI format
+            QJsonObject imageUrl;
+            if (m_sourceType == ImageSourceType::Base64) {
+                imageUrl["url"] = QString("data:%1;base64,%2").arg(m_mediaType, m_data);
+            } else {
+                imageUrl["url"] = m_data;
+            }
+            return QJsonObject{{"type", "image_url"}, {"image_url", imageUrl}};
+        }
+    }
+
+private:
+    QString m_data;
+    QString m_mediaType;
+    ImageSourceType m_sourceType;
+};
+
 class ToolUseContent : public ContentBlock
 {
     Q_OBJECT
@@ -135,6 +183,70 @@ public:
 private:
     QString m_toolUseId;
     QString m_result;
+};
+
+class ThinkingContent : public ContentBlock
+{
+    Q_OBJECT
+public:
+    explicit ThinkingContent(const QString &thinking = QString(), const QString &signature = QString())
+        : ContentBlock()
+        , m_thinking(thinking)
+        , m_signature(signature)
+    {}
+
+    QString type() const override { return "thinking"; }
+    QString thinking() const { return m_thinking; }
+    QString signature() const { return m_signature; }
+    void appendThinking(const QString &text) { m_thinking += text; }
+    void setThinking(const QString &text) { m_thinking = text; }
+    void setSignature(const QString &signature) { m_signature = signature; }
+
+    QJsonValue toJson(ProviderFormat format) const override
+    {
+        Q_UNUSED(format);
+        // Only include signature field if it's not empty
+        // Empty signature is rejected by API with "Invalid signature" error
+        // In streaming mode, signature is not provided, so we omit the field entirely
+        QJsonObject obj{{"type", "thinking"}, {"thinking", m_thinking}};
+        if (!m_signature.isEmpty()) {
+            obj["signature"] = m_signature;
+        }
+        return obj;
+    }
+
+private:
+    QString m_thinking;
+    QString m_signature;
+};
+
+class RedactedThinkingContent : public ContentBlock
+{
+    Q_OBJECT
+public:
+    explicit RedactedThinkingContent(const QString &signature = QString())
+        : ContentBlock()
+        , m_signature(signature)
+    {}
+
+    QString type() const override { return "redacted_thinking"; }
+    QString signature() const { return m_signature; }
+    void setSignature(const QString &signature) { m_signature = signature; }
+
+    QJsonValue toJson(ProviderFormat format) const override
+    {
+        Q_UNUSED(format);
+        // Only include signature field if it's not empty
+        // Empty signature is rejected by API with "Invalid signature" error
+        QJsonObject obj{{"type", "redacted_thinking"}};
+        if (!m_signature.isEmpty()) {
+            obj["signature"] = m_signature;
+        }
+        return obj;
+    }
+
+private:
+    QString m_signature;
 };
 
 } // namespace QodeAssist::LLMCore

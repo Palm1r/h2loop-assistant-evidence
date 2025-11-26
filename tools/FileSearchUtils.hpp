@@ -20,8 +20,8 @@
 #pragma once
 
 #include <context/IgnoreManager.hpp>
-#include <QString>
 #include <QList>
+#include <QString>
 
 namespace ProjectExplorer {
 class Project;
@@ -36,7 +36,7 @@ namespace QodeAssist::Tools {
  * - Fuzzy file searching with multiple match strategies
  * - File pattern matching (e.g., *.cpp, *.h)
  * - Secure file content reading with project boundary checks
- * - Integration with IgnoreManager for respecting .qodeassistignore
+ * - Integration with IgnoreManager for respecting .h2loopignore
  */
 class FileSearchUtils
 {
@@ -45,9 +45,9 @@ public:
      * @brief Match quality levels for file search results
      */
     enum class MatchType {
-        ExactName,    ///< Exact filename match (highest priority)
-        PathMatch,    ///< Query found in relative path
-        PartialName   ///< Query found in filename (lowest priority)
+        ExactName,  ///< Exact filename match (highest priority)
+        PathMatch,  ///< Query found in relative path
+        PartialName ///< Query found in filename (lowest priority)
     };
 
     /**
@@ -55,13 +55,13 @@ public:
      */
     struct FileMatch
     {
-        QString absolutePath;   ///< Full absolute path to the file
-        QString relativePath;   ///< Path relative to project root
-        QString projectName;    ///< Name of the project containing the file
-        QString content;        ///< File content (if read)
-        MatchType matchType;    ///< Quality of the match
+        QString absolutePath;     ///< Full absolute path to the file
+        QString relativePath;     ///< Path relative to project root
+        QString projectName;      ///< Name of the project containing the file
+        QString content;          ///< File content (if read)
+        MatchType matchType;      ///< Quality of the match
         bool contentRead = false; ///< Whether content has been read
-        QString error;          ///< Error message if operation failed
+        QString error;            ///< Error message if operation failed
 
         /**
          * @brief Compare matches by quality (for sorting)
@@ -78,7 +78,7 @@ public:
      * Search strategy:
      * 1. Check if query is an absolute path
      * 2. Search in project source files (exact, path, partial matches)
-     * 3. Search filesystem within project directories (respects .qodeassistignore)
+     * 3. Search filesystem within project directories (respects .h2loopignore)
      * 
      * @param query Filename, partial name, or path to search for (case-insensitive)
      * @param filePattern Optional file pattern filter (e.g., "*.cpp", "*.h")
@@ -123,7 +123,7 @@ public:
      * @brief Search for files in filesystem directory tree
      * 
      * Recursively searches a directory for files matching the query.
-     * Respects .qodeassistignore patterns and depth limits.
+     * Respects .h2loopignore patterns and depth limits.
      * 
      * @param dirPath Directory to search in
      * @param query Search query (case-insensitive)

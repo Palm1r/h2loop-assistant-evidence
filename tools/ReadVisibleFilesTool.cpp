@@ -101,8 +101,7 @@ QFuture<QString> ReadVisibleFilesTool::executeAsync(const QJsonObject &input)
             auto project = ProjectExplorer::ProjectManager::projectForFile(
                 editor->document()->filePath());
             if (project && m_ignoreManager->shouldIgnore(filePath, project)) {
-                LOG_MESSAGE(
-                    QString("Ignoring visible file due to .qodeassistignore: %1").arg(filePath));
+                LOG_MESSAGE(QString("Ignoring visible file due to .h2loopignore: %1").arg(filePath));
                 continue;
             }
 
@@ -121,7 +120,7 @@ QFuture<QString> ReadVisibleFilesTool::executeAsync(const QJsonObject &input)
         }
 
         if (results.isEmpty()) {
-            QString error = "Error: All visible files are excluded by .qodeassistignore";
+            QString error = "Error: All visible files are excluded by .h2loopignore";
             throw ToolRuntimeError(error);
         }
 
