@@ -61,6 +61,7 @@ public:
     void removeServer(const QString &serverName);
     void connectToServer(const QString &serverName);
     void disconnectFromServer(const QString &serverName);
+    void refreshServers();
 
     QList<MCPToolInfo> getAvailableTools() const;
     QFuture<QString> executeTool(

@@ -112,11 +112,11 @@ add_qtc_plugin(QodeAssist
     providers/LlamaCppProvider.hpp providers/LlamaCppProvider.cpp
     providers/CodestralProvider.hpp providers/CodestralProvider.cpp
     settings/MCPSettings.hpp settings/MCPSettings.cpp
-    mcp/MCPClientManager.hpp mcp/MCPClientManager.cpp
-    mcp/MCPToolAdapter.hpp mcp/MCPToolAdapter.cpp
     QodeAssist.qrc
     LSPCompletion.hpp
     LLMSuggestion.hpp LLMSuggestion.cpp
+    RefactorSuggestion.hpp RefactorSuggestion.cpp
+    RefactorSuggestionHoverHandler.hpp RefactorSuggestionHoverHandler.cpp
     QodeAssistClient.hpp QodeAssistClient.cpp
     chat/ChatOutputPane.h chat/ChatOutputPane.cpp
     chat/NavigationPanel.hpp chat/NavigationPanel.cpp
@@ -124,10 +124,17 @@ add_qtc_plugin(QodeAssist
     CodeHandler.hpp CodeHandler.cpp
     UpdateStatusWidget.hpp UpdateStatusWidget.cpp
     widgets/CompletionProgressHandler.hpp widgets/CompletionProgressHandler.cpp
+    widgets/CompletionErrorHandler.hpp widgets/CompletionErrorHandler.cpp
+    widgets/CompletionHintWidget.hpp widgets/CompletionHintWidget.cpp
+    widgets/CompletionHintHandler.hpp widgets/CompletionHintHandler.cpp
     widgets/ProgressWidget.hpp widgets/ProgressWidget.cpp
+    widgets/ErrorWidget.hpp widgets/ErrorWidget.cpp
     widgets/EditorChatButton.hpp widgets/EditorChatButton.cpp
     widgets/EditorChatButtonHandler.hpp widgets/EditorChatButtonHandler.cpp
     widgets/QuickRefactorDialog.hpp widgets/QuickRefactorDialog.cpp
+    widgets/CustomInstructionsManager.hpp widgets/CustomInstructionsManager.cpp
+    widgets/AddCustomInstructionDialog.hpp widgets/AddCustomInstructionDialog.cpp
+
     QuickRefactorHandler.hpp QuickRefactorHandler.cpp
     tools/ToolsFactory.hpp tools/ToolsFactory.cpp
     tools/ReadVisibleFilesTool.hpp tools/ReadVisibleFilesTool.cpp
@@ -138,6 +145,7 @@ add_qtc_plugin(QodeAssist
     tools/CreateNewFileTool.hpp tools/CreateNewFileTool.cpp
     tools/EditFileTool.hpp tools/EditFileTool.cpp
     tools/BuildProjectTool.hpp tools/BuildProjectTool.cpp
+    tools/ExecuteTerminalCommandTool.hpp tools/ExecuteTerminalCommandTool.cpp
     tools/ProjectSearchTool.hpp tools/ProjectSearchTool.cpp
     tools/FindAndReadFileTool.hpp tools/FindAndReadFileTool.cpp
     tools/FileSearchUtils.hpp tools/FileSearchUtils.cpp

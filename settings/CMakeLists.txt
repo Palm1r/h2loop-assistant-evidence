@@ -1,12 +1,14 @@
 add_library(QodeAssistSettings STATIC
     GeneralSettings.hpp GeneralSettings.cpp
     CustomPromptSettings.hpp CustomPromptSettings.cpp
+    ConfigurationManager.hpp ConfigurationManager.cpp
     SettingsUtils.hpp
     SettingsConstants.hpp
     ButtonAspect.hpp
     SettingsTr.hpp
     CodeCompletionSettings.hpp CodeCompletionSettings.cpp
     ChatAssistantSettings.hpp ChatAssistantSettings.cpp
+    QuickRefactorSettings.hpp QuickRefactorSettings.cpp
     ToolsSettings.hpp ToolsSettings.cpp
     SettingsDialog.hpp SettingsDialog.cpp
     ProjectSettings.hpp ProjectSettings.cpp

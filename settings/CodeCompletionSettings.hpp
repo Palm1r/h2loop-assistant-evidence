@@ -36,14 +36,20 @@ public:
     Utils::BoolAspect autoCompletion{this};
     Utils::BoolAspect multiLineCompletion{this};
     Utils::SelectionAspect modelOutputHandler{this};
+    Utils::SelectionAspect completionTriggerMode{this};
 
     Utils::IntegerAspect startSuggestionTimer{this};
     Utils::IntegerAspect autoCompletionCharThreshold{this};
     Utils::IntegerAspect autoCompletionTypingInterval{this};
+    Utils::IntegerAspect hintCharThreshold{this};
+    Utils::IntegerAspect hintHideTimeout{this};
+    Utils::SelectionAspect hintTriggerKey{this};
+    Utils::BoolAspect ignoreWhitespaceInCharCount{this};
 
     Utils::StringListAspect customLanguages{this};
 
     Utils::BoolAspect showProgressWidget{this};
+    Utils::BoolAspect abortAssistOnRequest{this};
     Utils::BoolAspect useOpenFilesContext{this};
 
     // General Parameters Settings

@@ -24,7 +24,8 @@ import QtQuick.Layouts
 import ChatView
 import UIControls
 import Qt.labs.platform as Platform
-import "./parts"
+
+import "./chatparts"
 
 ChatRootView {
     id: root
@@ -55,6 +56,24 @@ ChatRootView {
 
         anchors.fill: parent
         color: palette.window
+    }
+
+    SplitDropZone {
+        anchors.fill: parent
+
+        onFilesDroppedToAttach: (urlStrings) => {
+            var localPaths = root.convertUrlsToLocalPaths(urlStrings)
+            if (localPaths.length > 0) {
+                root.addFilesToAttachList(localPaths)
+            }
+        }
+
+        onFilesDroppedToLink: (urlStrings) => {
+            var localPaths = root.convertUrlsToLocalPaths(urlStrings)
+            if (localPaths.length > 0) {
+                root.addFilesToLinkList(localPaths)
+            }
+        }
     }
 
     ColumnLayout {
@@ -91,21 +110,45 @@ ChatRootView {
                     root.isAgentMode = agentModeSwitch.checked
                 }
             }
+            thinkingMode {
+                checked: root.isThinkingMode
+                enabled: root.isThinkingSupport
+                onCheckedChanged: {
+                    root.isThinkingMode = thinkingMode.checked
+                }
+            }
+            configSelector {
+                model: root.availableConfigurations
+                displayText: root.currentConfiguration
+                onActivated: function(index) {
+                    if (index > 0) {
+                        root.applyConfiguration(root.availableConfigurations[index])
+                    }
+                }
+                
+                popup.onAboutToShow: {
+                    root.loadAvailableConfigurations()
+                }
+            }
         }
 
         ListView {
             id: chatListView
+
+            signal hideServiceComponents(int itemIndex)
 
             Layout.fillWidth: true
             Layout.fillHeight: true
             leftMargin: 5
             model: root.chatModel
             clip: true
-            spacing: 10
+            spacing: 0
             boundsBehavior: Flickable.StopAtBounds
             cacheBuffer: 2000
 
             delegate: Loader {
+                id: componentLoader
+
                 required property var model
                 required property int index
 
@@ -116,8 +159,16 @@ ChatRootView {
                         return toolMessageComponent
                     } else if (model.roleType === ChatModel.FileEdit) {
                         return fileEditMessageComponent
+                    } else if (model.roleType === ChatModel.Thinking) {
+                        return thinkingMessageComponent
                     } else {
                         return chatItemComponent
+                    }
+                }
+
+                onLoaded: {
+                    if (componentLoader.sourceComponent == chatItemComponent) {
+                        chatListView.hideServiceComponents(index)
                     }
                 }
             }
@@ -125,6 +176,21 @@ ChatRootView {
             header: Item {
                 width: ListView.view.width - scroll.width
                 height: 30
+            }
+
+            footer: Item {
+                width: ListView.view.width - scroll.width
+                height: root.isRequestInProgress ? 50 : 0
+
+                Behavior on height {
+                    NumberAnimation { duration: 200; easing.type: Easing.InOutQuad }
+                }
+
+                BusyIndicator {
+                    anchors.centerIn: parent
+                    running: root.isRequestInProgress
+                    visible: running
+                }
             }
 
             ScrollBar.vertical: QQC.ScrollBar {
@@ -150,6 +216,8 @@ ChatRootView {
                     width: parent.width
                     msgModel: root.chatModel.processMessageContent(model.content)
                     messageAttachments: model.attachments
+                    messageImages: model.images
+                    chatFilePath: root.chatFilePath()
                     isUserMessage: model.roleType === ChatModel.User
                     messageIndex: index
                     textFontFamily: root.textFontFamily
@@ -169,16 +237,27 @@ ChatRootView {
             Component {
                 id: toolMessageComponent
 
-                ToolStatusItem {
+                ToolBlock {
+                    id: toolsItem
+
                     width: parent.width
                     toolContent: model.content
+
+                    Connections {
+                        target: chatListView
+                        function onHideServiceComponents(itemIndex) {
+                            if (index !== itemIndex) {
+                                toolsItem.headerOpacity = 0.5
+                            }
+                        }
+                    }
                 }
             }
 
             Component {
                 id: fileEditMessageComponent
 
-                FileEditItem {
+                FileEditBlock {
                     width: parent.width
                     editContent: model.content
 
@@ -196,6 +275,34 @@ ChatRootView {
 
                     onOpenInEditor: function(editId) {
                         root.openFileEditInEditor(editId)
+                    }
+                }
+            }
+
+            Component {
+                id: thinkingMessageComponent
+
+                ThinkingBlock {
+                    id: thinking
+
+                    width: parent.width
+                    thinkingContent: {
+                        let content = model.content
+                        let signatureStart = content.indexOf("\n[Signature:")
+                        if (signatureStart >= 0) {
+                            return content.substring(0, signatureStart)
+                        }
+                        return content
+                    }
+                    isRedacted: model.isRedacted !== undefined ? model.isRedacted : false
+
+                    Connections {
+                        target: chatListView
+                        function onHideServiceComponents(itemIndex) {
+                            if (index !== itemIndex) {
+                                thinking.headerOpacity = 0.5
+                            }
+                        }
                     }
                 }
             }
@@ -236,9 +343,18 @@ ChatRootView {
 
                 onTextChanged: root.calculateMessageTokensCount(messageInput.text)
 
-                Keys.onReturnPressed: {
-                    root.sendChatMessage()
-                    event.accepted = true
+                Keys.onPressed: (event) => {
+                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        if (event.modifiers & (Qt.ControlModifier | Qt.MetaModifier)) {
+                            // Ctrl+Enter (Linux/Windows) or Cmd+Enter (macOS)
+                            messageInput.insert(messageInput.cursorPosition, "\n")
+                            event.accepted = true
+                        } else {
+                            // Only Enter -> send message
+                            root.sendChatMessage()
+                            event.accepted = true
+                        }
+                    }
                 }
 
                 MouseArea {
@@ -340,19 +456,8 @@ ChatRootView {
                 onCheckedChanged: root.setIsSyncOpenFiles(bottomBar.syncOpenFiles.checked)
             }
             attachFiles.onClicked: root.showAttachFilesDialog()
+            attachImages.onClicked: root.showAddImageDialog()
             linkFiles.onClicked: root.showLinkFilesDialog()
-        }
-    }
-
-    Shortcut {
-        id: sendMessageShortcut
-
-        sequences: ["Return", "Enter"]
-        context: Qt.WindowShortcut
-        onActivated: {
-            if (messageInput.activeFocus && !Qt.inputMethod.visible) {
-                root.sendChatMessage()
-            }
         }
     }
 
@@ -378,7 +483,7 @@ ChatRootView {
         id: errorToast
         z: 1000
 
-        color: Qt.rgba(0.8, 0.2, 0.2, 0.7)
+        color: Qt.rgba(0.8, 0.2, 0.2, 0.9)
         border.color: Qt.darker(infoToast.color, 1.3)
         toastTextColor: "#FFFFFF"
     }
@@ -387,7 +492,7 @@ ChatRootView {
         id: infoToast
         z: 1000
 
-        color: Qt.rgba(0.2, 0.8, 0.2, 0.7)
+        color: Qt.rgba(0.2, 0.8, 0.2, 0.9)
         border.color: Qt.darker(infoToast.color, 1.3)
         toastTextColor: "#FFFFFF"
     }

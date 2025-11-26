@@ -22,6 +22,7 @@
 #include <QDebug>
 #include <QJsonDocument>
 #include <QThreadPool>
+#include <QTimer>
 #include <QtConcurrent>
 
 namespace QodeAssist::MCP {
@@ -58,6 +59,7 @@ void MCPClientManager::removeServer(const QString &serverName)
 {
     if (m_servers.contains(serverName)) {
         disconnectFromServer(serverName);
+        delete m_servers[serverName];
         m_servers.remove(serverName);
     }
 }
@@ -139,6 +141,28 @@ void MCPClientManager::disconnectFromServer(const QString &serverName)
             emit serverDisconnected(serverName);
         });
     }
+}
+
+void MCPClientManager::refreshServers()
+{
+    QStringList connectedServers;
+    for (auto it = m_servers.begin(); it != m_servers.end(); ++it) {
+        if (it.value()->connected) {
+            connectedServers.append(it.key());
+        }
+    }
+
+    // Disconnect all connected servers
+    for (const QString &serverName : std::as_const(connectedServers)) {
+        disconnectFromServer(serverName);
+    }
+
+    // Reconnect all servers after a short delay to allow disconnections to complete
+    QTimer::singleShot(100, this, [this, connectedServers]() {
+        for (const QString &serverName : std::as_const(connectedServers)) {
+            connectToServer(serverName);
+        }
+    });
 }
 
 QList<MCPToolInfo> MCPClientManager::getAvailableTools() const

@@ -35,6 +35,7 @@
 
 #include "ChatAssistantSettings.hpp"
 #include "ChatSerializer.hpp"
+#include "ConfigurationManager.hpp"
 #include "GeneralSettings.hpp"
 #include "Logger.hpp"
 #include "ProjectSettings.hpp"
@@ -43,6 +44,7 @@
 #include "context/ContextManager.hpp"
 #include "context/TokenUtils.hpp"
 #include "llmcore/RulesLoader.hpp"
+#include "ProvidersManager.hpp"
 
 namespace QodeAssist::Chat {
 
@@ -53,7 +55,16 @@ ChatRootView::ChatRootView(QQuickItem *parent)
     , m_clientInterface(new ClientInterface(m_chatModel, &m_promptProvider, this))
     , m_isRequestInProgress(false)
 {
+    // Set initial debug log file path for the chat
+    QString debugLogsDir = getDebugLogsDir();
+    if (!debugLogsDir.isEmpty()) {
+        QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+        QString logFilePath = QDir(debugLogsDir).filePath("chat_" + timestamp + "_debug.log");
+        Logger::instance().setDebugLogFilePath(logFilePath);
+    }
+
     m_isSyncOpenFiles = Settings::chatAssistantSettings().linkOpenFiles();
+
     connect(
         &Settings::chatAssistantSettings().linkOpenFiles,
         &Utils::BaseAspect::changed,
@@ -64,6 +75,20 @@ ChatRootView::ChatRootView(QQuickItem *parent)
 
     connect(
         &settings.caModel, &Utils::BaseAspect::changed, this, &ChatRootView::currentTemplateChanged);
+    
+    connect(&settings.caProvider, &Utils::BaseAspect::changed, this, [this]() {
+        auto &settings = Settings::generalSettings();
+        m_currentConfiguration = QString("%1 - %2").arg(settings.caProvider.value(), 
+                                                         settings.caModel.value());
+        emit currentConfigurationChanged();
+    });
+    
+    connect(&settings.caModel, &Utils::BaseAspect::changed, this, [this]() {
+        auto &settings = Settings::generalSettings();
+        m_currentConfiguration = QString("%1 - %2").arg(settings.caProvider.value(), 
+                                                         settings.caModel.value());
+        emit currentConfigurationChanged();
+    });
 
     connect(
         m_clientInterface,
@@ -85,7 +110,16 @@ ChatRootView::ChatRootView(QQuickItem *parent)
         setRecentFilePath(QString{});
         m_currentMessageRequestId.clear();
         updateCurrentMessageEditsStats();
+
+        // Set new debug log file path for new chat
+        QString debugLogsDir = getDebugLogsDir();
+        if (!debugLogsDir.isEmpty()) {
+            QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+            QString logFilePath = QDir(debugLogsDir).filePath("chat_" + timestamp + "_debug.log");
+            Logger::instance().setDebugLogFilePath(logFilePath);
+        }
     });
+    connect(m_chatModel, &ChatModel::messageAdded, this, &ChatRootView::updateInputTokensCount);
     connect(this, &ChatRootView::attachmentFilesChanged, &ChatRootView::updateInputTokensCount);
     connect(this, &ChatRootView::linkedFilesChanged, &ChatRootView::updateInputTokensCount);
     connect(
@@ -189,6 +223,7 @@ ChatRootView::ChatRootView(QQuickItem *parent)
 
     updateInputTokensCount();
     refreshRules();
+    loadAvailableConfigurations();
 
     connect(
         ProjectExplorer::ProjectManager::instance(),
@@ -198,12 +233,24 @@ ChatRootView::ChatRootView(QQuickItem *parent)
 
     QSettings appSettings;
     m_isAgentMode = appSettings.value("QodeAssist/Chat/AgentMode", false).toBool();
+    m_isThinkingMode = Settings::chatAssistantSettings().enableThinkingMode();
+
+    connect(
+        &Settings::chatAssistantSettings().enableThinkingMode,
+        &Utils::BaseAspect::changed,
+        this,
+        [this]() { setIsThinkingMode(Settings::chatAssistantSettings().enableThinkingMode()); });
 
     connect(
         &Settings::toolsSettings().useTools,
         &Utils::BaseAspect::changed,
         this,
         &ChatRootView::toolsSupportEnabledChanged);
+    connect(
+        &Settings::generalSettings().caProvider,
+        &Utils::BaseAspect::changed,
+        this,
+        &ChatRootView::isThinkingSupportChanged);
 }
 
 ChatModel *ChatRootView::chatModel() const
@@ -226,6 +273,14 @@ void ChatRootView::sendMessage(const QString &message)
             m_chatModel->clear();
             setRecentFilePath(QString{});
             return;
+        }
+    }
+
+    if (m_recentFilePath.isEmpty()) {
+        QString filePath = getAutosaveFilePath(message, m_attachmentFiles);
+        if (!filePath.isEmpty()) {
+            setRecentFilePath(filePath);
+            LOG_MESSAGE(QString("Set chat file path for new chat: %1").arg(filePath));
         }
     }
 
@@ -276,6 +331,28 @@ QString ChatRootView::getChatsHistoryDir() const
     QDir dir(path);
     if (!dir.exists() && !dir.mkpath(".")) {
         LOG_MESSAGE(QString("Failed to create directory: %1").arg(path));
+        return QString();
+    }
+
+    return path;
+}
+
+QString ChatRootView::getDebugLogsDir() const
+{
+    QString path;
+
+    if (auto project = ProjectExplorer::ProjectManager::startupProject()) {
+        Settings::ProjectSettings projectSettings(project);
+        QString chatHistoryPath = projectSettings.chatHistoryPath().toFSPathString();
+        path = QDir(chatHistoryPath).absoluteFilePath("debug_logs");
+    } else {
+        path = QString("%1/h2loopassistant/debug_logs")
+                   .arg(Core::ICore::userResourcePath().toFSPathString());
+    }
+
+    QDir dir(path);
+    if (!dir.exists() && !dir.mkpath(".")) {
+        LOG_MESSAGE(QString("Failed to create debug logs directory: %1").arg(path));
         return QString();
     }
 
@@ -366,51 +443,22 @@ void ChatRootView::showLoadDialog()
 
 QString ChatRootView::getSuggestedFileName() const
 {
-    QStringList parts;
-
-    static const QRegularExpression saitizeSymbols = QRegularExpression("[\\/:*?\"<>|\\s]");
-    static const QRegularExpression underSymbols = QRegularExpression("_+");
+    QString shortMessage;
 
     if (m_chatModel->rowCount() > 0) {
         QString firstMessage
             = m_chatModel->data(m_chatModel->index(0), ChatModel::Content).toString();
-        QString shortMessage = firstMessage.split('\n').first().simplified().left(30);
+        shortMessage = firstMessage.split('\n').first().simplified().left(30);
 
-        QString sanitizedMessage = shortMessage;
-        sanitizedMessage.replace(saitizeSymbols, "_");
-        sanitizedMessage.replace(underSymbols, "_");
-        sanitizedMessage = sanitizedMessage.trimmed();
-
-        if (!sanitizedMessage.isEmpty()) {
-            if (sanitizedMessage.startsWith('_')) {
-                sanitizedMessage.remove(0, 1);
-            }
-            if (sanitizedMessage.endsWith('_')) {
-                sanitizedMessage.chop(1);
-            }
-
-            QString targetDir = getChatsHistoryDir();
-            QString fullPath = QDir(targetDir).filePath(sanitizedMessage);
-
-            QFileInfo fileInfo(fullPath);
-            if (!fileInfo.exists() && QFileInfo(fileInfo.path()).isWritable()) {
-                parts << sanitizedMessage;
+        if (shortMessage.isEmpty()) {
+            QVariantList images = m_chatModel->data(m_chatModel->index(0), ChatModel::Images).toList();
+            if (!images.isEmpty()) {
+                shortMessage = "image_chat";
             }
         }
     }
 
-    parts << QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm");
-
-    QString fileName = parts.join("_");
-
-    QString fullPath = QDir(getChatsHistoryDir()).filePath(fileName);
-    QFileInfo finalCheck(fullPath);
-
-    if (fileName.isEmpty() || finalCheck.exists() || !QFileInfo(finalCheck.path()).isWritable()) {
-        fileName = QString("chat_%1").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm"));
-    }
-
-    return fileName;
+    return generateChatFileName(shortMessage, getChatsHistoryDir());
 }
 
 void ChatRootView::autosave()
@@ -440,6 +488,27 @@ QString ChatRootView::getAutosaveFilePath() const
     return QDir(dir).filePath(getSuggestedFileName() + ".json");
 }
 
+QString ChatRootView::getAutosaveFilePath(const QString &firstMessage, const QStringList &attachments) const
+{
+    if (!m_recentFilePath.isEmpty()) {
+        return m_recentFilePath;
+    }
+
+    QString dir = getChatsHistoryDir();
+    if (dir.isEmpty()) {
+        return QString();
+    }
+
+    QString shortMessage = firstMessage.split('\n').first().simplified().left(30);
+
+    if (shortMessage.isEmpty() && hasImageAttachments(attachments)) {
+        shortMessage = "image_chat";
+    }
+
+    QString fileName = generateChatFileName(shortMessage, dir);
+    return QDir(dir).filePath(fileName + ".json");
+}
+
 QStringList ChatRootView::attachmentFiles() const
 {
     return m_attachmentFiles;
@@ -454,6 +523,103 @@ void ChatRootView::showAttachFilesDialog()
 {
     QFileDialog dialog(nullptr, tr("Select Files to Attach"));
     dialog.setFileMode(QFileDialog::ExistingFiles);
+
+    if (auto project = ProjectExplorer::ProjectManager::startupProject()) {
+        dialog.setDirectory(project->projectDirectory().toFSPathString());
+    }
+
+    if (dialog.exec() == QDialog::Accepted) {
+        addFilesToAttachList(dialog.selectedFiles());
+    }
+}
+
+void ChatRootView::addFilesToAttachList(const QStringList &filePaths)
+{
+    if (filePaths.isEmpty()) {
+        return;
+    }
+
+    bool filesAdded = false;
+    for (const QString &filePath : filePaths) {
+        if (!m_attachmentFiles.contains(filePath)) {
+            m_attachmentFiles.append(filePath);
+            filesAdded = true;
+        }
+    }
+    
+    if (filesAdded) {
+        emit attachmentFilesChanged();
+    }
+}
+
+void ChatRootView::removeFileFromAttachList(int index)
+{
+    if (index >= 0 && index < m_attachmentFiles.size()) {
+        m_attachmentFiles.removeAt(index);
+        emit attachmentFilesChanged();
+    }
+}
+
+void ChatRootView::showLinkFilesDialog()
+{
+    QFileDialog dialog(nullptr, tr("Select Files to Attach"));
+    dialog.setFileMode(QFileDialog::ExistingFiles);
+
+    if (auto project = ProjectExplorer::ProjectManager::startupProject()) {
+        dialog.setDirectory(project->projectDirectory().toFSPathString());
+    }
+
+    if (dialog.exec() == QDialog::Accepted) {
+        addFilesToLinkList(dialog.selectedFiles());
+    }
+}
+
+void ChatRootView::addFilesToLinkList(const QStringList &filePaths)
+{
+    if (filePaths.isEmpty()) {
+        return;
+    }
+
+    bool filesAdded = false;
+    QStringList imageFiles;
+    
+    for (const QString &filePath : filePaths) {
+        if (isImageFile(filePath)) {
+            imageFiles.append(filePath);
+            continue;
+        }
+        
+        if (!m_linkedFiles.contains(filePath)) {
+            m_linkedFiles.append(filePath);
+            filesAdded = true;
+        }
+    }
+    
+    if (!imageFiles.isEmpty()) {
+        addFilesToAttachList(imageFiles);
+        
+        m_lastInfoMessage = tr("Images automatically moved to Attach zone (%n file(s))", "", imageFiles.size());
+        emit lastInfoMessageChanged();
+    }
+    
+    if (filesAdded) {
+        emit linkedFilesChanged();
+    }
+}
+
+void ChatRootView::removeFileFromLinkList(int index)
+{
+    if (index >= 0 && index < m_linkedFiles.size()) {
+        m_linkedFiles.removeAt(index);
+        emit linkedFilesChanged();
+    }
+}
+
+void ChatRootView::showAddImageDialog()
+{
+    QFileDialog dialog(nullptr, tr("Select Images to Attach"));
+    dialog.setFileMode(QFileDialog::ExistingFiles);
+    dialog.setNameFilter(tr("Images (*.png *.jpg *.jpeg *.gif *.bmp *.webp)"));
 
     if (auto project = ProjectExplorer::ProjectManager::startupProject()) {
         dialog.setDirectory(project->projectDirectory().toFSPathString());
@@ -476,46 +642,19 @@ void ChatRootView::showAttachFilesDialog()
     }
 }
 
-void ChatRootView::removeFileFromAttachList(int index)
+QStringList ChatRootView::convertUrlsToLocalPaths(const QVariantList &urls) const
 {
-    if (index >= 0 && index < m_attachmentFiles.size()) {
-        m_attachmentFiles.removeAt(index);
-        emit attachmentFilesChanged();
-    }
-}
-
-void ChatRootView::showLinkFilesDialog()
-{
-    QFileDialog dialog(nullptr, tr("Select Files to Attach"));
-    dialog.setFileMode(QFileDialog::ExistingFiles);
-
-    if (auto project = ProjectExplorer::ProjectManager::startupProject()) {
-        dialog.setDirectory(project->projectDirectory().toFSPathString());
-    }
-
-    if (dialog.exec() == QDialog::Accepted) {
-        QStringList newFilePaths = dialog.selectedFiles();
-        if (!newFilePaths.isEmpty()) {
-            bool filesAdded = false;
-            for (const QString &filePath : std::as_const(newFilePaths)) {
-                if (!m_linkedFiles.contains(filePath)) {
-                    m_linkedFiles.append(filePath);
-                    filesAdded = true;
-                }
-            }
-            if (filesAdded) {
-                emit linkedFilesChanged();
+    QStringList localPaths;
+    for (const QVariant &urlVariant : urls) {
+        QUrl url(urlVariant.toString());
+        if (url.isLocalFile()) {
+            QString localPath = url.toLocalFile();
+            if (!localPath.isEmpty()) {
+                localPaths.append(localPath);
             }
         }
     }
-}
-
-void ChatRootView::removeFileFromLinkList(int index)
-{
-    if (index >= 0 && index < m_linkedFiles.size()) {
-        m_linkedFiles.removeAt(index);
-        emit linkedFilesChanged();
-    }
+    return localPaths;
 }
 
 void ChatRootView::calculateMessageTokensCount(const QString &message)
@@ -652,10 +791,16 @@ QString ChatRootView::chatFileName() const
     return QFileInfo(m_recentFilePath).baseName();
 }
 
+QString ChatRootView::chatFilePath() const
+{
+    return m_recentFilePath;
+}
+
 void ChatRootView::setRecentFilePath(const QString &filePath)
 {
     if (m_recentFilePath != filePath) {
         m_recentFilePath = filePath;
+        m_clientInterface->setChatFilePath(filePath);
         emit chatFileNameChanged();
     }
 }
@@ -667,7 +812,7 @@ bool ChatRootView::shouldIgnoreFileForAttach(const Utils::FilePath &filePath)
         && m_clientInterface->contextManager()
                ->ignoreManager()
                ->shouldIgnore(filePath.toFSPathString(), project)) {
-        LOG_MESSAGE(QString("Ignoring file for attachment due to .qodeassistignore: %1")
+        LOG_MESSAGE(QString("Ignoring file for attachment due to .h2loopignore: %1")
                         .arg(filePath.toFSPathString()));
         return true;
     }
@@ -777,6 +922,23 @@ void ChatRootView::setIsAgentMode(bool newIsAgentMode)
         settings.setValue("QodeAssist/Chat/AgentMode", newIsAgentMode);
 
         emit isAgentModeChanged();
+    }
+}
+
+bool ChatRootView::isThinkingMode() const
+{
+    return m_isThinkingMode;
+}
+
+void ChatRootView::setIsThinkingMode(bool newIsThinkingMode)
+{
+    if (m_isThinkingMode != newIsThinkingMode) {
+        m_isThinkingMode = newIsThinkingMode;
+
+        Settings::chatAssistantSettings().enableThinkingMode.setValue(newIsThinkingMode);
+        Settings::chatAssistantSettings().writeSettings();
+
+        emit isThinkingModeChanged();
     }
 }
 
@@ -1095,6 +1257,138 @@ int ChatRootView::currentMessageRejectedEdits() const
 QString ChatRootView::lastInfoMessage() const
 {
     return m_lastInfoMessage;
+}
+
+bool ChatRootView::isThinkingSupport() const
+{
+    auto providerName = Settings::generalSettings().caProvider();
+    auto provider = LLMCore::ProvidersManager::instance().getProviderByName(providerName);
+
+    return provider && provider->supportThinking();
+}
+
+QString ChatRootView::generateChatFileName(const QString &shortMessage, const QString &dir) const
+{
+    static const QRegularExpression saitizeSymbols = QRegularExpression("[\\/:*?\"<>|\\s]");
+    static const QRegularExpression underSymbols = QRegularExpression("_+");
+
+    QStringList parts;
+    QString sanitizedMessage = shortMessage;
+    sanitizedMessage.replace(saitizeSymbols, "_");
+    sanitizedMessage.replace(underSymbols, "_");
+    sanitizedMessage = sanitizedMessage.trimmed();
+
+    if (!sanitizedMessage.isEmpty()) {
+        if (sanitizedMessage.startsWith('_')) {
+            sanitizedMessage.remove(0, 1);
+        }
+        if (sanitizedMessage.endsWith('_')) {
+            sanitizedMessage.chop(1);
+        }
+
+        QString fullPath = QDir(dir).filePath(sanitizedMessage);
+        QFileInfo fileInfo(fullPath);
+        if (!fileInfo.exists() && QFileInfo(fileInfo.path()).isWritable()) {
+            parts << sanitizedMessage;
+        }
+    }
+
+    parts << QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm");
+
+    QString fileName = parts.join("_");
+    QString fullPath = QDir(dir).filePath(fileName);
+    QFileInfo finalCheck(fullPath);
+
+    if (fileName.isEmpty() || finalCheck.exists() || !QFileInfo(finalCheck.path()).isWritable()) {
+        fileName = QString("chat_%1").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm"));
+    }
+
+    return fileName;
+}
+
+bool ChatRootView::hasImageAttachments(const QStringList &attachments) const
+{
+    for (const QString &filePath : attachments) {
+        if (isImageFile(filePath)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ChatRootView::isImageFile(const QString &filePath) const
+{
+    static const QSet<QString> imageExtensions = {
+        "png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"
+    };
+
+    QFileInfo fileInfo(filePath);
+    return imageExtensions.contains(fileInfo.suffix().toLower());
+}
+
+void ChatRootView::loadAvailableConfigurations()
+{
+    auto &manager = Settings::ConfigurationManager::instance();
+    manager.loadConfigurations(Settings::ConfigurationType::Chat);
+
+    QVector<Settings::AIConfiguration> configs = manager.configurations(
+        Settings::ConfigurationType::Chat);
+
+    m_availableConfigurations.clear();
+    m_availableConfigurations.append(QObject::tr("Current Settings"));
+
+    for (const Settings::AIConfiguration &config : configs) {
+        m_availableConfigurations.append(config.name);
+    }
+
+    auto &settings = Settings::generalSettings();
+    QString currentProvider = settings.caProvider.value();
+    QString currentModel = settings.caModel.value();
+    m_currentConfiguration = QString("%1 - %2").arg(currentProvider, currentModel);
+
+    emit availableConfigurationsChanged();
+    emit currentConfigurationChanged();
+}
+
+void ChatRootView::applyConfiguration(const QString &configName)
+{
+    if (configName == QObject::tr("Current Settings")) {
+        return;
+    }
+
+    auto &manager = Settings::ConfigurationManager::instance();
+    QVector<Settings::AIConfiguration> configs = manager.configurations(
+        Settings::ConfigurationType::Chat);
+
+    for (const Settings::AIConfiguration &config : configs) {
+        if (config.name == configName) {
+            auto &settings = Settings::generalSettings();
+
+            settings.caProvider.setValue(config.provider);
+            settings.caModel.setValue(config.model);
+            settings.caTemplate.setValue(config.templateName);
+            settings.caUrl.setValue(config.url);
+            settings.caEndpointMode.setValue(settings.caEndpointMode.indexForDisplay(config.endpointMode));
+            settings.caCustomEndpoint.setValue(config.customEndpoint);
+
+            settings.writeSettings();
+
+            m_currentConfiguration = QString("%1 - %2").arg(config.provider, config.model);
+            emit currentConfigurationChanged();
+
+            break;
+        }
+    }
+}
+
+QStringList ChatRootView::availableConfigurations() const
+{
+    return m_availableConfigurations;
+}
+
+QString ChatRootView::currentConfiguration() const
+{
+    return m_currentConfiguration;
 }
 
 } // namespace QodeAssist::Chat

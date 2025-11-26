@@ -57,7 +57,8 @@ public:
         LLMCore::PromptTemplate *prompt,
         LLMCore::ContextData context,
         LLMCore::RequestType type,
-        bool isToolsEnabled)
+        bool isToolsEnabled,
+        bool isThinkingEnabled)
         = 0;
     virtual QList<QString> getInstalledModels(const QString &url) = 0;
     virtual QList<QString> validateRequest(const QJsonObject &request, TemplateType type) = 0;
@@ -69,6 +70,8 @@ public:
         = 0;
 
     virtual bool supportsTools() const { return false; };
+    virtual bool supportThinking() const { return false; };
+    virtual bool supportImage() const { return false; };
 
     virtual void setMCPClientManager(MCP::MCPClientManager *mcpManager) { Q_UNUSED(mcpManager) };
 
@@ -98,6 +101,9 @@ signals:
         const QString &toolName,
         const QString &result);
     void continuationStarted(const QodeAssist::LLMCore::RequestID &requestId);
+    void thinkingBlockReceived(
+        const QString &requestId, const QString &thinking, const QString &signature);
+    void redactedThinkingBlockReceived(const QString &requestId, const QString &signature);
 
 protected:
     QJsonObject parseEventLine(const QString &line);
