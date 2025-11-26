@@ -156,7 +156,8 @@ public:
 
     void showUrlSelectionDialog(Utils::StringAspect &aspect, const QStringList &predefinedUrls);
 
-    void showTemplateInfoDialog(const Utils::StringAspect &descriptionAspect, const QString &templateName);
+    void showTemplateInfoDialog(
+        const Utils::StringAspect &descriptionAspect, const QString &templateName);
 
     void updatePreset1Visiblity(bool state);
 

@@ -35,11 +35,18 @@ QodeAssist enhances Qt Creator with AI-powered coding assistance:
 
 - **Code Completion**: Intelligent, context-aware code suggestions for C++ and QML
 - **Chat Assistant**: Multiple interface options (popup window, side panel, bottom panel)
+  <<<<<<< HEAD
 - **Quick Refactoring**: Inline AI-assisted code improvements directly in editor with custom instructions library
 - **File Context**: Attach or link files for better AI understanding
 - **Tool Calling**: AI can read project files, search code, and access diagnostics
 - **Multiple Providers**: Support for Ollama, Claude, OpenAI, Google AI, Mistral AI, llama.cpp, and more
-- **Customizable**: Project-specific rules, custom instructions, and extensive model templates
+- # **Customizable**: Project-specific rules, custom instructions, and extensive model templates
+- **Quick Refactoring**: AI-assisted code improvements and alternative suggestions
+- **File Context**: Attach or link files for better AI understanding
+- **Tool Calling**: AI can read project files, search code, and access diagnostics
+- **Multiple Providers**: Support for Ollama, Claude, OpenAI, Google AI, Mistral AI, llama.cpp, and more
+- **Customizable**: Project-specific rules and extensive model templates
+  > > > > > > > e59d17e (doc: Move out docs from main README)
 
 **Join our [Discord Community](https://discord.gg/BGMkUsXUgf)** to get support and connect with other users!
 
@@ -439,6 +446,37 @@ cmake --build .
   - **Windows/Linux**: Qt Creator build directory or combined binary package
   - **macOS**: `Qt Creator.app/Contents/Resources/`
 - `<path_to_plugin_source>`: Path to this plugin directory
+  or (for faster builds with parallel jobs) - Linux
+  cmake --build . -j $(nproc)
+
+  OR - Windows
+  cmake --build . -j %NUMBER_OF_PROCESSORS%
+
+```bash
+mkdir build && cd build
+```
+
+2. Configure and build:
+
+```bash
+cmake -DCMAKE_PREFIX_PATH=<path_to_qtcreator> -DCMAKE_BUILD_TYPE=RelWithDebInfo <path_to_plugin_source>
+cmake --build .
+```
+
+**Path specifications:**
+
+- `<path_to_qtcreator>`:
+  - **Windows/Linux**: Qt Creator build directory or combined binary package
+  - **macOS**: `Qt Creator.app/Contents/Resources/`
+- `<path_to_plugin_source>`: Path to this plugin directory
+
+**Build Command Reference Example (Ubuntu 24)**
+
+    cmake -DCMAKE_PREFIX_PATH=/home/dinesh/Qt/Tools/QtCreator/lib/cmake/QtCreator -DCMAKE_BUILD_TYPE=RelWithDebInfo /media/dinesh/HDD1/RamailoTech/QodeAssist
+
+    cmake -DCMAKE_PREFIX_PATH=/home/dinesh/Qt/6.9.3/gcc_64/ -DCMAKE_BUILD_TYPE=RelWithDebInfo /media/dinesh/HDD1/RamailoTech/QodeAssist
+
+    cmake --build . -j $(nproc)
 
 **Build Command Reference Example (Ubuntu 24)**
 

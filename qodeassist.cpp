@@ -42,7 +42,6 @@
 #include <QMessageBox>
 #include <QTranslator>
 
-#include <QInputDialog>
 #include "ConfigurationManager.hpp"
 #include "QodeAssistClient.hpp"
 #include "UpdateStatusWidget.hpp"
@@ -67,6 +66,7 @@
 #include <texteditor/textdocument.h>
 #include <texteditor/texteditor.h>
 #include <texteditor/texteditorconstants.h>
+#include <QInputDialog>
 
 using namespace Utils;
 using namespace Core;
@@ -119,7 +119,7 @@ public:
         Core::IOptionsPage::registerCategory(
             Constants::QODE_ASSIST_GENERAL_OPTIONS_CATEGORY,
             Constants::QODE_ASSIST_GENERAL_OPTIONS_DISPLAY_CATEGORY,
-            ":/resources/images/qoderassist-icon.png");
+            ":/resources/images/h2loop-icon.png");
 #endif
         QQuickWindow::setSceneGraphBackend(
             Settings::chatAssistantSettings().chatRenderer.stringValue());
@@ -128,18 +128,19 @@ public:
 
         Providers::registerProviders();
         Templates::registerTemplates();
-        
+
+        CustomInstructionsManager::instance().loadInstructions();
+
         CustomInstructionsManager::instance().loadInstructions();
 
         Utils::Icon QCODEASSIST_ICON(
-            {{":/resources/images/qoderassist-icon.png", Utils::Theme::IconsBaseColor}});
-        Utils::Icon QCODEASSIST_CHAT_ICON(
-            {{":/resources/images/qode-assist-chat-icon.png", Utils::Theme::IconsBaseColor}});
+            {{":/resources/images/h2loop-icon.png", Utils::Theme::IconsBaseColor}});
+        Utils::Icon QCODEASSIST_CHAT_ICON({{":/resources/images/qode-assist-chat-icon.png"}});
 
         ActionBuilder requestAction(this, Constants::QODE_ASSIST_REQUEST_SUGGESTION);
         requestAction.setToolTip(
-            Tr::tr("Generate QodeAssist suggestion at the current cursor position."));
-        requestAction.setText(Tr::tr("Request QodeAssist Suggestion"));
+            Tr::tr("Generate H2Loop Assistant suggestion at the current cursor position."));
+        requestAction.setText(Tr::tr("Request H2Loop Assistant Suggestion"));
         requestAction.setIcon(QCODEASSIST_ICON.icon());
         const QKeySequence defaultShortcut = QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_Q);
         requestAction.setDefaultKeySequence(defaultShortcut);
@@ -152,8 +153,9 @@ public:
                         m_qodeAssistClient->requestCompletions(editor);
                     }
                 } else
-                    qWarning() << "The QodeAssist is not ready. Please check your connection and "
-                                  "settings.";
+                    qWarning()
+                        << "The H2Loop Assistant is not ready. Please check your connection and "
+                           "settings.";
             }
         });
 
@@ -175,15 +177,16 @@ public:
         Settings::setupProjectPanel();
         ConfigurationManager::instance().init();
 
-        if (Settings::generalSettings().enableCheckUpdate()) {
-            QTimer::singleShot(3000, this, &QodeAssistPlugin::checkForUpdates);
-        }
+        // Temporarily disable update check
+        // if (Settings::generalSettings().enableCheckUpdate()) {
+        //     QTimer::singleShot(3000, this, &QodeAssistPlugin::checkForUpdates);
+        // }
 
         ActionBuilder quickRefactorAction(this, "QodeAssist.QuickRefactor");
         const QKeySequence quickRefactorShortcut = QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_R);
         quickRefactorAction.setDefaultKeySequence(quickRefactorShortcut);
-        quickRefactorAction.setToolTip(Tr::tr("Refactor code using QodeAssist"));
-        quickRefactorAction.setText(Tr::tr("Quick Refactor with QodeAssist"));
+        quickRefactorAction.setToolTip(Tr::tr("Refactor code using H2Loop Assistant"));
+        quickRefactorAction.setText(Tr::tr("Quick Refactor with H2Loop Assistant"));
         quickRefactorAction.setIcon(QCODEASSIST_ICON.icon());
         quickRefactorAction.addOnTriggered(this, [this] {
             if (auto editor = TextEditor::TextEditorWidget::currentTextEditorWidget()) {
@@ -199,8 +202,9 @@ public:
                         }
                     }
                 } else {
-                    qWarning() << "The QodeAssist is not ready. Please check your connection and "
-                                  "settings.";
+                    qWarning()
+                        << "The H2Loop Assistant is not ready. Please check your connection and "
+                           "settings.";
                 }
             }
         });
@@ -208,8 +212,8 @@ public:
         ActionBuilder showChatViewAction(this, "QodeAssist.ShowChatView");
         const QKeySequence showChatViewShortcut = QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_W);
         showChatViewAction.setDefaultKeySequence(showChatViewShortcut);
-        showChatViewAction.setToolTip(Tr::tr("Show QodeAssist Chat"));
-        showChatViewAction.setText(Tr::tr("Show QodeAssist Chat"));
+        showChatViewAction.setToolTip(Tr::tr("Show H2Loop Assistant Chat"));
+        showChatViewAction.setText(Tr::tr("Show H2Loop Assistant Chat"));
         showChatViewAction.setIcon(QCODEASSIST_CHAT_ICON.icon());
         showChatViewAction.addOnTriggered(this, [this] {
             if (!m_chatView) {
@@ -228,8 +232,8 @@ public:
         ActionBuilder closeChatViewAction(this, "QodeAssist.CloseChatView");
         const QKeySequence closeChatViewShortcut = QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_S);
         closeChatViewAction.setDefaultKeySequence(closeChatViewShortcut);
-        closeChatViewAction.setToolTip(Tr::tr("Close QodeAssist Chat"));
-        closeChatViewAction.setText(Tr::tr("Close QodeAssist Chat"));
+        closeChatViewAction.setToolTip(Tr::tr("Close H2Loop Assistant Chat"));
+        closeChatViewAction.setText(Tr::tr("Close H2Loop Assistant Chat"));
         closeChatViewAction.setIcon(QCODEASSIST_CHAT_ICON.icon());
         closeChatViewAction.addOnTriggered(this, [this] {
             if (m_chatView->isVisible()) {
@@ -244,10 +248,10 @@ public:
             editorContextMenu
                 ->addAction(quickRefactorAction.command(), Core::Constants::G_DEFAULT_THREE);
             editorContextMenu->addAction(requestAction.command(), Core::Constants::G_DEFAULT_THREE);
-            editorContextMenu->addAction(showChatViewAction.command(),
-                                         Core::Constants::G_DEFAULT_THREE);
-            editorContextMenu->addAction(closeChatViewAction.command(),
-                                         Core::Constants::G_DEFAULT_THREE);
+            editorContextMenu
+                ->addAction(showChatViewAction.command(), Core::Constants::G_DEFAULT_THREE);
+            editorContextMenu
+                ->addAction(closeChatViewAction.command(), Core::Constants::G_DEFAULT_THREE);
         }
     }
 

@@ -87,22 +87,20 @@ void CompletionProgressHandler::operateTooltip(
     }
 
     m_progressWidget = new ProgressWidget(editorWidget);
-    
     if (m_cancelCallback) {
         m_progressWidget->setCancelCallback(m_cancelCallback);
     }
-    
+
     const QRect cursorRect = editorWidget->cursorRect(editorWidget->textCursor());
     QPoint globalPos = editorWidget->viewport()->mapToGlobal(cursorRect.topLeft());
     QPoint localPos = editorWidget->mapFromGlobal(globalPos);
-    
     localPos.rx() += 5;
     localPos.ry() -= m_progressWidget->height() + 5;
-    
+
     if (localPos.y() < 0) {
         localPos.ry() = cursorRect.bottom() + 5;
     }
-    
+
     m_progressWidget->move(localPos);
     m_progressWidget->show();
     m_progressWidget->raise();

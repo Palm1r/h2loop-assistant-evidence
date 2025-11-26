@@ -77,6 +77,17 @@ CodeCompletionSettings::CodeCompletionSettings()
             "Hint-based: Shows a hint when typing, press Tab to request completion\n"
             "Automatic: Automatically requests completion after typing threshold"));
 
+    completionTriggerMode.setLabelText(Tr::tr("Completion trigger mode:"));
+    completionTriggerMode.setSettingsKey(Constants::CC_COMPLETION_TRIGGER_MODE);
+    completionTriggerMode.setDisplayStyle(Utils::SelectionAspect::DisplayStyle::ComboBox);
+    completionTriggerMode.addOption("Hint-based (Tab to trigger)");
+    completionTriggerMode.addOption("Automatic");
+    completionTriggerMode.setDefaultValue("Hint-based (Tab to trigger)");
+    completionTriggerMode.setToolTip(
+        Tr::tr(
+            "Hint-based: Shows a hint when typing, press Tab to request completion\n"
+            "Automatic: Automatically requests completion after typing threshold"));
+
     startSuggestionTimer.setSettingsKey(Constants::СС_START_SUGGESTION_TIMER);
     startSuggestionTimer.setLabelText(Tr::tr("with delay(ms)"));
     startSuggestionTimer.setToolTip(

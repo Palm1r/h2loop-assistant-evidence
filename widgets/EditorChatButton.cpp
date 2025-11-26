@@ -31,7 +31,7 @@ EditorChatButton::EditorChatButton(QWidget *parent)
     m_textColor = Utils::creatorTheme()->color(Utils::Theme::TextColorNormal);
     m_backgroundColor = Utils::creatorTheme()->color(Utils::Theme::BackgroundColorNormal);
 
-    m_logoPixmap = QPixmap(":/resources/images/qoderassist-icon.png");
+    m_logoPixmap = QPixmap(":/resources/images/h2loop-icon.png");
 
     if (!m_logoPixmap.isNull()) {
         QImage image = m_logoPixmap.toImage();
@@ -61,7 +61,7 @@ EditorChatButton::EditorChatButton(QWidget *parent)
 
     setFixedSize(40, 40);
     setCursor(Qt::PointingHandCursor);
-    setToolTip(tr("Open QodeAssist Chat"));
+    setToolTip(tr("Open H2Loop Assistant Chat"));
 }
 
 EditorChatButton::~EditorChatButton() = default;

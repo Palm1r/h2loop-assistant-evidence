@@ -54,21 +54,19 @@ void RefactorSuggestionHoverHandler::clearSuggestionRange()
 }
 
 void RefactorSuggestionHoverHandler::identifyMatch(
-    TextEditor::TextEditorWidget *editorWidget,
-    int pos,
-    ReportPriority report)
+    TextEditor::TextEditorWidget *editorWidget, int pos, ReportPriority report)
 {
-    
     QScopeGuard cleanup([&] { report(Priority_None); });
-    
+
     if (!editorWidget->suggestionVisible()) {
+        LOG_MESSAGE("RefactorSuggestionHoverHandler: No suggestion visible");
         return;
     }
 
     QTextCursor cursor(editorWidget->document());
     cursor.setPosition(pos);
     m_block = cursor.block();
-    
+
 #if QODEASSIST_QT_CREATOR_VERSION_MAJOR >= 17
     auto *suggestion = dynamic_cast<RefactorSuggestion *>(
         TextEditor::TextBlockUserData::suggestion(m_block));
@@ -78,24 +76,26 @@ void RefactorSuggestionHoverHandler::identifyMatch(
         LOG_MESSAGE("RefactorSuggestionHoverHandler: No user data in block");
         return;
     }
-    
+
     auto *suggestion = dynamic_cast<RefactorSuggestion *>(userData->suggestion());
 #endif
-    
+
     if (!suggestion) {
+        LOG_MESSAGE("RefactorSuggestionHoverHandler: No RefactorSuggestion in block");
         return;
     }
 
+    LOG_MESSAGE(
+        "RefactorSuggestionHoverHandler: Found RefactorSuggestion, reporting Priority_Suggestion");
     cleanup.dismiss();
     report(Priority_Suggestion);
 }
 
 void RefactorSuggestionHoverHandler::operateTooltip(
-    TextEditor::TextEditorWidget *editorWidget,
-    const QPoint &point)
+    TextEditor::TextEditorWidget *editorWidget, const QPoint &point)
 {
     Q_UNUSED(point)
-    
+
 #if QODEASSIST_QT_CREATOR_VERSION_MAJOR >= 17
     auto *suggestion = dynamic_cast<RefactorSuggestion *>(
         TextEditor::TextBlockUserData::suggestion(m_block));
@@ -105,19 +105,24 @@ void RefactorSuggestionHoverHandler::operateTooltip(
         LOG_MESSAGE("RefactorSuggestionHoverHandler::operateTooltip: No user data in block");
         return;
     }
-    
+
     auto *suggestion = dynamic_cast<RefactorSuggestion *>(userData->suggestion());
 #endif
 
     if (!suggestion) {
+        LOG_MESSAGE("RefactorSuggestionHoverHandler::operateTooltip: No suggestion in block");
         return;
     }
 
+    LOG_MESSAGE("RefactorSuggestionHoverHandler::operateTooltip: Creating tooltip widget");
+
+    // Create compact widget with buttons
     auto *widget = new QWidget();
     auto *layout = new QHBoxLayout(widget);
     layout->setContentsMargins(4, 3, 4, 3);
     layout->setSpacing(6);
 
+    // Get theme colors
     const QColor normalBg = Utils::creatorColor(Utils::Theme::BackgroundColorNormal);
     const QColor hoverBg = Utils::creatorColor(Utils::Theme::BackgroundColorHover);
     const QColor selectedBg = Utils::creatorColor(Utils::Theme::BackgroundColorSelected);
@@ -131,28 +136,28 @@ void RefactorSuggestionHoverHandler::operateTooltip(
     applyButton->setToolTip("Apply refactoring (Tab)");
     applyButton->setCursor(Qt::PointingHandCursor);
     applyButton->setStyleSheet(QString(
-        "QPushButton {"
-        "  background-color: %1;"
-        "  color: %2;"
-        "  border: 1px solid %3;"
-        "  border-radius: 3px;"
-        "  padding: 4px 12px;"
-        "  font-weight: bold;"
-        "  font-size: 11px;"
-        "  min-width: 60px;"
-        "}"
-        "QPushButton:hover {"
-        "  background-color: %4;"
-        "  border-color: %2;"
-        "}"
-        "QPushButton:pressed {"
-        "  background-color: %5;"
-        "}")
-        .arg(selectedBg.name())
-        .arg(successColor.name())
-        .arg(borderColor.name())
-        .arg(selectedBg.lighter(110).name())
-        .arg(selectedBg.darker(110).name()));
+                                   "QPushButton {"
+                                   "  background-color: %1;"
+                                   "  color: %2;"
+                                   "  border: 1px solid %3;"
+                                   "  border-radius: 3px;"
+                                   "  padding: 4px 12px;"
+                                   "  font-weight: bold;"
+                                   "  font-size: 11px;"
+                                   "  min-width: 60px;"
+                                   "}"
+                                   "QPushButton:hover {"
+                                   "  background-color: %4;"
+                                   "  border-color: %2;"
+                                   "}"
+                                   "QPushButton:pressed {"
+                                   "  background-color: %5;"
+                                   "}")
+                                   .arg(selectedBg.name())
+                                   .arg(successColor.name())
+                                   .arg(borderColor.name())
+                                   .arg(selectedBg.lighter(110).name())
+                                   .arg(selectedBg.darker(110).name()));
     QObject::connect(applyButton, &QPushButton::clicked, widget, [this]() {
         Utils::ToolTip::hide();
         if (m_applyCallback) {
@@ -165,29 +170,29 @@ void RefactorSuggestionHoverHandler::operateTooltip(
     dismissButton->setToolTip("Dismiss refactoring (Esc)");
     dismissButton->setCursor(Qt::PointingHandCursor);
     dismissButton->setStyleSheet(QString(
-        "QPushButton {"
-        "  background-color: %1;"
-        "  color: %2;"
-        "  border: 1px solid %3;"
-        "  border-radius: 3px;"
-        "  padding: 4px 12px;"
-        "  font-size: 11px;"
-        "  min-width: 60px;"
-        "}"
-        "QPushButton:hover {"
-        "  background-color: %4;"
-        "  color: %5;"
-        "  border-color: %5;"
-        "}"
-        "QPushButton:pressed {"
-        "  background-color: %6;"
-        "}")
-        .arg(normalBg.name())
-        .arg(textColor.name())
-        .arg(borderColor.name())
-        .arg(hoverBg.name())
-        .arg(errorColor.name())
-        .arg(hoverBg.darker(110).name()));
+                                     "QPushButton {"
+                                     "  background-color: %1;"
+                                     "  color: %2;"
+                                     "  border: 1px solid %3;"
+                                     "  border-radius: 3px;"
+                                     "  padding: 4px 12px;"
+                                     "  font-size: 11px;"
+                                     "  min-width: 60px;"
+                                     "}"
+                                     "QPushButton:hover {"
+                                     "  background-color: %4;"
+                                     "  color: %5;"
+                                     "  border-color: %5;"
+                                     "}"
+                                     "QPushButton:pressed {"
+                                     "  background-color: %6;"
+                                     "}")
+                                     .arg(normalBg.name())
+                                     .arg(textColor.name())
+                                     .arg(borderColor.name())
+                                     .arg(hoverBg.name())
+                                     .arg(errorColor.name())
+                                     .arg(hoverBg.darker(110).name()));
     QObject::connect(dismissButton, &QPushButton::clicked, widget, [this]() {
         Utils::ToolTip::hide();
         if (m_dismissCallback) {
@@ -198,13 +203,13 @@ void RefactorSuggestionHoverHandler::operateTooltip(
     layout->addWidget(applyButton);
     layout->addWidget(dismissButton);
 
+    // Position tooltip above cursor, like standard Qt Creator suggestions
     const QRect cursorRect = editorWidget->cursorRect(editorWidget->textCursor());
     QPoint pos = editorWidget->viewport()->mapToGlobal(cursorRect.topLeft())
                  - Utils::ToolTip::offsetFromPosition();
     pos.ry() -= widget->sizeHint().height();
-    
+
     Utils::ToolTip::show(pos, widget, editorWidget);
 }
 
 } // namespace QodeAssist
-

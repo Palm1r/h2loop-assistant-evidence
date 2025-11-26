@@ -88,13 +88,11 @@ void QuickRefactorDialog::setupUi()
     m_commandsComboBox->setEditable(true);
     m_commandsComboBox->setInsertPolicy(QComboBox::NoInsert);
     m_commandsComboBox->lineEdit()->setPlaceholderText("Search or select instruction...");
-
     QCompleter *completer = new QCompleter(this);
     completer->setCompletionMode(QCompleter::PopupCompletion);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     completer->setFilterMode(Qt::MatchContains);
     m_commandsComboBox->setCompleter(completer);
-
     instructionsLayout->addWidget(m_commandsComboBox);
 
     m_addCommandButton = new QToolButton(this);
@@ -191,12 +189,10 @@ void QuickRefactorDialog::createActionButtons()
 QString QuickRefactorDialog::instructions() const
 {
     QString result;
-
     CustomInstruction instruction = findCurrentInstruction();
     if (!instruction.id.isEmpty()) {
         result = instruction.body;
     }
-
     QString additionalText = m_textEdit->toPlainText().trimmed();
     if (!additionalText.isEmpty()) {
         if (!result.isEmpty()) {
@@ -204,7 +200,6 @@ QString QuickRefactorDialog::instructions() const
         }
         result += additionalText;
     }
-
     return result;
 }
 
@@ -358,13 +353,11 @@ CustomInstruction QuickRefactorDialog::findCurrentInstruction() const
 
     auto &manager = CustomInstructionsManager::instance();
     const QVector<CustomInstruction> &instructions = manager.instructions();
-
     for (const CustomInstruction &instruction : instructions) {
         if (instruction.name == currentText) {
             return instruction;
         }
     }
-
     int currentIndex = m_commandsComboBox->currentIndex();
     if (currentIndex > 0) {
         QString instructionId = m_commandsComboBox->itemData(currentIndex).toString();
@@ -372,7 +365,6 @@ CustomInstruction QuickRefactorDialog::findCurrentInstruction() const
             return manager.getInstructionById(instructionId);
         }
     }
-
     return CustomInstruction();
 }
 
@@ -470,12 +462,10 @@ void QuickRefactorDialog::onOpenInstructionsFolder()
 {
     QString path = QString("%1/qodeassist/quick_refactor/instructions")
                        .arg(Core::ICore::userResourcePath().toFSPathString());
-
     QDir dir(path);
     if (!dir.exists()) {
         dir.mkpath(".");
     }
-
     QUrl url = QUrl::fromLocalFile(dir.absolutePath());
     QDesktopServices::openUrl(url);
 }

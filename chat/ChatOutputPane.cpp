@@ -28,7 +28,7 @@ ChatOutputPane::ChatOutputPane(QObject *parent)
     , m_chatWidget(new ChatWidget)
 {
     setId("QodeAssistChat");
-    setDisplayName(Tr::tr("QodeAssist Chat"));
+    setDisplayName(Tr::tr("H2Loop Assistant Chat"));
     setPriorityInStatusBar(-40);
 }
 
