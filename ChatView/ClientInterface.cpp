@@ -26,6 +26,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QMimeDatabase>
+#include <QRegularExpression>
 #include <QUuid>
 
 #include <coreplugin/editormanager/editormanager.h>
@@ -41,12 +42,12 @@
 #include "ChatAssistantSettings.hpp"
 #include "ChatSerializer.hpp"
 #include "GeneralSettings.hpp"
-#include "ToolsSettings.hpp"
 #include "Logger.hpp"
 #include "ProvidersManager.hpp"
 #include "RequestConfig.hpp"
-#include <context/ChangesManager.h>
+#include "ToolsSettings.hpp"
 #include <RulesLoader.hpp>
+#include <context/ChangesManager.h>
 
 namespace QodeAssist::Chat {
 
@@ -71,12 +72,12 @@ void ClientInterface::sendMessage(
 {
     cancelRequest();
     m_accumulatedResponses.clear();
-    
+
     Context::ChangesManager::instance().archiveAllNonArchivedEdits();
 
     QList<QString> imageFiles;
     QList<QString> textFiles;
-    
+
     for (const QString &filePath : attachments) {
         if (isImageFile(filePath)) {
             imageFiles.append(filePath);
@@ -86,7 +87,7 @@ void ClientInterface::sendMessage(
     }
 
     auto attachFiles = m_contextManager->getContentFiles(textFiles);
-    
+
     QList<ChatModel::ImageAttachment> imageAttachments;
     if (!imageFiles.isEmpty() && !m_chatFilePath.isEmpty()) {
         for (const QString &imagePath : imageFiles) {
@@ -94,23 +95,25 @@ void ClientInterface::sendMessage(
             if (base64Data.isEmpty()) {
                 continue;
             }
-            
+
             QString storedPath;
             QFileInfo fileInfo(imagePath);
-            if (ChatSerializer::saveImageToStorage(m_chatFilePath, fileInfo.fileName(), base64Data, storedPath)) {
+            if (ChatSerializer::saveImageToStorage(
+                    m_chatFilePath, fileInfo.fileName(), base64Data, storedPath)) {
                 ChatModel::ImageAttachment imageAttachment;
                 imageAttachment.fileName = fileInfo.fileName();
                 imageAttachment.storedPath = storedPath;
                 imageAttachment.mediaType = getMediaTypeForImage(imagePath);
                 imageAttachments.append(imageAttachment);
-                
+
                 LOG_MESSAGE(QString("Stored image %1 as %2").arg(fileInfo.fileName(), storedPath));
             }
         }
     } else if (!imageFiles.isEmpty()) {
-        LOG_MESSAGE(QString("Warning: Chat file path not set, cannot save %1 image(s)").arg(imageFiles.size()));
+        LOG_MESSAGE(QString("Warning: Chat file path not set, cannot save %1 image(s)")
+                        .arg(imageFiles.size()));
     }
-    
+
     m_chatModel->addMessage(message, ChatModel::ChatRole::User, "", attachFiles, imageAttachments);
 
     auto &chatAssistantSettings = Settings::chatAssistantSettings();
@@ -142,7 +145,8 @@ void ClientInterface::sendMessage(
 
         if (project) {
             systemPrompt += QString("\n# Active project name: %1").arg(project->displayName());
-            systemPrompt += QString("\n# Active Project path: %1").arg(project->projectDirectory().toUrlishString());
+            systemPrompt += QString("\n# Active Project path: %1")
+                                .arg(project->projectDirectory().toUrlishString());
 
             QString projectRules
                 = LLMCore::RulesLoader::loadRulesForProject(project, LLMCore::RulesContext::Chat);
@@ -165,29 +169,29 @@ void ClientInterface::sendMessage(
         if (msg.role == ChatModel::ChatRole::Tool || msg.role == ChatModel::ChatRole::FileEdit) {
             continue;
         }
-        
+
         LLMCore::Message apiMessage;
         apiMessage.role = msg.role == ChatModel::ChatRole::User ? "user" : "assistant";
         apiMessage.content = msg.content;
         apiMessage.isThinking = (msg.role == ChatModel::ChatRole::Thinking);
         apiMessage.isRedacted = msg.isRedacted;
         apiMessage.signature = msg.signature;
-        
+
         if (provider->supportImage() && !m_chatFilePath.isEmpty() && !msg.images.isEmpty()) {
             auto apiImages = loadImagesFromStorage(msg.images);
             if (!apiImages.isEmpty()) {
                 apiMessage.images = apiImages;
             }
         }
-        
+
         messages.append(apiMessage);
     }
-    
+
     if (!imageFiles.isEmpty() && !provider->supportImage()) {
         LOG_MESSAGE(QString("Provider %1 doesn't support images, %2 ignored")
                         .arg(provider->name(), QString::number(imageFiles.size())));
     }
-    
+
     context.history = messages;
 
     LLMCore::LLMConfig config;
@@ -222,7 +226,7 @@ void ClientInterface::sendMessage(
     QJsonObject request{{"id", requestId}};
 
     m_activeRequests[requestId] = {request, provider};
-    
+
     emit requestStarted(requestId);
 
     connect(
@@ -311,7 +315,8 @@ void ClientInterface::cancelRequest()
 
 void ClientInterface::handleLLMResponse(const QString &response, const QJsonObject &request)
 {
-    const auto message = response.trimmed();
+    QString filteredResponse = filterToolCallSyntax(response);
+    const auto message = filteredResponse.trimmed();
 
     if (!message.isEmpty()) {
         QString messageId = request["id"].toString();
@@ -341,6 +346,24 @@ QString ClientInterface::getCurrentFileContext() const
     LOG_MESSAGE(QString("Got context from file: %1").arg(textDocument->filePath().toFSPathString()));
 
     return QString("Current file context:\n%1\nFile content:\n%2").arg(fileInfo, content);
+}
+
+QString ClientInterface::filterToolCallSyntax(const QString &response) const
+{
+    QString filtered = response;
+
+    // Remove <tool_call> <function=... patterns (with any tool name)
+    QRegularExpression toolCallRegex(R"(<tool_call>\s*<function=[^>]*)");
+    filtered = filtered.replace(toolCallRegex, "");
+
+    // Remove any remaining <function=... patterns (with any tool name)
+    QRegularExpression functionRegex(R"(<function=[^>]*)");
+    filtered = filtered.replace(functionRegex, "");
+
+    // Remove any remaining <tool_call> tags
+    filtered = filtered.replace("<tool_call>", "");
+
+    return filtered;
 }
 
 QString ClientInterface::getSystemPromptWithLinkedFiles(
@@ -386,14 +409,14 @@ void ClientInterface::handleFullResponse(const QString &requestId, const QString
     const RequestContext &ctx = it.value();
 
     QString finalText = !fullText.isEmpty() ? fullText : m_accumulatedResponses[requestId];
-    
+
     QString applyError;
-    bool applySuccess = Context::ChangesManager::instance()
-                           .applyPendingEditsForRequest(requestId, &applyError);
-    
+    bool applySuccess
+        = Context::ChangesManager::instance().applyPendingEditsForRequest(requestId, &applyError);
+
     if (!applySuccess) {
         LOG_MESSAGE(QString("Some edits for request %1 were not auto-applied: %2")
-                       .arg(requestId, applyError));
+                        .arg(requestId, applyError));
     }
 
     LOG_MESSAGE(
@@ -434,35 +457,32 @@ void ClientInterface::handleCleanAccumulatedData(const QString &requestId)
 
 bool ClientInterface::isImageFile(const QString &filePath) const
 {
-    static const QSet<QString> imageExtensions = {
-        "png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"
-    };
-    
+    static const QSet<QString> imageExtensions = {"png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"};
+
     QFileInfo fileInfo(filePath);
     QString extension = fileInfo.suffix().toLower();
-    
+
     return imageExtensions.contains(extension);
 }
 
 QString ClientInterface::getMediaTypeForImage(const QString &filePath) const
 {
-    static const QHash<QString, QString> mediaTypes = {
-        {"png", "image/png"},
-        {"jpg", "image/jpeg"},
-        {"jpeg", "image/jpeg"},
-        {"gif", "image/gif"},
-        {"webp", "image/webp"},
-        {"bmp", "image/bmp"},
-        {"svg", "image/svg+xml"}
-    };
-    
+    static const QHash<QString, QString> mediaTypes
+        = {{"png", "image/png"},
+           {"jpg", "image/jpeg"},
+           {"jpeg", "image/jpeg"},
+           {"gif", "image/gif"},
+           {"webp", "image/webp"},
+           {"bmp", "image/bmp"},
+           {"svg", "image/svg+xml"}};
+
     QFileInfo fileInfo(filePath);
     QString extension = fileInfo.suffix().toLower();
-    
+
     if (mediaTypes.contains(extension)) {
         return mediaTypes[extension];
     }
-    
+
     QMimeDatabase mimeDb;
     QMimeType mimeType = mimeDb.mimeTypeForFile(filePath);
     return mimeType.name();
@@ -475,32 +495,34 @@ QString ClientInterface::encodeImageToBase64(const QString &filePath) const
         LOG_MESSAGE(QString("Failed to open image file: %1").arg(filePath));
         return QString();
     }
-    
+
     QByteArray imageData = file.readAll();
     file.close();
-    
+
     return imageData.toBase64();
 }
 
-QVector<LLMCore::ImageAttachment> ClientInterface::loadImagesFromStorage(const QList<ChatModel::ImageAttachment> &storedImages) const
+QVector<LLMCore::ImageAttachment> ClientInterface::loadImagesFromStorage(
+    const QList<ChatModel::ImageAttachment> &storedImages) const
 {
     QVector<LLMCore::ImageAttachment> apiImages;
-    
+
     for (const auto &storedImage : storedImages) {
-        QString base64Data = ChatSerializer::loadImageFromStorage(m_chatFilePath, storedImage.storedPath);
+        QString base64Data
+            = ChatSerializer::loadImageFromStorage(m_chatFilePath, storedImage.storedPath);
         if (base64Data.isEmpty()) {
             LOG_MESSAGE(QString("Warning: Failed to load image: %1").arg(storedImage.storedPath));
             continue;
         }
-        
+
         LLMCore::ImageAttachment apiImage;
         apiImage.data = base64Data;
         apiImage.mediaType = storedImage.mediaType;
         apiImage.isUrl = false;
-        
+
         apiImages.append(apiImage);
     }
-    
+
     return apiImages;
 }
 
