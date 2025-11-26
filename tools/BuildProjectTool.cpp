@@ -37,7 +37,20 @@ namespace QodeAssist::Tools {
 
 BuildProjectTool::BuildProjectTool(QObject *parent)
     : BaseTool(parent)
+{}
+
+BuildProjectTool::~BuildProjectTool()
 {
+    for (auto it = m_activeBuilds.begin(); it != m_activeBuilds.end(); ++it) {
+        BuildInfo &info = it.value();
+        if (info.buildFinishedConnection) {
+            disconnect(info.buildFinishedConnection);
+        }
+        if (info.promise) {
+            info.promise->finish();
+        }
+    }
+    m_activeBuilds.clear();
 }
 
 BuildProjectTool::~BuildProjectTool()
@@ -184,8 +197,8 @@ void BuildProjectTool::onBuildQueueFinished(bool success)
         if (!ProjectExplorer::BuildManager::isBuilding(project)) {
             BuildInfo &info = it.value();
 
-            LOG_MESSAGE(QString("BuildProjectTool: Build completed for project '%1'")
-                            .arg(info.projectName));
+            LOG_MESSAGE(
+                QString("BuildProjectTool: Build completed for project '%1'").arg(info.projectName));
 
             if (info.promise && info.promise->future().isCanceled()) {
                 LOG_MESSAGE(
@@ -220,8 +233,7 @@ QString BuildProjectTool::collectBuildResults(
     QString buildType = isRebuild ? QString("Rebuild") : QString("Build");
     QString statusText = success ? QString("✓ SUCCEEDED") : QString("✗ FAILED");
 
-    results.append(QString("%1 %2 for project '%3'\n")
-                       .arg(buildType, statusText, projectName));
+    results.append(QString("%1 %2 for project '%3'\n").arg(buildType, statusText, projectName));
 
     const auto tasks = IssuesTracker::instance().getTasks();
 
@@ -275,9 +287,8 @@ QString BuildProjectTool::collectBuildResults(
             }
         }
 
-        results.append(QString("Issues found: %1 error(s), %2 warning(s)")
-                           .arg(errorCount)
-                           .arg(warningCount));
+        results.append(
+            QString("Issues found: %1 error(s), %2 warning(s)").arg(errorCount).arg(warningCount));
 
         if (!issuesList.isEmpty()) {
             results.append("\nDetails:");
@@ -308,8 +319,8 @@ void BuildProjectTool::cleanupBuildInfo(ProjectExplorer::Project *project)
         disconnect(info.buildFinishedConnection);
     }
 
-    LOG_MESSAGE(QString("BuildProjectTool: Cleaned up build info for project '%1'")
-                    .arg(info.projectName));
+    LOG_MESSAGE(
+        QString("BuildProjectTool: Cleaned up build info for project '%1'").arg(info.projectName));
 }
 
 } // namespace QodeAssist::Tools

@@ -138,26 +138,24 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
             throw ToolInvalidArgument("'new_content' parameter is required and cannot be empty");
         }
 
-
         QString filePath;
         QFileInfo fileInfo(filename);
 
         if (fileInfo.isAbsolute() && fileInfo.exists()) {
             filePath = filename;
         } else {
-            FileSearchUtils::FileMatch match = FileSearchUtils::findBestMatch(
-                filename, QString(), 10, m_ignoreManager);
+            FileSearchUtils::FileMatch match
+                = FileSearchUtils::findBestMatch(filename, QString(), 10, m_ignoreManager);
 
             if (match.absolutePath.isEmpty()) {
-                throw ToolRuntimeError(
-                    QString("File '%1' not found in project. "
-                            "Please provide a valid filename or absolute path.")
-                        .arg(filename));
+                throw ToolRuntimeError(QString(
+                                           "File '%1' not found in project. "
+                                           "Please provide a valid filename or absolute path.")
+                                           .arg(filename));
             }
 
             filePath = match.absolutePath;
-            LOG_MESSAGE(QString("EditFileTool: Found file '%1' at '%2'")
-                            .arg(filename, filePath));
+            LOG_MESSAGE(QString("EditFileTool: Found file '%1' at '%2'").arg(filename, filePath));
         }
 
         QFile file(filePath);
@@ -175,10 +173,11 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
         if (!isInProject) {
             const auto &settings = Settings::toolsSettings();
             if (!settings.allowAccessOutsideProject()) {
-                throw ToolRuntimeError(
-                    QString("File path '%1' is not within the current project. "
-                            "Enable 'Allow file access outside project' in settings to edit files outside the project.")
-                        .arg(filePath));
+                throw ToolRuntimeError(QString(
+                                           "File path '%1' is not within the current project. "
+                                           "Enable 'Allow file access outside project' in settings "
+                                           "to edit files outside the project.")
+                                           .arg(filePath));
             }
             LOG_MESSAGE(QString("Editing file outside project scope: %1").arg(filePath));
         }
@@ -192,25 +191,18 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
         if (oldContent.length() <= 200) {
             LOG_MESSAGE(QString("  oldContent: '%1'").arg(oldContent));
         } else {
-            LOG_MESSAGE(QString("  oldContent (first 200 chars): '%1...'")
-                           .arg(oldContent.left(200)));
+            LOG_MESSAGE(
+                QString("  oldContent (first 200 chars): '%1...'").arg(oldContent.left(200)));
         }
         if (newContent.length() <= 200) {
             LOG_MESSAGE(QString("  newContent: '%1'").arg(newContent));
         } else {
-            LOG_MESSAGE(QString("  newContent (first 200 chars): '%1...'")
-                           .arg(newContent.left(200)));
+            LOG_MESSAGE(
+                QString("  newContent (first 200 chars): '%1...'").arg(newContent.left(200)));
         }
 
-        Context::ChangesManager::instance().addFileEdit(
-            editId,
-            filePath,
-            oldContent,
-            newContent,
-            autoApply,
-            false,
-            requestId
-        );
+        Context::ChangesManager::instance()
+            .addFileEdit(editId, filePath, oldContent, newContent, autoApply, false, requestId);
 
         auto edit = Context::ChangesManager::instance().getFileEdit(editId);
         QString status = "pending";
@@ -232,14 +224,15 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
         result["status"] = status;
         result["status_message"] = statusMessage;
 
-        LOG_MESSAGE(QString("File edit created: %1 (ID: %2, Status: %3, Deferred: %4)")
-                        .arg(filePath, editId, status, requestId.isEmpty() ? QString("no") : QString("yes")));
+        LOG_MESSAGE(
+            QString("File edit created: %1 (ID: %2, Status: %3, Deferred: %4)")
+                .arg(filePath, editId, status, requestId.isEmpty() ? QString("no") : QString("yes")));
 
         QString resultStr = "QODEASSIST_FILE_EDIT:"
-                            + QString::fromUtf8(QJsonDocument(result).toJson(QJsonDocument::Compact));
+                            + QString::fromUtf8(
+                                QJsonDocument(result).toJson(QJsonDocument::Compact));
         return resultStr;
     });
 }
 
 } // namespace QodeAssist::Tools
-
