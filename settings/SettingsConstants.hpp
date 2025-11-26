@@ -121,13 +121,12 @@ const char QODE_ASSIST_QUICK_REFACTOR_SETTINGS_PAGE_ID[]
     = "QodeAssist.4QuickRefactorSettingsPageId";
 const char QODE_ASSIST_TOOLS_SETTINGS_PAGE_ID[] = "QodeAssist.5ToolsSettingsPageId";
 const char QODE_ASSIST_CUSTOM_PROMPT_SETTINGS_PAGE_ID[] = "QodeAssist.6CustomPromptSettingsPageId";
-const char QODE_ASSIST_MCP_SETTINGS_PAGE_ID[] = "QodeAssist.7MCPSettingsPageId";
+// Provider Settings Page ID
+const char QODE_ASSIST_PROVIDER_SETTINGS_PAGE_ID[] = "QodeAssist.7ProviderSettingsPageId";
+const char QODE_ASSIST_MCP_SETTINGS_PAGE_ID[] = "QodeAssist.8MCPSettingsPageId";
 
 const char QODE_ASSIST_GENERAL_OPTIONS_CATEGORY[] = "QodeAssist.Category";
 const char QODE_ASSIST_GENERAL_OPTIONS_DISPLAY_CATEGORY[] = "H2Loop Assistant";
-
-// Provider Settings Page ID
-const char QODE_ASSIST_PROVIDER_SETTINGS_PAGE_ID[] = "QodeAssist.7ProviderSettingsPageId";
 
 // Provider API Keys
 const char OPEN_ROUTER_API_KEY[] = "QodeAssist.openRouterApiKey";
