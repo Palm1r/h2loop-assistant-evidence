@@ -56,14 +56,17 @@ QString EditFileTool::description() const
            "Provide the filename (or absolute path) and a content string containing one or more "
            "SEARCH/REPLACE blocks. Changes are applied immediately if auto-apply is enabled. "
            "The user can undo or reapply changes at any time."
-           "\n\nSEARCH/REPLACE Block Format:"
-           "\n```language"
-           "\n<<<<<<< SEARCH"
+           "\n\nSEARCH/REPLACE Block Format (with line numbers - RECOMMENDED):"
+           "\n```"
+           "\n<<<<<<< SEARCH:start_line:end_line"
            "\n[exact lines to find in the file]"
            "\n======="
            "\n[new lines to replace with]"
            "\n>>>>>>> REPLACE"
            "\n```"
+           "\n\nLine numbers help identify the correct location when similar code exists in multiple places."
+           "\n- start_line: The 1-based line number where the search block starts in the original file."
+           "\n- end_line: The 1-based line number where the search block ends in the original file."
            "\n\nIMPORTANT RULES:"
            "\n- The SEARCH section must EXACTLY match existing file content (including whitespace)."
            "\n- Each SEARCH/REPLACE block replaces only the FIRST occurrence found."
@@ -71,7 +74,8 @@ QString EditFileTool::description() const
            "\n- For EMPTY files or to APPEND: use an empty SEARCH section."
            "\n- Multiple SEARCH/REPLACE blocks can be provided in a single content string."
            "\n- Blocks are processed in order from top to bottom."
-           "\n- The system requires 85% similarity for matching. Provide accurate SEARCH content.";
+           "\n- The system requires 85% similarity for matching. Provide accurate SEARCH content."
+           "\n- Example with line numbers: \"<<<<<<< SEARCH:42:45\\nint main() {return 0;}\\n=======\\nint main() {std::cout << \\\"Hello\\\";return 0;}\\n>>>>>>> REPLACE\";";
 }
 
 QJsonObject EditFileTool::getDefinition(LLMCore::ToolSchemaFormat format) const
@@ -91,7 +95,9 @@ QJsonObject EditFileTool::getDefinition(LLMCore::ToolSchemaFormat format) const
         = "Content containing one or more SEARCH/REPLACE blocks. Each block starts with "
           "<<<<<<< SEARCH, followed by the exact content to find, then =======, "
           "then the replacement content, and ends with >>>>>>> REPLACE. "
-          "For appending to a file, use an empty SEARCH section.";
+          "For appending to a file, use an empty SEARCH section."
+           "\n- Example with line numbers: \"<<<<<<< SEARCH:42:45\\nint main() {return 0;}\\n=======\\nint main() {std::cout << \\\"Hello\\\";return 0;}\\n>>>>>>> REPLACE\";";
+    
     properties["content"] = contentProperty;
 
     QJsonObject definition;
@@ -125,10 +131,11 @@ QList<EditFileTool::SearchReplaceBlock> EditFileTool::parseSearchReplaceBlocks(c
 {
     QList<SearchReplaceBlock> blocks;
 
-    // Pattern to match SEARCH/REPLACE blocks
+    // Pattern to match SEARCH/REPLACE blocks with optional line numbers
+    // Format: <<<<<<< SEARCH:start_line:end_line or <<<<<<< SEARCH
     // Handles optional code fence with language identifier
     QRegularExpression blockPattern(
-        R"((?:```\w*\s*\n)?<<<<<<< SEARCH\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE(?:\n```)?)",
+        R"((?:```\w*\s*\n)?<<<<<<< SEARCH(?::(\d+):(\d+))?\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE(?:\n```)?)",
         QRegularExpression::MultilineOption);
 
     QRegularExpressionMatchIterator it = blockPattern.globalMatch(content);
@@ -136,8 +143,17 @@ QList<EditFileTool::SearchReplaceBlock> EditFileTool::parseSearchReplaceBlocks(c
     while (it.hasNext()) {
         QRegularExpressionMatch match = it.next();
         SearchReplaceBlock block;
-        block.searchContent = match.captured(1);
-        block.replaceContent = match.captured(2);
+        
+        // Parse optional line numbers
+        QString startLineStr = match.captured(1);
+        QString endLineStr = match.captured(2);
+        if (!startLineStr.isEmpty() && !endLineStr.isEmpty()) {
+            block.startLine = startLineStr.toInt();
+            block.endLine = endLineStr.toInt();
+        }
+        
+        block.searchContent = match.captured(3);
+        block.replaceContent = match.captured(4);
         blocks.append(block);
     }
 
@@ -224,6 +240,9 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
             LOG_MESSAGE(QString("EditFileTool: Processing block %1 for %2:")
                             .arg(blockIndex + 1)
                             .arg(filePath));
+            if (block.startLine > 0 && block.endLine > 0) {
+                LOG_MESSAGE(QString("  line hints: %1-%2").arg(block.startLine).arg(block.endLine));
+            }
             LOG_MESSAGE(
                 QString("  searchContent length: %1 chars").arg(block.searchContent.length()));
             LOG_MESSAGE(
@@ -249,7 +268,9 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
                 block.replaceContent,
                 autoApply,
                 false,
-                requestId);
+                requestId,
+                block.startLine,
+                block.endLine);
 
             auto edit = Context::ChangesManager::instance().getFileEdit(editId);
             QString status = "pending";

@@ -91,7 +91,9 @@ void ChangesManager::addFileEdit(
     const QString &newContent,
     bool autoApply,
     bool isFromHistory,
-    const QString &requestId)
+    const QString &requestId,
+    int lineHintStart,
+    int lineHintEnd)
 {
     QMutexLocker locker(&m_mutex);
     
@@ -108,6 +110,13 @@ void ChangesManager::addFileEdit(
     edit.timestamp = QDateTime::currentDateTime();
     edit.wasAutoApplied = false;
     edit.isFromHistory = isFromHistory;
+    edit.lineHintStart = lineHintStart;
+    edit.lineHintEnd = lineHintEnd;
+    
+    if (lineHintStart > 0 && lineHintEnd > 0) {
+        LOG_MESSAGE(QString("File edit with line hints: %1 (lines %2-%3)")
+                       .arg(editId).arg(lineHintStart).arg(lineHintEnd));
+    }
 
     LOG_MESSAGE(QString("Creating diff for edit %1").arg(editId));
     locker.unlock();
@@ -179,6 +188,8 @@ bool ChangesManager::applyFileEdit(const QString &editId)
     QString filePathCopy = edit.filePath;
     QString oldContentCopy = edit.oldContent;
     QString newContentCopy = edit.newContent;
+    int lineHintStart = edit.lineHintStart;
+    int lineHintEnd = edit.lineHintEnd;
     
     locker.unlock();
     
@@ -187,7 +198,7 @@ bool ChangesManager::applyFileEdit(const QString &editId)
     QString errorMsg;
     bool isAppend = oldContentCopy.isEmpty();
     bool success = performFragmentReplacement(
-        filePathCopy, oldContentCopy, newContentCopy, isAppend, &errorMsg);
+        filePathCopy, oldContentCopy, newContentCopy, isAppend, &errorMsg, false, lineHintStart, lineHintEnd);
     
     locker.relock();
     
@@ -261,6 +272,8 @@ bool ChangesManager::undoFileEdit(const QString &editId)
     QString filePathCopy = edit.filePath;
     QString oldContentCopy = edit.oldContent;
     QString newContentCopy = edit.newContent;
+    int lineHintStart = edit.lineHintStart;
+    int lineHintEnd = edit.lineHintEnd;
     
     locker.unlock();
     
@@ -268,8 +281,10 @@ bool ChangesManager::undoFileEdit(const QString &editId)
     
     QString errorMsg;
     bool isAppend = oldContentCopy.isEmpty();
+    // For undo, we search for newContent (what was applied), so line hints may not be accurate
+    // since the file has changed. Pass -1 to disable line hints for undo operations.
     bool success = performFragmentReplacement(
-        filePathCopy, newContentCopy, oldContentCopy, isAppend, &errorMsg, true);
+        filePathCopy, newContentCopy, oldContentCopy, isAppend, &errorMsg, true, -1, -1);
     
     locker.relock();
     
@@ -650,7 +665,9 @@ QString ChangesManager::findBestMatchWithNormalization(
     const QString &fileContent, 
     const QString &searchContent, 
     double *outSimilarity,
-    QString *outMatchType) const
+    QString *outMatchType,
+    int lineHintStart,
+    int lineHintEnd) const
 {
     if (searchContent.isEmpty() || fileContent.isEmpty()) {
         if (outSimilarity) *outSimilarity = 0.0;
@@ -658,6 +675,58 @@ QString ChangesManager::findBestMatchWithNormalization(
         return QString();
     }
     
+    // If we have line hints, try to find the match in that region first
+    if (lineHintStart > 0 && lineHintEnd > 0) {
+        LOG_MESSAGE(QString("Using line hints %1-%2 for targeted search").arg(lineHintStart).arg(lineHintEnd));
+        
+        QStringList lines = fileContent.split('\n');
+        
+        // Apply fuzziness: search within ±3 lines of the hint
+        const int LINE_FUZZ = 3;
+        int searchStartLine = qMax(1, lineHintStart - LINE_FUZZ) - 1;  // Convert to 0-based
+        int searchEndLine = qMin(lines.size(), lineHintEnd + LINE_FUZZ);
+        
+        LOG_MESSAGE(QString("Searching in line range %1-%2 (with ±%3 fuzz)")
+                       .arg(searchStartLine + 1).arg(searchEndLine).arg(LINE_FUZZ));
+        
+        // Extract the region content
+        QStringList regionLines;
+        for (int i = searchStartLine; i < searchEndLine && i < lines.size(); ++i) {
+            regionLines.append(lines[i]);
+        }
+        QString regionContent = regionLines.join('\n');
+        
+        // First try exact match in the region
+        if (regionContent.contains(searchContent)) {
+            LOG_MESSAGE("Match found: Exact match in hinted region");
+            if (outSimilarity) *outSimilarity = 1.0;
+            if (outMatchType) *outMatchType = "exact_hinted";
+            return searchContent;
+        }
+        
+        // Try fuzzy match in the region
+        double regionSim = 0.0;
+        QString regionMatch = findBestMatch(regionContent, searchContent, 0.0, &regionSim);
+        
+        if (!regionMatch.isEmpty() && regionSim >= 0.70) {
+            LOG_MESSAGE(QString("Match found: Fuzzy match in hinted region (%1%% similarity)")
+                           .arg(qRound(regionSim * 100)));
+            if (outSimilarity) *outSimilarity = regionSim;
+            if (outMatchType) {
+                if (regionSim >= 0.85) {
+                    *outMatchType = "fuzzy_high_hinted";
+                } else {
+                    *outMatchType = "fuzzy_medium_hinted";
+                }
+            }
+            return regionMatch;
+        }
+        
+        LOG_MESSAGE(QString("No good match in hinted region (best: %1%%), falling back to full search")
+                       .arg(qRound(regionSim * 100)));
+    }
+    
+    // Fall back to full file search
     if (fileContent.contains(searchContent)) {
         LOG_MESSAGE("Match found: Exact match");
         if (outSimilarity) *outSimilarity = 1.0;
@@ -698,7 +767,9 @@ bool ChangesManager::performFragmentReplacement(
     const QString &replaceContent,
     bool isAppendOperation,
     QString *errorMsg,
-    bool isUndo)
+    bool isUndo,
+    int lineHintStart,
+    int lineHintEnd)
 {
     QString currentContent = readFileContent(filePath);
     QString resultContent;
@@ -722,14 +793,16 @@ bool ChangesManager::performFragmentReplacement(
     } else {
         double minThreshold = isUndo ? 0.70 : 0.85;
         
-        LOG_MESSAGE(QString("Fragment replacement: isUndo=%1, threshold=%2%%")
+        LOG_MESSAGE(QString("Fragment replacement: isUndo=%1, threshold=%2%%, lineHints=%3-%4")
                        .arg(isUndo ? "yes" : "no")
-                       .arg(qRound(minThreshold * 100)));
+                       .arg(qRound(minThreshold * 100))
+                       .arg(lineHintStart)
+                       .arg(lineHintEnd));
         
         double similarity = 0.0;
         QString matchType;
         QString matchedContent = findBestMatchWithNormalization(
-            currentContent, searchContent, &similarity, &matchType);
+            currentContent, searchContent, &similarity, &matchType, lineHintStart, lineHintEnd);
         
         if (!matchedContent.isEmpty() && similarity < minThreshold) {
             QString msg = QString("Cannot %1: similarity too low (%2%%, threshold: %3%%). %4")
@@ -938,8 +1011,9 @@ bool ChangesManager::undoAllEditsForRequest(const QString &requestId, QString *e
         
         QString errMsg;
         bool isAppend = oldContentCopy.isEmpty();
+        // For undo, line hints are not reliable since file has changed
         bool success = performFragmentReplacement(
-            filePathCopy, newContentCopy, oldContentCopy, isAppend, &errMsg, true);
+            filePathCopy, newContentCopy, oldContentCopy, isAppend, &errMsg, true, -1, -1);
         
         locker.relock();
         
@@ -1015,6 +1089,8 @@ bool ChangesManager::reapplyAllEditsForRequest(const QString &requestId, QString
         QString filePathCopy = edit.filePath;
         QString oldContentCopy = edit.oldContent;
         QString newContentCopy = edit.newContent;
+        int lineHintStart = edit.lineHintStart;
+        int lineHintEnd = edit.lineHintEnd;
         
         locker.unlock();
         
@@ -1023,7 +1099,7 @@ bool ChangesManager::reapplyAllEditsForRequest(const QString &requestId, QString
         QString errMsg;
         bool isAppend = oldContentCopy.isEmpty();
         bool success = performFragmentReplacement(
-            filePathCopy, oldContentCopy, newContentCopy, isAppend, &errMsg);
+            filePathCopy, oldContentCopy, newContentCopy, isAppend, &errMsg, false, lineHintStart, lineHintEnd);
         
         locker.relock();
         

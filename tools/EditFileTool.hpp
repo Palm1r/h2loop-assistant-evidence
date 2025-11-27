@@ -45,6 +45,8 @@ public:
     {
         QString searchContent;
         QString replaceContent;
+        int startLine = -1;  // Line hint for search start (-1 = not specified)
+        int endLine = -1;    // Line hint for search end (-1 = not specified)
     };
 
     // Parse SEARCH/REPLACE blocks from content string

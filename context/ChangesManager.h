@@ -76,6 +76,8 @@ public:
         bool wasAutoApplied = false;  // Track if edit was already auto-applied once
         bool isFromHistory = false;   // Track if edit was loaded from chat history
         QString statusMessage;
+        int lineHintStart = -1;  // Line hint for search start (-1 = not specified)
+        int lineHintEnd = -1;    // Line hint for search end (-1 = not specified)
     };
 
     static ChangesManager &instance();
@@ -91,7 +93,9 @@ public:
         const QString &newContent,
         bool autoApply = true,
         bool isFromHistory = false,
-        const QString &requestId = QString());
+        const QString &requestId = QString(),
+        int lineHintStart = -1,
+        int lineHintEnd = -1);
     bool applyFileEdit(const QString &editId);
     bool rejectFileEdit(const QString &editId);
     bool undoFileEdit(const QString &editId);
@@ -136,12 +140,14 @@ private:
         const QString &replaceContent,
         bool isAppendOperation,
         QString *errorMsg = nullptr,
-        bool isUndo = false);
+        bool isUndo = false,
+        int lineHintStart = -1,
+        int lineHintEnd = -1);
     
     int levenshteinDistance(const QString &s1, const QString &s2) const;
     QString findBestMatch(const QString &fileContent, const QString &searchContent, double threshold = 0.82, double *outSimilarity = nullptr) const;
     QString findBestMatchLineBased(const QString &fileContent, const QString &searchContent, double threshold = 0.82, double *outSimilarity = nullptr) const;
-    QString findBestMatchWithNormalization(const QString &fileContent, const QString &searchContent, double *outSimilarity = nullptr, QString *outMatchType = nullptr) const;
+    QString findBestMatchWithNormalization(const QString &fileContent, const QString &searchContent, double *outSimilarity = nullptr, QString *outMatchType = nullptr, int lineHintStart = -1, int lineHintEnd = -1) const;
 
     struct RequestEdits
     {
