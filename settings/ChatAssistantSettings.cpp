@@ -79,7 +79,7 @@ ChatAssistantSettings::ChatAssistantSettings()
 
     maxTokens.setSettingsKey(Constants::CA_MAX_TOKENS);
     maxTokens.setLabelText(Tr::tr("Max Tokens:"));
-    maxTokens.setRange(-1, 200000);  // -1 for unlimited, 200k max for extended output
+    maxTokens.setRange(-1, 200000); // -1 for unlimited, 200k max for extended output
     maxTokens.setDefaultValue(2000);
 
     // Advanced Parameters
@@ -126,6 +126,12 @@ ChatAssistantSettings::ChatAssistantSettings()
     systemPrompt.setSettingsKey(Constants::CA_SYSTEM_PROMPT);
     systemPrompt.setDisplayStyle(Utils::StringAspect::TextEditDisplay);
     systemPrompt.setDefaultValue(
+        "You are an advanced AI assistant specializing in C++, Qt, and QML development. Your role "
+        "is to provide helpful, accurate, and detailed responses to questions about coding, "
+        "debugging, "
+        "and best practices in these technologies.\n\n"
+
+        "<EXTREMELY IMPORTANT>\n"
         "Edit a file using SEARCH/REPLACE blocks only. "
         "Provide a content string containing one or more "
         "<<<<<<< SEARCH ======= >>>>>>> REPLACE blocks. Changes are applied immediately if "
@@ -153,7 +159,8 @@ ChatAssistantSettings::ChatAssistantSettings()
         "\n- Blocks are processed in order from top to bottom."
         "\n- The system requires 85% similarity for matching. Provide accurate SEARCH content."
         "\n- Example with line numbers: \"<<<<<<< SEARCH:42:45\\nint main() {return "
-        "0;}\\n=======\\nint main() {std::cout << \\\"Hello\\\";return 0;}\\n>>>>>>> REPLACE\"");
+        "0;}\\n=======\\nint main() {std::cout << \\\"Hello\\\";return 0;}\\n>>>>>>> REPLACE\""
+        "\n</EXTREMELY IMPORTANT>");
 
     // Ollama Settings
     ollamaLivetime.setSettingsKey(Constants::CA_OLLAMA_LIVETIME);
@@ -172,25 +179,32 @@ ChatAssistantSettings::ChatAssistantSettings()
 
     // Extended Thinking Settings
     enableThinkingMode.setSettingsKey(Constants::CA_ENABLE_THINKING_MODE);
-    enableThinkingMode.setLabelText(Tr::tr("Enable extended thinking mode (Claude only).\n Temperature is 1.0 accordingly API requerement"));
+    enableThinkingMode.setLabelText(
+        Tr::tr(
+            "Enable extended thinking mode (Claude only).\n Temperature is 1.0 accordingly API "
+            "requerement"));
     enableThinkingMode.setToolTip(
-        Tr::tr("Enable Claude's extended thinking mode for complex reasoning tasks. "
-               "This provides step-by-step reasoning before the final answer."));
+        Tr::tr(
+            "Enable Claude's extended thinking mode for complex reasoning tasks. "
+            "This provides step-by-step reasoning before the final answer."));
     enableThinkingMode.setDefaultValue(false);
 
     thinkingBudgetTokens.setSettingsKey(Constants::CA_THINKING_BUDGET_TOKENS);
     thinkingBudgetTokens.setLabelText(Tr::tr("Thinking budget tokens:"));
     thinkingBudgetTokens.setToolTip(
-        Tr::tr("Maximum number of tokens Claude can use for internal reasoning. "
-               "Larger budgets improve quality but increase latency. Minimum: 1024, Recommended: 10000-16000."));
+        Tr::tr(
+            "Maximum number of tokens Claude can use for internal reasoning. "
+            "Larger budgets improve quality but increase latency. Minimum: 1024, Recommended: "
+            "10000-16000."));
     thinkingBudgetTokens.setRange(1024, 100000);
     thinkingBudgetTokens.setDefaultValue(10000);
 
     thinkingMaxTokens.setSettingsKey(Constants::CA_THINKING_MAX_TOKENS);
     thinkingMaxTokens.setLabelText(Tr::tr("Thinking mode max output tokens:"));
     thinkingMaxTokens.setToolTip(
-        Tr::tr("Maximum number of tokens for the final response when thinking mode is enabled. "
-               "Set to -1 to use the default max tokens setting. Recommended: 4096-16000."));
+        Tr::tr(
+            "Maximum number of tokens for the final response when thinking mode is enabled. "
+            "Set to -1 to use the default max tokens setting. Recommended: 4096-16000."));
     thinkingMaxTokens.setRange(-1, 200000);
     thinkingMaxTokens.setDefaultValue(16000);
 
