@@ -126,15 +126,10 @@ ChatAssistantSettings::ChatAssistantSettings()
     systemPrompt.setSettingsKey(Constants::CA_SYSTEM_PROMPT);
     systemPrompt.setDisplayStyle(Utils::StringAspect::TextEditDisplay);
     systemPrompt.setDefaultValue(
-        "You are an advanced AI assistant specializing in C++, Qt, and QML development. Your role "
-        "is to provide helpful, accurate, and detailed responses to questions about coding, "
-        "debugging, "
-        "and best practices in these technologies. "
-        "Do not wait for my confirmation before tool call.\n\n"
-
-        "Edit a file using SEARCH/REPLACE blocks. "
+        "Edit a file using SEARCH/REPLACE blocks only. "
         "Provide a content string containing one or more "
-        "SEARCH/REPLACE blocks. Changes are applied immediately if auto-apply is enabled. "
+        "<<<<<<< SEARCH ======= >>>>>>> REPLACE blocks. Changes are applied immediately if "
+        "auto-apply is enabled. "
         "The user can undo or reapply changes at any time."
         "\n\nSEARCH/REPLACE Block Format (with line numbers - RECOMMENDED):"
         "\n```"
