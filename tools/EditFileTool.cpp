@@ -64,11 +64,13 @@ QString EditFileTool::description() const
            "\n[new lines to replace with]"
            "\n>>>>>>> REPLACE"
            "\n```"
+
            "\n\nLine numbers help identify the correct location when similar code exists in "
            "multiple places."
-           "\n- start_line: The 1-based line number where the search block starts in the original "
-           "file."
-           "\n- end_line: The 1-based line number where the search block ends in the original file."
+           "\n- start_line (required): The line number of original content where the search block "
+           "starts. "
+           "\n- end_line (required): The line number of original content  where the search block "
+           "ends."
            "\n\nIMPORTANT RULES:"
            "\n- The SEARCH section must EXACTLY match existing file content (including whitespace)."
            "\n- Each SEARCH/REPLACE block replaces only the FIRST occurrence found."
@@ -96,7 +98,8 @@ QJsonObject EditFileTool::getDefinition(LLMCore::ToolSchemaFormat format) const
     contentProperty["type"] = "string";
     contentProperty["description"]
         = "Content containing one or more SEARCH/REPLACE blocks. Each block starts with "
-          "<<<<<<< SEARCH, followed by the exact content to find, then =======, "
+          "<<<<<<< SEARCH:start_line:end_line, followed by the exact content to find, then "
+          "=======, "
           "then the replacement content, and ends with >>>>>>> REPLACE. "
           "For appending to a file, use an empty SEARCH section."
           "\n- Example with line numbers: \"<<<<<<< SEARCH:42:45\\nint main() {return "
@@ -186,7 +189,8 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
             throw ToolInvalidArgument(
                 "No valid SEARCH/REPLACE blocks found in content. "
                 "You must provide content in the exact SEARCH/REPLACE format. "
-                "Example: <<<<<<< SEARCH\\nexisting code here\\n=======\\nnew code here\\n>>>>>>> "
+                "Example: <<<<<<< SEARCH:start_line:end_line\\nexisting code here\\n=======\\nnew "
+                "code here\\n>>>>>>> "
                 "REPLACE");
         }
 
