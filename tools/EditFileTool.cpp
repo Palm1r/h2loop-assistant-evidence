@@ -340,7 +340,7 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
         result["blocks_processed"] = blocks.size();
         result["edits"] = editResults;
 
-        QString resultStr = "QODEASSIST_FILE_EDIT:"
+        QString resultStr = "H2LOOP_FILE_EDIT:"
                             + QString::fromUtf8(
                                 QJsonDocument(result).toJson(QJsonDocument::Compact));
         return resultStr;
