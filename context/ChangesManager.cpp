@@ -705,7 +705,8 @@ QString ChangesManager::findBestMatchWithNormalization(
     double *outSimilarity,
     QString *outMatchType,
     int lineHintStart,
-    int lineHintEnd) const
+    int lineHintEnd,
+    int *outPosition) const
 {
     if (searchContent.isEmpty() || fileContent.isEmpty()) {
         if (outSimilarity)
@@ -715,63 +716,120 @@ QString ChangesManager::findBestMatchWithNormalization(
         return QString();
     }
 
-    // If we have line hints, try to find the match in that region first
+    // If we have line hints, find all occurrences and pick the closest to the hint
     if (lineHintStart > 0 && lineHintEnd > 0) {
-        LOG_MESSAGE(QString("Using line hints %1-%2 for targeted search")
+        LOG_MESSAGE(QString("Using line hints %1-%2 for closest match search")
                         .arg(lineHintStart)
                         .arg(lineHintEnd));
 
-        QStringList lines = fileContent.split('\n');
+        int targetLine = lineHintStart; // Use start of hint range as target
 
-        // Apply fuzziness: search within ±3 lines of the hint
-        const int LINE_FUZZ = 3;
-        int searchStartLine = qMax(1, lineHintStart - LINE_FUZZ) - 1; // Convert to 0-based
-        int searchEndLine = qMin(lines.size(), lineHintEnd + LINE_FUZZ);
-
-        LOG_MESSAGE(QString("Searching in line range %1-%2 (with ±%3 fuzz)")
-                        .arg(searchStartLine + 1)
-                        .arg(searchEndLine)
-                        .arg(LINE_FUZZ));
-
-        // Extract the region content
-        QStringList regionLines;
-        for (int i = searchStartLine; i < searchEndLine && i < lines.size(); ++i) {
-            regionLines.append(lines[i]);
-        }
-        QString regionContent = regionLines.join('\n');
-
-        // First try exact match in the region
-        if (regionContent.contains(searchContent)) {
-            LOG_MESSAGE("Match found: Exact match in hinted region");
-            if (outSimilarity)
-                *outSimilarity = 1.0;
-            if (outMatchType)
-                *outMatchType = "exact_hinted";
-            return searchContent;
+        // Find all exact matches in the entire file
+        QList<int> exactPositions;
+        int pos = 0;
+        while ((pos = fileContent.indexOf(searchContent, pos)) != -1) {
+            exactPositions.append(pos);
+            pos += searchContent.length();
         }
 
-        // Try fuzzy match in the region
-        double regionSim = 0.0;
-        QString regionMatch = findBestMatch(regionContent, searchContent, 0.0, &regionSim);
-
-        if (!regionMatch.isEmpty() && regionSim >= 0.70) {
-            LOG_MESSAGE(QString("Match found: Fuzzy match in hinted region (%1%% similarity)")
-                            .arg(qRound(regionSim * 100)));
-            if (outSimilarity)
-                *outSimilarity = regionSim;
-            if (outMatchType) {
-                if (regionSim >= 0.85) {
-                    *outMatchType = "fuzzy_high_hinted";
-                } else {
-                    *outMatchType = "fuzzy_medium_hinted";
+        if (!exactPositions.isEmpty()) {
+            // Find the closest exact match to the target line
+            int bestPos = -1;
+            int minDistance = 999999; // line numbers in file will be less than this
+            for (int p : exactPositions) {
+                int line = fileContent.left(p).count('\n') + 1;
+                int dist = qAbs(line - targetLine);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    bestPos = p;
                 }
             }
-            return regionMatch;
+            if (bestPos != -1) {
+                int matchLine = fileContent.left(bestPos).count('\n') + 1;
+                LOG_MESSAGE(QString("Found exact match closest to line %1 at position %2 (line %3)")
+                                .arg(targetLine)
+                                .arg(bestPos)
+                                .arg(matchLine));
+                if (outSimilarity)
+                    *outSimilarity = 1.0;
+                if (outMatchType)
+                    *outMatchType = "exact_closest";
+                if (outPosition)
+                    *outPosition = bestPos;
+                return searchContent;
+            }
         }
 
-        LOG_MESSAGE(
-            QString("No good match in hinted region (best: %1%%), falling back to full search")
-                .arg(qRound(regionSim * 100)));
+        // If no exact matches, find all fuzzy matches above threshold
+        QList<QPair<int, double>> fuzzyMatches; // position, similarity
+        const int searchLen = searchContent.length();
+        const int fileLen = fileContent.length();
+
+        if (searchLen <= fileLen) {
+            QChar firstChar = searchContent.at(0);
+            int step = 1;
+            if (fileLen > 100000 && searchLen > 1000) {
+                step = searchLen / 10;
+                if (step < 1)
+                    step = 1;
+            }
+            int searchEnd = fileLen - searchLen + 1;
+            for (int i = 0; i < searchEnd; i += step) {
+                if (step == 1 && fileContent.at(i) != firstChar)
+                    continue;
+                QString candidate = fileContent.mid(i, searchLen);
+                int lengthDiff = qAbs(candidate.length() - searchLen);
+                if (lengthDiff > searchLen * 0.3)
+                    continue;
+                int distance = levenshteinDistance(candidate, searchContent);
+                double similarity = 1.0 - (static_cast<double>(distance) / searchLen);
+                if (similarity >= 0.70) {
+                    fuzzyMatches.append({i, similarity});
+                }
+            }
+        }
+
+        if (!fuzzyMatches.isEmpty()) {
+            // Find the closest fuzzy match to the target line
+            int bestPos = -1;
+            double bestSim = 0.0;
+            int minDistance = 999999;
+            for (auto &match : fuzzyMatches) {
+                int p = match.first;
+                double sim = match.second;
+                int line = fileContent.left(p).count('\n') + 1;
+                int dist = qAbs(line - targetLine);
+                if (dist < minDistance || (dist == minDistance && sim > bestSim)) {
+                    minDistance = dist;
+                    bestPos = p;
+                    bestSim = sim;
+                }
+            }
+            if (bestPos != -1) {
+                QString matched = fileContent.mid(bestPos, searchLen);
+                int matchLine = fileContent.left(bestPos).count('\n') + 1;
+                LOG_MESSAGE(
+                    QString("Found fuzzy match closest to line %1 at position %2 (line %3, %4%%)")
+                        .arg(targetLine)
+                        .arg(bestPos)
+                        .arg(matchLine)
+                        .arg(qRound(bestSim * 100)));
+                if (outSimilarity)
+                    *outSimilarity = bestSim;
+                if (outMatchType) {
+                    if (bestSim >= 0.85) {
+                        *outMatchType = "fuzzy_high_closest";
+                    } else {
+                        *outMatchType = "fuzzy_medium_closest";
+                    }
+                }
+                if (outPosition)
+                    *outPosition = bestPos;
+                return matched;
+            }
+        }
+
+        LOG_MESSAGE("No matches found in closest search, falling back to full search");
     }
 
     // Fall back to full file search
@@ -781,6 +839,8 @@ QString ChangesManager::findBestMatchWithNormalization(
             *outSimilarity = 1.0;
         if (outMatchType)
             *outMatchType = "exact";
+        if (outPosition)
+            *outPosition = fileContent.indexOf(searchContent);
         return searchContent;
     }
 
@@ -799,6 +859,8 @@ QString ChangesManager::findBestMatchWithNormalization(
                 *outMatchType = "fuzzy_medium";
             }
         }
+        if (outPosition)
+            *outPosition = fileContent.indexOf(bestMatch);
         return bestMatch;
     }
 
@@ -876,10 +938,17 @@ bool ChangesManager::performFragmentReplacement(
                         .arg(lineHintStart)
                         .arg(lineHintEnd));
 
+        int matchPos = -1;
         double similarity = 0.0;
         QString matchType;
         QString matchedContent = findBestMatchWithNormalization(
-            currentContent, searchContent, &similarity, &matchType, lineHintStart, lineHintEnd);
+            currentContent,
+            searchContent,
+            &similarity,
+            &matchType,
+            lineHintStart,
+            lineHintEnd,
+            &matchPos);
 
         if (!matchedContent.isEmpty() && similarity < minThreshold) {
             QString msg = QString("Cannot %1: similarity too low (%2%%, threshold: %3%%). %4")
@@ -896,36 +965,7 @@ bool ChangesManager::performFragmentReplacement(
         }
 
         if (!matchedContent.isEmpty()) {
-            int matchPos = -1;
-            if (lineHintStart > 0 && lineHintEnd > 0) {
-                // Restrict search to hinted region to avoid global first match
-                QStringList lines = currentContent.split('\n');
-                const int LINE_FUZZ = 3;
-                int searchStartLine = qMax(1, lineHintStart - LINE_FUZZ) - 1; // Convert to 0-based
-                int searchEndLine = qMin(lines.size(), lineHintEnd + LINE_FUZZ);
-
-                QStringList regionLines;
-                for (int i = searchStartLine; i < searchEndLine && i < lines.size(); ++i) {
-                    regionLines.append(lines[i]);
-                }
-                QString regionContent = regionLines.join('\n');
-
-                int regionPos = regionContent.indexOf(matchedContent);
-                if (regionPos != -1) {
-                    // Calculate position in full content
-                    QString beforeRegion = lines.mid(0, searchStartLine).join('\n');
-                    if (!beforeRegion.isEmpty())
-                        beforeRegion += '\n';
-                    matchPos = beforeRegion.length() + regionPos;
-                    LOG_MESSAGE(
-                        QString("Restricted match to hinted region at position %1").arg(matchPos));
-                } else {
-                    LOG_MESSAGE(
-                        "Matched content not found in hinted region, falling back to global "
-                        "search");
-                    matchPos = currentContent.indexOf(matchedContent);
-                }
-            } else {
+            if (matchPos == -1) {
                 matchPos = currentContent.indexOf(matchedContent);
             }
 
@@ -937,6 +977,10 @@ bool ChangesManager::performFragmentReplacement(
                     QString("Internal error: matched content disappeared: %1").arg(filePath));
                 return false;
             }
+
+            DEBUG_LOG_MESSAGE(QString("Matched content at position %1 (length: %2)")
+                                  .arg(matchPos)
+                                  .arg(matchedContent.length()));
 
             resultContent = currentContent.left(matchPos) + replaceContent
                             + currentContent.mid(matchPos + matchedContent.length());
