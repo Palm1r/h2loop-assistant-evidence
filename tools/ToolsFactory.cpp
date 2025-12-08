@@ -27,6 +27,7 @@
 
 #include "BuildProjectTool.hpp"
 #include "CreateNewFileTool.hpp"
+#include "CtagsTool.hpp"
 #include "EditFileTool.hpp"
 #include "ExecuteTerminalCommandTool.hpp"
 #include "FindAndReadFileTool.hpp"
@@ -59,6 +60,7 @@ void ToolsFactory::registerTools()
     registerTool(new ProjectSearchTool(this));
     registerTool(new ReadFileLinesTool(this));
     registerTool(new FindAndReadFileTool(this));
+    registerTool(new CtagsTool(this));
 
     LOG_MESSAGE(QString("Registered %1 tools").arg(m_tools.size()));
 }
