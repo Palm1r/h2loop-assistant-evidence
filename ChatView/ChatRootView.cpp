@@ -39,12 +39,12 @@
 #include "GeneralSettings.hpp"
 #include "Logger.hpp"
 #include "ProjectSettings.hpp"
+#include "ProvidersManager.hpp"
 #include "ToolsSettings.hpp"
 #include "context/ChangesManager.h"
 #include "context/ContextManager.hpp"
 #include "context/TokenUtils.hpp"
 #include "llmcore/RulesLoader.hpp"
-#include "ProvidersManager.hpp"
 
 namespace QodeAssist::Chat {
 
@@ -57,11 +57,7 @@ ChatRootView::ChatRootView(QQuickItem *parent)
 {
     // Set initial debug log file path for the chat
     QString debugLogsDir = getDebugLogsDir();
-    if (!debugLogsDir.isEmpty()) {
-        QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-        QString logFilePath = QDir(debugLogsDir).filePath("chat_" + timestamp + "_debug.log");
-        Logger::instance().setDebugLogFilePath(logFilePath);
-    }
+    Logger::instance().createNewDebugLogFile(debugLogsDir);
 
     m_isSyncOpenFiles = Settings::chatAssistantSettings().linkOpenFiles();
 
@@ -75,18 +71,18 @@ ChatRootView::ChatRootView(QQuickItem *parent)
 
     connect(
         &settings.caModel, &Utils::BaseAspect::changed, this, &ChatRootView::currentTemplateChanged);
-    
+
     connect(&settings.caProvider, &Utils::BaseAspect::changed, this, [this]() {
         auto &settings = Settings::generalSettings();
-        m_currentConfiguration = QString("%1 - %2").arg(settings.caProvider.value(), 
-                                                         settings.caModel.value());
+        m_currentConfiguration
+            = QString("%1 - %2").arg(settings.caProvider.value(), settings.caModel.value());
         emit currentConfigurationChanged();
     });
-    
+
     connect(&settings.caModel, &Utils::BaseAspect::changed, this, [this]() {
         auto &settings = Settings::generalSettings();
-        m_currentConfiguration = QString("%1 - %2").arg(settings.caProvider.value(), 
-                                                         settings.caModel.value());
+        m_currentConfiguration
+            = QString("%1 - %2").arg(settings.caProvider.value(), settings.caModel.value());
         emit currentConfigurationChanged();
     });
 
@@ -113,11 +109,7 @@ ChatRootView::ChatRootView(QQuickItem *parent)
 
         // Set new debug log file path for new chat
         QString debugLogsDir = getDebugLogsDir();
-        if (!debugLogsDir.isEmpty()) {
-            QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-            QString logFilePath = QDir(debugLogsDir).filePath("chat_" + timestamp + "_debug.log");
-            Logger::instance().setDebugLogFilePath(logFilePath);
-        }
+        Logger::instance().createNewDebugLogFile(debugLogsDir);
     });
     connect(m_chatModel, &ChatModel::messageAdded, this, &ChatRootView::updateInputTokensCount);
     connect(this, &ChatRootView::attachmentFilesChanged, &ChatRootView::updateInputTokensCount);
@@ -339,16 +331,8 @@ QString ChatRootView::getChatsHistoryDir() const
 
 QString ChatRootView::getDebugLogsDir() const
 {
-    QString path;
-
-    if (auto project = ProjectExplorer::ProjectManager::startupProject()) {
-        Settings::ProjectSettings projectSettings(project);
-        QString chatHistoryPath = projectSettings.chatHistoryPath().toFSPathString();
-        path = QDir(chatHistoryPath).absoluteFilePath("debug_logs");
-    } else {
-        path = QString("%1/h2loopassistant/debug_logs")
-                   .arg(Core::ICore::userResourcePath().toFSPathString());
-    }
+    QString path = QString("%1/h2loopassistant/debug_logs")
+                       .arg(Core::ICore::userResourcePath().toFSPathString());
 
     QDir dir(path);
     if (!dir.exists() && !dir.mkpath(".")) {
@@ -451,7 +435,8 @@ QString ChatRootView::getSuggestedFileName() const
         shortMessage = firstMessage.split('\n').first().simplified().left(30);
 
         if (shortMessage.isEmpty()) {
-            QVariantList images = m_chatModel->data(m_chatModel->index(0), ChatModel::Images).toList();
+            QVariantList images
+                = m_chatModel->data(m_chatModel->index(0), ChatModel::Images).toList();
             if (!images.isEmpty()) {
                 shortMessage = "image_chat";
             }
@@ -488,7 +473,8 @@ QString ChatRootView::getAutosaveFilePath() const
     return QDir(dir).filePath(getSuggestedFileName() + ".json");
 }
 
-QString ChatRootView::getAutosaveFilePath(const QString &firstMessage, const QStringList &attachments) const
+QString ChatRootView::getAutosaveFilePath(
+    const QString &firstMessage, const QStringList &attachments) const
 {
     if (!m_recentFilePath.isEmpty()) {
         return m_recentFilePath;
@@ -546,7 +532,7 @@ void ChatRootView::addFilesToAttachList(const QStringList &filePaths)
             filesAdded = true;
         }
     }
-    
+
     if (filesAdded) {
         emit attachmentFilesChanged();
     }
@@ -582,26 +568,27 @@ void ChatRootView::addFilesToLinkList(const QStringList &filePaths)
 
     bool filesAdded = false;
     QStringList imageFiles;
-    
+
     for (const QString &filePath : filePaths) {
         if (isImageFile(filePath)) {
             imageFiles.append(filePath);
             continue;
         }
-        
+
         if (!m_linkedFiles.contains(filePath)) {
             m_linkedFiles.append(filePath);
             filesAdded = true;
         }
     }
-    
+
     if (!imageFiles.isEmpty()) {
         addFilesToAttachList(imageFiles);
-        
-        m_lastInfoMessage = tr("Images automatically moved to Attach zone (%n file(s))", "", imageFiles.size());
+
+        m_lastInfoMessage
+            = tr("Images automatically moved to Attach zone (%n file(s))", "", imageFiles.size());
         emit lastInfoMessageChanged();
     }
-    
+
     if (filesAdded) {
         emit linkedFilesChanged();
     }
@@ -1318,9 +1305,7 @@ bool ChatRootView::hasImageAttachments(const QStringList &attachments) const
 
 bool ChatRootView::isImageFile(const QString &filePath) const
 {
-    static const QSet<QString> imageExtensions = {
-        "png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"
-    };
+    static const QSet<QString> imageExtensions = {"png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"};
 
     QFileInfo fileInfo(filePath);
     return imageExtensions.contains(fileInfo.suffix().toLower());
@@ -1368,7 +1353,8 @@ void ChatRootView::applyConfiguration(const QString &configName)
             settings.caModel.setValue(config.model);
             settings.caTemplate.setValue(config.templateName);
             settings.caUrl.setValue(config.url);
-            settings.caEndpointMode.setValue(settings.caEndpointMode.indexForDisplay(config.endpointMode));
+            settings.caEndpointMode.setValue(
+                settings.caEndpointMode.indexForDisplay(config.endpointMode));
             settings.caCustomEndpoint.setValue(config.customEndpoint);
 
             settings.writeSettings();

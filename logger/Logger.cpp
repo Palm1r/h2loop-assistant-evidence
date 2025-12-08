@@ -2,6 +2,7 @@
 #include <coreplugin/messagemanager.h>
 
 #include <QDateTime>
+#include <QDir>
 #include <QFile>
 #include <QTextStream>
 
@@ -47,6 +48,15 @@ void Logger::setDebugLogFilePath(const QString &filePath)
 QString Logger::debugLogFilePath() const
 {
     return m_debugLogFilePath;
+}
+
+void Logger::createNewDebugLogFile(const QString &debugLogsDir)
+{
+    if (!debugLogsDir.isEmpty()) {
+        QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+        QString logFilePath = QDir(debugLogsDir).filePath("chat_" + timestamp + "_debug.log");
+        setDebugLogFilePath(logFilePath);
+    }
 }
 
 void Logger::log(const QString &message, bool silent)

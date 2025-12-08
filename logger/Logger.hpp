@@ -21,6 +21,8 @@ public:
     void setDebugLogFilePath(const QString &filePath);
     QString debugLogFilePath() const;
 
+    void createNewDebugLogFile(const QString &debugLogsDir);
+
     void log(const QString &message, bool silent = true);
     void logMessages(const QStringList &messages, bool silent = true);
 
