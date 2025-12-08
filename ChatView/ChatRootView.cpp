@@ -789,6 +789,14 @@ void ChatRootView::setRecentFilePath(const QString &filePath)
         m_recentFilePath = filePath;
         m_clientInterface->setChatFilePath(filePath);
         emit chatFileNameChanged();
+
+        // Rename debug log file to match the chat file name
+        if (!filePath.isEmpty()) {
+            QString baseName = QFileInfo(filePath).baseName();
+            QString debugDir = getDebugLogsDir();
+            QString newDebugPath = QDir(debugDir).filePath(baseName + "_debug.log");
+            Logger::instance().renameDebugLogFile(newDebugPath);
+        }
     }
 }
 
