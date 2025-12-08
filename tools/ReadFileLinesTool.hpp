@@ -45,6 +45,7 @@ public:
 
 private:
     QString readFileLines(const QString &filePath, int startLine, int endLine) const;
+    bool parseTextRange(const QString &rangeStr, int &startLine, int &endLine) const;
 
     Context::IgnoreManager *m_ignoreManager;
 };

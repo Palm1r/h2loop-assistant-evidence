@@ -24,6 +24,7 @@
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QTextStream>
 #include <QtConcurrent>
 
@@ -57,6 +58,11 @@ QJsonObject ReadFileLinesTool::getDefinition(LLMCore::ToolSchemaFormat format) c
         {"type", "string"},
         {"description", "Filename, partial name, or path to search for (case-insensitive)"}};
 
+    properties["text_range"] = QJsonObject{
+        {"type", "string"},
+        {"description",
+         "Natural language range description (e.g., 'lines 35 to 45', 'from 35 to 45', '35-45')"}};
+
     properties["start_line"]
         = QJsonObject{{"type", "integer"}, {"description", "Starting line number (1-based)"}};
 
@@ -67,7 +73,7 @@ QJsonObject ReadFileLinesTool::getDefinition(LLMCore::ToolSchemaFormat format) c
     QJsonObject definition;
     definition["type"] = "object";
     definition["properties"] = properties;
-    definition["required"] = QJsonArray{"query", "start_line"};
+    definition["required"] = QJsonArray{"query"};
 
     switch (format) {
     case LLMCore::ToolSchemaFormat::OpenAI:
@@ -95,12 +101,25 @@ QFuture<QString> ReadFileLinesTool::executeAsync(const QJsonObject &input)
             throw ToolInvalidArgument("Query parameter is required");
         }
 
-        int startLine = input["start_line"].toInt();
+        int startLine = -1;
+        int endLine = -1;
+
+        // Parse text_range parameter if provided
+        if (input.contains("text_range")) {
+            QString rangeStr = input["text_range"].toString().trimmed();
+            if (!parseTextRange(rangeStr, startLine, endLine)) {
+                throw ToolInvalidArgument(
+                    "Invalid range format. Examples: '35-45', 'lines 35 to 45', 'from 35 to 45'");
+            }
+        } else {
+            // Use individual line parameters
+            startLine = input["start_line"].toInt();
+            endLine = input["end_line"].toInt(-1);
+        }
+
         if (startLine < 1) {
             throw ToolInvalidArgument("Start line must be >= 1");
         }
-
-        int endLine = input["end_line"].toInt(-1); // -1 means to end
 
         LOG_MESSAGE(QString("ReadFileLinesTool: Searching for '%1' and reading lines %2-%3")
                         .arg(query)
@@ -168,6 +187,41 @@ QString ReadFileLinesTool::readFileLines(const QString &filePath, int startLine,
     }
 
     return result;
+}
+
+bool ReadFileLinesTool::parseTextRange(const QString &rangeStr, int &startLine, int &endLine) const
+{
+    // Use regex to extract numbers from various formats:
+    // "35-45", "35 to 45", "lines 35 to 45", "from 35 to 45", "35 ---> 45", etc.
+    QRegularExpression regex(R"((\d+)\s*(?:to|-|-->|→|--)\s*(\d+))");
+    QRegularExpressionMatch match = regex.match(rangeStr.toLower());
+
+    if (match.hasMatch()) {
+        bool ok1, ok2;
+        startLine = match.captured(1).toInt(&ok1);
+        endLine = match.captured(2).toInt(&ok2);
+        return ok1 && ok2 && startLine > 0 && endLine > 0;
+    }
+
+    // Fallback: try to extract any two numbers
+    QStringList numbers;
+    QRegularExpression numRegex(R"(\d+)");
+    QRegularExpressionMatchIterator it = numRegex.globalMatch(rangeStr);
+
+    while (it.hasNext()) {
+        numbers.append(it.next().captured());
+        if (numbers.size() >= 2)
+            break;
+    }
+
+    if (numbers.size() >= 2) {
+        bool ok1, ok2;
+        startLine = numbers[0].toInt(&ok1);
+        endLine = numbers[1].toInt(&ok2);
+        return ok1 && ok2 && startLine > 0 && endLine > 0;
+    }
+
+    return false;
 }
 
 } // namespace QodeAssist::Tools
