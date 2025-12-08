@@ -45,9 +45,9 @@ public:
 
     struct ImageAttachment
     {
-        QString fileName;      // Original filename
-        QString storedPath;    // Path to stored image file (relative to chat folder)
-        QString mediaType;     // MIME type
+        QString fileName;   // Original filename
+        QString storedPath; // Path to stored image file (relative to chat folder)
+        QString mediaType;  // MIME type
     };
 
     struct Message
@@ -84,6 +84,7 @@ public:
 
     QString currentModel() const;
     QString lastMessageId() const;
+    bool hasImages() const;
 
     Q_INVOKABLE void resetModelTo(int index);
 
@@ -101,7 +102,7 @@ public:
 
     void setLoadingFromHistory(bool loading);
     bool isLoadingFromHistory() const;
-    
+
     void setChatFilePath(const QString &filePath);
     QString chatFilePath() const;
 
