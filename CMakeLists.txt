@@ -148,6 +148,7 @@ add_qtc_plugin(QodeAssist
     tools/ExecuteTerminalCommandTool.hpp tools/ExecuteTerminalCommandTool.cpp
     tools/ProjectSearchTool.hpp tools/ProjectSearchTool.cpp
     tools/FindAndReadFileTool.hpp tools/FindAndReadFileTool.cpp
+    tools/ReadFileLinesTool.hpp tools/ReadFileLinesTool.cpp
     tools/FileSearchUtils.hpp tools/FileSearchUtils.cpp
     providers/ClaudeMessage.hpp providers/ClaudeMessage.cpp
     providers/OpenAIMessage.hpp providers/OpenAIMessage.cpp

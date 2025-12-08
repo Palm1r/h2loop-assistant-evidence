@@ -33,6 +33,7 @@
 #include "GetIssuesListTool.hpp"
 #include "ListProjectFilesTool.hpp"
 #include "ProjectSearchTool.hpp"
+#include "ReadFileLinesTool.hpp"
 #include "ReadVisibleFilesTool.hpp"
 
 #include <mcp/MCPClientManager.hpp>
@@ -56,6 +57,7 @@ void ToolsFactory::registerTools()
     registerTool(new BuildProjectTool(this));
     registerTool(new ExecuteTerminalCommandTool(this));
     registerTool(new ProjectSearchTool(this));
+    registerTool(new ReadFileLinesTool(this));
     registerTool(new FindAndReadFileTool(this));
 
     LOG_MESSAGE(QString("Registered %1 tools").arg(m_tools.size()));
@@ -141,8 +143,7 @@ QJsonArray ToolsFactory::getToolsDefinitions(
             }
 
             if (!matchesFilter) {
-                LOG_MESSAGE(QString("Tool '%1' skipped by tools filter")
-                                .arg(it.value()->name()));
+                LOG_MESSAGE(QString("Tool '%1' skipped by tools filter").arg(it.value()->name()));
                 continue;
             }
         }
