@@ -21,6 +21,8 @@
 #include "ToolExceptions.hpp"
 
 #include <logger/Logger.hpp>
+#include <QCoreApplication>
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -122,25 +124,50 @@ QFuture<QString> CtagsTool::executeAsync(const QJsonObject &input)
 
 QString CtagsTool::runCtags(const QString &filePath) const
 {
+    QString ctagsProgram;
+
+    // First try bundled ctags
+    QString pluginDir = QCoreApplication::applicationDirPath();
+    QString bundledCtags = pluginDir + "/ctags";
+#ifdef Q_OS_WIN
+    bundledCtags += ".exe";
+#endif
+    if (QFile::exists(bundledCtags)) {
+        ctagsProgram = bundledCtags;
+    } else {
+        // Fallback to system ctags
+        QProcess whichProcess;
+        whichProcess.start("which", {"ctags"});
+        if (!whichProcess.waitForFinished(5000) || whichProcess.exitCode() != 0) {
+            LOG_MESSAGE("ctags command not found in system PATH or bundled location");
+            return QString(
+                "Error: ctags is not available. The plugin should have bundled ctags, or install "
+                "Universal Ctags (https://ctags.io/) system-wide.");
+        }
+        ctagsProgram = "ctags";
+    }
+
     QProcess process;
-    process.setProgram("ctags");
+    process.setProgram(ctagsProgram);
     process.setArguments(
         {"--output-format=json", "--fields=+neS", "--sort=no", "--extras=+p", filePath});
 
     process.start();
     if (!process.waitForFinished(30000)) { // 30 second timeout
         LOG_MESSAGE(QString("Ctags process timed out for file: %1").arg(filePath));
-        return QString();
+        return QString("Error: ctags process timed out");
     }
 
     if (process.exitCode() != 0) {
-        LOG_MESSAGE(QString("Ctags failed with exit code %1 for file: %2")
+        QString errorOutput = QString::fromUtf8(process.readAllStandardError());
+        LOG_MESSAGE(QString("Ctags failed with exit code %1 for file: %2. Error: %3")
                         .arg(process.exitCode())
-                        .arg(filePath));
-        return QString();
+                        .arg(filePath)
+                        .arg(errorOutput));
+        return QString("Error: ctags failed to process file. %1").arg(errorOutput);
     }
 
-    return process.readAllStandardOutput();
+    return QString::fromUtf8(process.readAllStandardOutput());
 }
 
 QString CtagsTool::parseCtagsOutput(const QString &output) const
