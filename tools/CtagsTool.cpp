@@ -197,6 +197,8 @@ QString CtagsTool::parseCtagsOutput(const QString &output) const
             QString scope = obj.contains("scope") ? obj["scope"].toString() : "";
             QString signature = obj.contains("signature") ? obj["signature"].toString() : "";
             int lineNum = obj["line"].toInt();
+            QString pattern = obj["pattern"].toString();
+            int endLine = obj.contains("end") ? obj["end"].toInt() : 0;
 
             QString tagInfo = QString("%1: %2").arg(kind, name);
             if (!signature.isEmpty()) {
@@ -205,7 +207,11 @@ QString CtagsTool::parseCtagsOutput(const QString &output) const
             if (!scope.isEmpty()) {
                 tagInfo += QString(" [in %1]").arg(scope);
             }
-            tagInfo += QString(" (line %1)").arg(lineNum);
+            tagInfo += QString(" (line %1").arg(lineNum);
+            if (endLine > 0) {
+                tagInfo += QString("-%1").arg(endLine);
+            }
+            tagInfo += QString(", pattern: %1)").arg(pattern);
 
             parsedTags.append(tagInfo);
         }
