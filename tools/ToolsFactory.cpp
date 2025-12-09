@@ -92,21 +92,38 @@ QJsonArray ToolsFactory::getToolsDefinitions(
     QJsonArray toolsArray;
     const auto &settings = Settings::toolsSettings();
 
+    LOG_MESSAGE(QString(
+                    "Tools settings: enableEditFileTool=%1, enableTerminalCommandTool=%2, "
+                    "enableBuildProjectTool=%3, allowFileSystemRead=%4, allowFileSystemWrite=%5, "
+                    "allowAccessOutsideProject=%6")
+                    .arg(settings.enableEditFileTool())
+                    .arg(settings.enableTerminalCommandTool())
+                    .arg(settings.enableBuildProjectTool())
+                    .arg(settings.allowFileSystemRead())
+                    .arg(settings.allowFileSystemWrite())
+                    .arg(settings.allowAccessOutsideProject()));
+
     for (auto it = m_tools.constBegin(); it != m_tools.constEnd(); ++it) {
         if (!it.value()) {
             continue;
         }
 
         if (it.value()->name() == "edit_file" && !settings.enableEditFileTool()) {
+            LOG_MESSAGE("Tool 'edit_file' skipped because edit file tool is disabled in settings");
             continue;
         }
 
         if (it.value()->name() == "build_project" && !settings.enableBuildProjectTool()) {
+            LOG_MESSAGE(
+                "Tool 'build_project' skipped because build project tool is disabled in settings");
             continue;
         }
 
         if (it.value()->name() == "execute_terminal_command"
             && !settings.enableTerminalCommandTool()) {
+            LOG_MESSAGE(
+                "Tool 'execute_terminal_command' skipped because terminal command tool is disabled "
+                "in settings");
             continue;
         }
 
@@ -141,8 +158,7 @@ QJsonArray ToolsFactory::getToolsDefinitions(
             }
 
             if (!matchesFilter) {
-                LOG_MESSAGE(QString("Tool '%1' skipped by tools filter")
-                                .arg(it.value()->name()));
+                LOG_MESSAGE(QString("Tool '%1' skipped by tools filter").arg(it.value()->name()));
                 continue;
             }
         }
@@ -174,6 +190,18 @@ QJsonArray ToolsFactory::getToolsDefinitions(
                 QString("Tool '%1' skipped due to missing permissions").arg(it.value()->name()));
         }
     }
+
+    QStringList includedToolNames;
+    for (const QJsonValue &toolValue : toolsArray) {
+        QJsonObject toolObj = toolValue.toObject();
+        if (toolObj.contains("function")) {
+            QString name = toolObj["function"].toObject()["name"].toString();
+            includedToolNames.append(name);
+        }
+    }
+    LOG_MESSAGE(QString("Final tools list (%1 tools): %2")
+                    .arg(toolsArray.size())
+                    .arg(includedToolNames.join(", ")));
 
     return toolsArray;
 }
