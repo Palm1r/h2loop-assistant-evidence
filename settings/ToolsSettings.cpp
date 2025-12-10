@@ -44,7 +44,8 @@ ToolsSettings::ToolsSettings()
 
     useTools.setSettingsKey(Constants::CA_USE_TOOLS);
     useTools.setLabelText(Tr::tr("Enable tools"));
-    useTools.setToolTip(Tr::tr(
+    useTools.setToolTip(
+        Tr::tr(
             "Enable tool use capabilities for the assistant (OpenAI function calling, Claude tools "
             "and etc) if plugin and provider support"));
     useTools.setDefaultValue(true);
@@ -59,49 +60,55 @@ ToolsSettings::ToolsSettings()
     allowFileSystemWrite.setLabelText(Tr::tr("Allow File System Write Access for tools"));
     allowFileSystemWrite.setToolTip(
         Tr::tr("Allow tools to write and modify files on disk (WARNING: Use with caution!)"));
-    allowFileSystemWrite.setDefaultValue(false);
+    allowFileSystemWrite.setDefaultValue(true);
 
     allowAccessOutsideProject.setSettingsKey(Constants::CA_ALLOW_ACCESS_OUTSIDE_PROJECT);
     allowAccessOutsideProject.setLabelText(Tr::tr("Allow file access outside project"));
     allowAccessOutsideProject.setToolTip(
-        Tr::tr("Allow tools to access (read/write) files outside the project scope (system "
-               "headers, Qt files, external libraries)"));
+        Tr::tr(
+            "Allow tools to access (read/write) files outside the project scope (system "
+            "headers, Qt files, external libraries)"));
     allowAccessOutsideProject.setDefaultValue(true);
 
     autoApplyFileEdits.setSettingsKey(Constants::CA_AUTO_APPLY_FILE_EDITS);
     autoApplyFileEdits.setLabelText(Tr::tr("Automatically apply file edits"));
     autoApplyFileEdits.setToolTip(
-        Tr::tr("When enabled, file edits suggested by AI will be applied automatically. "
-               "When disabled, you will need to manually approve each edit."));
+        Tr::tr(
+            "When enabled, file edits suggested by AI will be applied automatically. "
+            "When disabled, you will need to manually approve each edit."));
     autoApplyFileEdits.setDefaultValue(false);
 
     enableEditFileTool.setSettingsKey(Constants::CA_ENABLE_EDIT_FILE_TOOL);
     enableEditFileTool.setLabelText(Tr::tr("Enable Edit File Tool (Experimental)"));
     enableEditFileTool.setToolTip(
-        Tr::tr("Enable the experimental edit_file tool that allows AI to directly modify files. "
-               "This feature is under testing and may have unexpected behavior."));
-    enableEditFileTool.setDefaultValue(false);
+        Tr::tr(
+            "Enable the experimental edit_file tool that allows AI to directly modify files. "
+            "This feature is under testing and may have unexpected behavior."));
+    enableEditFileTool.setDefaultValue(true);
 
     enableBuildProjectTool.setSettingsKey(Constants::CA_ENABLE_BUILD_PROJECT_TOOL);
     enableBuildProjectTool.setLabelText(Tr::tr("Enable Build Project Tool (Experimental)"));
     enableBuildProjectTool.setToolTip(
-        Tr::tr("Enable the experimental build_project tool that allows AI to build the current "
-               "project. This feature is under testing and may have unexpected behavior."));
+        Tr::tr(
+            "Enable the experimental build_project tool that allows AI to build the current "
+            "project. This feature is under testing and may have unexpected behavior."));
     enableBuildProjectTool.setDefaultValue(false);
 
     enableTerminalCommandTool.setSettingsKey(Constants::CA_ENABLE_TERMINAL_COMMAND_TOOL);
     enableTerminalCommandTool.setLabelText(Tr::tr("Enable Terminal Command Tool (Experimental)"));
     enableTerminalCommandTool.setToolTip(
-        Tr::tr("Enable the experimental execute_terminal_command tool that allows AI to execute "
-               "terminal commands from the allowed list. This feature is under testing and may have "
-               "unexpected behavior."));
+        Tr::tr(
+            "Enable the experimental execute_terminal_command tool that allows AI to execute "
+            "terminal commands from the allowed list. This feature is under testing and may have "
+            "unexpected behavior."));
     enableTerminalCommandTool.setDefaultValue(false);
 
     allowedTerminalCommands.setSettingsKey(Constants::CA_ALLOWED_TERMINAL_COMMANDS);
     allowedTerminalCommands.setLabelText(Tr::tr("Allowed Terminal Commands"));
     allowedTerminalCommands.setToolTip(
-        Tr::tr("Comma-separated list of terminal commands that AI is allowed to execute. "
-               "Example: git, ls, cat, grep, cmake"));
+        Tr::tr(
+            "Comma-separated list of terminal commands that AI is allowed to execute. "
+            "Example: git, ls, cat, grep, cmake"));
     allowedTerminalCommands.setDisplayStyle(Utils::StringAspect::LineEditDisplay);
     allowedTerminalCommands.setDefaultValue("git, ls, cat, grep");
 
@@ -124,8 +131,7 @@ ToolsSettings::ToolsSettings()
                     Space{8},
                     allowFileSystemRead,
                     allowFileSystemWrite,
-                    allowAccessOutsideProject
-                }},
+                    allowAccessOutsideProject}},
             Space{8},
             Group{
                 title(Tr::tr("Experimental Features")),
@@ -141,11 +147,7 @@ ToolsSettings::ToolsSettings()
 
 void ToolsSettings::setupConnections()
 {
-    connect(
-        &resetToDefaults,
-        &ButtonAspect::clicked,
-        this,
-        &ToolsSettings::resetSettingsToDefaults);
+    connect(&resetToDefaults, &ButtonAspect::clicked, this, &ToolsSettings::resetSettingsToDefaults);
 }
 
 void ToolsSettings::resetSettingsToDefaults()
