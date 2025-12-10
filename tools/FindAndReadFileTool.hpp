@@ -29,6 +29,25 @@
 
 namespace QodeAssist::Tools {
 
+// Struct to represent a ctags tag
+struct Tag
+{
+    QString name;
+    QString kind;
+    QString scope;
+    QString signature;
+    int line;
+    int endLine;
+    QString pattern;
+
+    bool matchesQuery(const QString &query) const
+    {
+        return name.contains(query, Qt::CaseInsensitive)
+               || kind.contains(query, Qt::CaseInsensitive)
+               || (!scope.isEmpty() && scope.contains(query, Qt::CaseInsensitive));
+    }
+};
+
 class FindAndReadFileTool : public LLMCore::BaseTool
 {
     Q_OBJECT
@@ -45,6 +64,11 @@ public:
 
 private:
     QString formatResult(const FileSearchUtils::FileMatch &match, bool readContent) const;
+
+    QString runCtags(const QString &filePath) const;
+    QList<Tag> parseCtagsJson(const QString &output) const;
+    QList<Tag> findMatchingTags(const QList<Tag> &tags, const QString &query) const;
+    QString readLines(const QString &filePath, const QList<Tag> &tags) const;
 
     Context::IgnoreManager *m_ignoreManager;
 };
