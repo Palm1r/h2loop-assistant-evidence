@@ -228,7 +228,7 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
             QString("File edit created: %1 (ID: %2, Status: %3, Deferred: %4)")
                 .arg(filePath, editId, status, requestId.isEmpty() ? QString("no") : QString("yes")));
 
-        QString resultStr = "QODEASSIST_FILE_EDIT:"
+        QString resultStr = "H2LOOP_FILE_EDIT:"
                             + QString::fromUtf8(
                                 QJsonDocument(result).toJson(QJsonDocument::Compact));
         return resultStr;

@@ -100,7 +100,7 @@ Rectangle {
 
     function parseEditData(content) {
         try {
-            const marker = "QODEASSIST_FILE_EDIT:";
+            const marker = "H2LOOP_FILE_EDIT:";
             let jsonStr = content;
             if (content.indexOf(marker) >= 0) {
                 jsonStr = content.substring(content.indexOf(marker) + marker.length);
