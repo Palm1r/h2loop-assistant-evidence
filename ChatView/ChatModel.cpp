@@ -30,6 +30,7 @@
 #include "ChatAssistantSettings.hpp"
 #include "Logger.hpp"
 #include "context/ChangesManager.h"
+#include "tools/CtagUtils.hpp"
 
 namespace QodeAssist::Chat {
 
