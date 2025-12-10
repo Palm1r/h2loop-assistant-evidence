@@ -115,4 +115,13 @@ QString CtagUtils::filterCtagsOutput(const QString &output)
     return filteredLines.join('\n');
 }
 
+QString CtagUtils::generateCtagforFile(const QString &filePath)
+{
+    QString ctagsOutput = runCtags(filePath);
+    if (!ctagsOutput.isEmpty()) {
+        return filterCtagsOutput(ctagsOutput);
+    }
+    return QString();
+}
+
 } // namespace QodeAssist::Tools
