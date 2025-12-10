@@ -68,16 +68,18 @@ QJsonObject FindAndReadFileTool::getDefinition(LLMCore::ToolSchemaFormat format)
 
     properties["read_content"] = QJsonObject{
         {"type", "boolean"},
-        {"description", "Read file content in addition to finding path (default: true)"}};
+        {"description",
+         "Whether to read the full file content (true) or use targeted search mode (false). "
+         "Defaults to true. Automatically set to false when search_query is provided."}};
 
     properties["search_query"] = QJsonObject{
         {"type", "string"},
         {"description",
-         "Specific query to search for in the file (function name, variable, class, etc.) "
-         "Use this for targeted searches, e.g., when user asking about one function, a specific "
-         "class "
-         "member, variable definition, "
-         "or any code element without needing the entire file content"}};
+         "Specific query to search for in the file (function name, variable, class, etc.). "
+         "When provided, automatically enables targeted search mode (read_content=false) "
+         "to find and return only the relevant code elements, such as when user asks about "
+         "one function, a specific class member, variable definition, or any code element "
+         "without needing the entire file content"}};
 
     QJsonObject definition;
     definition["type"] = "object";
@@ -113,6 +115,10 @@ QFuture<QString> FindAndReadFileTool::executeAsync(const QJsonObject &input)
         QString filePattern = input["file_pattern"].toString();
         bool readContent = input["read_content"].toBool(true);
         QString searchQuery = input["search_query"].toString();
+
+        if (!searchQuery.isEmpty()) {
+            readContent = false;
+        }
 
         FileSearchUtils::FileMatch bestMatch
             = FileSearchUtils::findBestMatch(query, filePattern, 10, m_ignoreManager);
