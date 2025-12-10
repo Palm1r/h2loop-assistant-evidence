@@ -87,4 +87,32 @@ QList<Tag> CtagUtils::parseCtagsJson(const QString &output)
     return tags;
 }
 
+QString CtagUtils::filterCtagsOutput(const QString &output)
+{
+    QStringList filteredLines;
+    QStringList lines = output.split('\n', Qt::SkipEmptyParts);
+
+    for (const QString &line : lines) {
+        QJsonDocument doc = QJsonDocument::fromJson(line.toUtf8());
+        if (!doc.isObject()) {
+            continue;
+        }
+
+        QJsonObject obj = doc.object();
+        QString type = obj["_type"].toString();
+
+        if (type == "tag") {
+            // Remove _type and path fields
+            obj.remove("_type");
+            obj.remove("path");
+
+            // Convert back to JSON string
+            QJsonDocument filteredDoc(obj);
+            filteredLines.append(QString::fromUtf8(filteredDoc.toJson(QJsonDocument::Compact)));
+        }
+    }
+
+    return filteredLines.join('\n');
+}
+
 } // namespace QodeAssist::Tools

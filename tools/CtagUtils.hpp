@@ -48,6 +48,7 @@ class CtagUtils
 public:
     static QString runCtags(const QString &filePath);
     static QList<Tag> parseCtagsJson(const QString &output);
+    static QString filterCtagsOutput(const QString &output);
 };
 
 } // namespace QodeAssist::Tools

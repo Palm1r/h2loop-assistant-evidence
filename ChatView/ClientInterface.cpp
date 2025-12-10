@@ -48,6 +48,9 @@
 #include "ToolsSettings.hpp"
 #include <RulesLoader.hpp>
 #include <context/ChangesManager.h>
+#include <tools/CtagUtils.hpp>
+
+using namespace QodeAssist::Tools;
 
 namespace QodeAssist::Chat {
 
@@ -372,11 +375,32 @@ QString ClientInterface::getSystemPromptWithLinkedFiles(
     QString updatedPrompt = basePrompt;
 
     if (!linkedFiles.isEmpty()) {
-        updatedPrompt += "\n\nLinked files for reference:\n";
+        updatedPrompt += "\n\nLinked files and it's information for reference:\n";
 
         auto contentFiles = m_contextManager->getContentFiles(linkedFiles);
         for (const auto &file : contentFiles) {
-            updatedPrompt += QString("\nFile: %1\nContent:\n%2\n").arg(file.filename, file.content);
+            LOG_MESSAGE(
+                QString("Processing file: %1 (full path: %2)").arg(file.filename, file.fullPath));
+
+            QString ctagsOutput = CtagUtils::runCtags(file.fullPath);
+            if (!ctagsOutput.isEmpty()) {
+                QString filteredCtags = CtagUtils::filterCtagsOutput(ctagsOutput);
+                if (!filteredCtags.isEmpty()) {
+                    updatedPrompt += QString("\n## File: %1\n").arg(file.filename);
+                    updatedPrompt
+                        += "### Ctags (symbols and structure) of file: Just use it for reference "
+                           "and always use the actual file content for editing a file.\n";
+                    updatedPrompt += filteredCtags + "\n";
+                } else {
+                    // Fallback to basic file info if no tags
+                    updatedPrompt += QString("\nFile: %1\nAnd it's content:\n%2\n")
+                                         .arg(file.filename, file.content);
+                }
+            } else {
+                // Fallback to basic file info if ctags failed
+                updatedPrompt += QString("\n## File: %1\n").arg(file.filename);
+                updatedPrompt += "### Ctags generation failed\n\n";
+            }
         }
     }
 
