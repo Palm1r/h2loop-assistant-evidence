@@ -27,12 +27,14 @@
 
 #include "BuildProjectTool.hpp"
 #include "CreateNewFileTool.hpp"
+#include "CtagsTool.hpp"
 #include "EditFileTool.hpp"
 #include "ExecuteTerminalCommandTool.hpp"
 #include "FindAndReadFileTool.hpp"
 #include "GetIssuesListTool.hpp"
 #include "ListProjectFilesTool.hpp"
 #include "ProjectSearchTool.hpp"
+#include "ReadFileLinesTool.hpp"
 #include "ReadVisibleFilesTool.hpp"
 
 #include <mcp/MCPClientManager.hpp>
@@ -56,7 +58,9 @@ void ToolsFactory::registerTools()
     registerTool(new BuildProjectTool(this));
     registerTool(new ExecuteTerminalCommandTool(this));
     registerTool(new ProjectSearchTool(this));
+    // registerTool(new ReadFileLinesTool(this));
     registerTool(new FindAndReadFileTool(this));
+    // registerTool(new CtagsTool(this));
 
     LOG_MESSAGE(QString("Registered %1 tools").arg(m_tools.size()));
 }

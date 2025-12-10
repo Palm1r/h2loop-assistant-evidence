@@ -93,6 +93,7 @@ ContentFile ContextManager::createContentFile(const QString &filePath) const
     ContentFile contentFile;
     QFileInfo fileInfo(filePath);
     contentFile.filename = fileInfo.fileName();
+    contentFile.fullPath = filePath;
     contentFile.content = readFile(filePath);
     return contentFile;
 }
