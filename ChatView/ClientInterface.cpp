@@ -19,6 +19,7 @@
 
 #include "ClientInterface.hpp"
 
+#include <numeric>
 #include <texteditor/textdocument.h>
 #include <QFile>
 #include <QFileInfo>
@@ -173,6 +174,18 @@ void ClientInterface::sendMessage(
         LLMCore::Message apiMessage;
         apiMessage.role = msg.role == ChatModel::ChatRole::User ? "user" : "assistant";
         apiMessage.content = msg.content;
+        if (!msg.attachments.isEmpty()) {
+            apiMessage.content += "\n\nAttached files list:"
+                                  + std::accumulate(
+                                      msg.attachments.begin(),
+                                      msg.attachments.end(),
+                                      QString(),
+                                      [](QString acc, const Context::ContentFile &attachment) {
+                                          return acc
+                                                 + QString("\nname: %1\nfile content:\n%2")
+                                                       .arg(attachment.filename, attachment.content);
+                                      });
+        }
         apiMessage.isThinking = (msg.role == ChatModel::ChatRole::Thinking);
         apiMessage.isRedacted = msg.isRedacted;
         apiMessage.signature = msg.signature;
