@@ -58,9 +58,9 @@ void ToolsFactory::registerTools()
     registerTool(new BuildProjectTool(this));
     registerTool(new ExecuteTerminalCommandTool(this));
     registerTool(new ProjectSearchTool(this));
-    registerTool(new ReadFileLinesTool(this));
+    // registerTool(new ReadFileLinesTool(this));
     registerTool(new FindAndReadFileTool(this));
-    registerTool(new CtagsTool(this));
+    // registerTool(new CtagsTool(this));
 
     LOG_MESSAGE(QString("Registered %1 tools").arg(m_tools.size()));
 }
