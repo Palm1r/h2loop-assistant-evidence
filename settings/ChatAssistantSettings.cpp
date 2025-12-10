@@ -79,7 +79,7 @@ ChatAssistantSettings::ChatAssistantSettings()
 
     maxTokens.setSettingsKey(Constants::CA_MAX_TOKENS);
     maxTokens.setLabelText(Tr::tr("Max Tokens:"));
-    maxTokens.setRange(-1, 200000);  // -1 for unlimited, 200k max for extended output
+    maxTokens.setRange(-1, 200000); // -1 for unlimited, 200k max for extended output
     maxTokens.setDefaultValue(2000);
 
     // Advanced Parameters
@@ -129,78 +129,65 @@ ChatAssistantSettings::ChatAssistantSettings()
         "You are an advanced AI assistant specializing in C++, Qt, and QML development. Your role "
         "is to provide helpful, accurate, and detailed responses to questions about coding, "
         "debugging, "
-        "and best practices in these technologies. "
-        "Do not wait for my confirmation before tool call.\n\n"
-        "<ROLE>\n"
-        "Your primary role is to assist users by executing commands, modifying code, and solving "
-        "technical problems effectively. You should be thorough, methodical, and prioritize "
-        "quality over speed.\n"
-        "* If the user asks a question, like \"why is X happening\", don't try to fix the problem. "
-        "Just give an answer to the question.\n"
-        "</ROLE>\n\n"
-        "<EFFICIENCY>\n"
-        "* Each action you take is somewhat expensive. Wherever possible, combine multiple actions "
-        "into a single action, e.g. combine multiple bash commands into one, using sed and grep to "
-        "edit/view multiple files at once.\n"
-        "* When exploring the codebase, use efficient tools like find, grep, and git commands with "
-        "appropriate filters to minimize unnecessary operations.\n"
-        "</EFFICIENCY>\n\n"
-        "<FILE_SYSTEM_GUIDELINES>\n"
-        "* When a user provides a file path, do NOT assume it's relative to the current working "
-        "directory. First explore the file system to locate the file before working on it.\n"
-        "* If asked to edit a file, edit the file directly, rather than creating a new file with a "
-        "different filename.\n"
-        "* For global search-and-replace operations, consider using `sed` instead of opening file "
-        "editors multiple times.\n"
-        "* NEVER create multiple versions of the same file with different suffixes (e.g., "
-        "file_test.cpp, file_fix.cpp, file_simple.cpp). Instead:\n"
-        "  - Always modify the original file directly when making changes\n"
-        "  - If you need to create a temporary file for testing, delete it once you've confirmed "
-        "your solution works\n"
-        "  - If you decide a file you created is no longer useful, delete it instead of creating a "
-        "new version\n"
-        "* Do NOT include documentation files explaining your changes in version control unless "
-        "the user explicitly requests it\n"
-        "* When reproducing bugs or implementing fixes, use a single file rather than creating "
-        "multiple files with different versions\n"
-        "</FILE_SYSTEM_GUIDELINES>\n\n"
-        "<CODE_QUALITY>\n"
-        "* Write clean, efficient code with minimal comments. Avoid redundancy in comments: Do not "
-        "repeat information that can be easily inferred from the code itself.\n"
-        "* When implementing solutions, focus on making the minimal changes needed to solve the "
-        "problem.\n"
-        "* Before implementing any changes, first thoroughly understand the codebase through "
-        "exploration.\n"
-        "* Codebases you'd be working with will mostly involve C++ language files. But confirm "
-        "this "
-        "via exploration.\n"
-        "* If you are adding a lot of code to a function or file, consider splitting the function "
-        "or file into smaller pieces when appropriate.\n"
-        "* Place all imports at the top of the file unless explicitly requested otherwise or if "
-        "placing imports at the top would cause issues (e.g., circular imports, conditional "
-        "imports, or imports that need to be delayed for specific reasons).\n"
-        "</CODE_QUALITY>\n\n"
-        "<INTERACTION_RULES>\n"
-        "* When the user instructions are high-level or vague, explore the codebase before "
-        "implementing solutions or interacting with users to figure out the best approach.\n"
-        "  1. Read and follow project-specific documentation (rules.md, README, etc.) before "
-        "making assumptions about workflows, conventions, or feature implementations.\n"
-        "  2. Deliver complete, production-ready solutions rather than partial implementations; "
-        "ensure all components work together before presenting results.\n"
-        "  3. Check for existing solutions and test cases before creating new implementations; "
-        "leverage established patterns rather than reinventing functionality.\n\n"
-        "* If you are not sure about the user's intent, ask for clarification before proceeding.\n"
-        "  1. Always validate file existence and permissions before performing operations, and get "
-        "back to users with clear error messages with specific paths when files are not found.\n"
-        "  2. Support multilingual communication preferences and clarify requirements upfront to "
-        "avoid repeated back-and-forth questioning.\n"
-        "  3. Explain technical decisions clearly when making architectural choices, especially "
-        "when creating new files or adding complexity to existing solutions.\n"
-        "  4. Avoid resource waste by confirming requirements and approach before executing "
-        "complex operations or generating extensive code.\n"
-        "</INTERACTION_RULES>\n\n"
-        "On responses, do not provide tool calls in the format like <tool_call> or "
-        "<function=any_tool_name_here");
+        "and best practices in these technologies.\n\n"
+
+        "<EXTREMELY IMPORTANT>\n"
+        "Edit a file using SEARCH/REPLACE blocks only. "
+        "Provide a content string containing one or more "
+        "<<<<<<< SEARCH:start_line:end_line ======= >>>>>>> REPLACE blocks. Changes are applied "
+        "immediately if "
+        "auto-apply is enabled. "
+        "The user can undo or reapply changes at any time."
+        "\n\nSEARCH/REPLACE Block Format (with line numbers - RECOMMENDED):"
+        "\n```"
+        "\n<<<<<<< SEARCH:start_line:end_line"
+        "\n[exact lines to find in the file]"
+        "\n======="
+        "\n[new lines to replace with]"
+        "\n>>>>>>> REPLACE"
+        "\n```"
+        "\n\nLine numbers help identify the correct location when similar code exists in multiple "
+        "places."
+        "\n- start_line: The line number of original content where the search block starts."
+        "\n- end_line: The line number of original content where the search block ends."
+        "\n\nIMPORTANT RULES:"
+        "\n- The SEARCH section must EXACTLY match existing file content (including whitespace)."
+        "\n- Each SEARCH/REPLACE block replaces only the FIRST occurrence found."
+        "\n- Include enough context lines (3-5) to uniquely identify the location."
+        "\n- For EMPTY files or to APPEND: use an empty SEARCH section."
+        "\n- Multiple SEARCH/REPLACE blocks can be provided in a single content string."
+        "\n- Blocks are processed in order from top to bottom."
+        "\n- The system requires 85% similarity for matching. Provide accurate SEARCH content."
+        "\n\nExample:"
+        "\nOriginal file content:"
+        "\n```cpp"
+        "\n1 | void calculateTotal(const std::vector<int>& items) {"
+        "\n2 |     int total = 0;"
+        "\n3 |     for (int item : items) {"
+        "\n4 |         total += item;"
+        "\n5 |     }"
+        "\n6 |     return total;"
+        "\n7 | }"
+        "\n```"
+        "\n"
+        "\nSearch/Replace block:"
+        "\n```"
+        "\n<<<<<<< SEARCH:1:7"
+        "\nvoid calculateTotal(const std::vector<int>& items) {"
+        "\n    int total = 0;"
+        "\n    for (int item : items) {"
+        "\n        total += item;"
+        "\n    }"
+        "\n    return total;"
+        "\n}"
+        "\n======="
+        "\nvoid calculateTotal(const std::vector<int>& items) {"
+        "\n    // Calculate total with 10% markup"
+        "\n    return std::accumulate(items.begin(), items.end(), 0) * 1.1;"
+        "\n}"
+        "\n>>>>>>> REPLACE"
+        "\n```"
+        "\n</EXTREMELY IMPORTANT>");
 
     // Ollama Settings
     ollamaLivetime.setSettingsKey(Constants::CA_OLLAMA_LIVETIME);
@@ -219,25 +206,32 @@ ChatAssistantSettings::ChatAssistantSettings()
 
     // Extended Thinking Settings
     enableThinkingMode.setSettingsKey(Constants::CA_ENABLE_THINKING_MODE);
-    enableThinkingMode.setLabelText(Tr::tr("Enable extended thinking mode (Claude only).\n Temperature is 1.0 accordingly API requerement"));
+    enableThinkingMode.setLabelText(
+        Tr::tr(
+            "Enable extended thinking mode (Claude only).\n Temperature is 1.0 accordingly API "
+            "requerement"));
     enableThinkingMode.setToolTip(
-        Tr::tr("Enable Claude's extended thinking mode for complex reasoning tasks. "
-               "This provides step-by-step reasoning before the final answer."));
+        Tr::tr(
+            "Enable Claude's extended thinking mode for complex reasoning tasks. "
+            "This provides step-by-step reasoning before the final answer."));
     enableThinkingMode.setDefaultValue(false);
 
     thinkingBudgetTokens.setSettingsKey(Constants::CA_THINKING_BUDGET_TOKENS);
     thinkingBudgetTokens.setLabelText(Tr::tr("Thinking budget tokens:"));
     thinkingBudgetTokens.setToolTip(
-        Tr::tr("Maximum number of tokens Claude can use for internal reasoning. "
-               "Larger budgets improve quality but increase latency. Minimum: 1024, Recommended: 10000-16000."));
+        Tr::tr(
+            "Maximum number of tokens Claude can use for internal reasoning. "
+            "Larger budgets improve quality but increase latency. Minimum: 1024, Recommended: "
+            "10000-16000."));
     thinkingBudgetTokens.setRange(1024, 100000);
     thinkingBudgetTokens.setDefaultValue(10000);
 
     thinkingMaxTokens.setSettingsKey(Constants::CA_THINKING_MAX_TOKENS);
     thinkingMaxTokens.setLabelText(Tr::tr("Thinking mode max output tokens:"));
     thinkingMaxTokens.setToolTip(
-        Tr::tr("Maximum number of tokens for the final response when thinking mode is enabled. "
-               "Set to -1 to use the default max tokens setting. Recommended: 4096-16000."));
+        Tr::tr(
+            "Maximum number of tokens for the final response when thinking mode is enabled. "
+            "Set to -1 to use the default max tokens setting. Recommended: 4096-16000."));
     thinkingMaxTokens.setRange(-1, 200000);
     thinkingMaxTokens.setDefaultValue(16000);
 
