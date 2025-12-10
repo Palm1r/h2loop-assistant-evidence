@@ -97,7 +97,7 @@ QVariant ChatModel::data(const QModelIndex &index, int role) const
             imageMap["fileName"] = image.fileName;
             imageMap["storedPath"] = image.storedPath;
             imageMap["mediaType"] = image.mediaType;
-            
+
             // Generate proper file URL for cross-platform compatibility
             if (!m_chatFilePath.isEmpty()) {
                 QFileInfo fileInfo(m_chatFilePath);
@@ -109,7 +109,7 @@ QVariant ChatModel::data(const QModelIndex &index, int role) const
             } else {
                 imageMap["imageUrl"] = QString();
             }
-            
+
             imagesList.append(imageMap);
         }
         return imagesList;
@@ -163,7 +163,7 @@ void ChatModel::addMessage(
         emit messageAdded();
 
         if (m_loadingFromHistory && role == ChatRole::FileEdit) {
-            const QString marker = "QODEASSIST_FILE_EDIT:";
+            const QString marker = "H2LOOP_FILE_EDIT:";
             if (content.contains(marker)) {
                 int markerPos = content.indexOf(marker);
                 int jsonStart = markerPos + marker.length();
@@ -401,7 +401,7 @@ void ChatModel::updateToolResult(
                         .arg(requestId, toolId));
     }
 
-    const QString marker = "QODEASSIST_FILE_EDIT:";
+    const QString marker = "H2LOOP_FILE_EDIT:";
     if (result.contains(marker)) {
         LOG_MESSAGE(QString("File edit marker detected in tool result"));
 
@@ -449,10 +449,11 @@ void ChatModel::updateToolResult(
 void ChatModel::addThinkingBlock(
     const QString &requestId, const QString &thinking, const QString &signature)
 {
-    LOG_MESSAGE(QString("Adding thinking block: requestId=%1, thinking length=%2, signature length=%3")
-                    .arg(requestId)
-                    .arg(thinking.length())
-                    .arg(signature.length()));
+    LOG_MESSAGE(
+        QString("Adding thinking block: requestId=%1, thinking length=%2, signature length=%3")
+            .arg(requestId)
+            .arg(thinking.length())
+            .arg(signature.length()));
 
     QString displayContent = thinking;
     if (!signature.isEmpty()) {
@@ -469,15 +470,15 @@ void ChatModel::addThinkingBlock(
     m_messages.append(thinkingMessage);
     endInsertRows();
     LOG_MESSAGE(QString("Added thinking message at index %1 with signature length=%2")
-                    .arg(m_messages.size() - 1).arg(signature.length()));
+                    .arg(m_messages.size() - 1)
+                    .arg(signature.length()));
 }
 
 void ChatModel::addRedactedThinkingBlock(const QString &requestId, const QString &signature)
 {
-    LOG_MESSAGE(
-        QString("Adding redacted thinking block: requestId=%1, signature length=%2")
-            .arg(requestId)
-            .arg(signature.length()));
+    LOG_MESSAGE(QString("Adding redacted thinking block: requestId=%1, signature length=%2")
+                    .arg(requestId)
+                    .arg(signature.length()));
 
     QString displayContent = "[Thinking content redacted by safety systems]";
     if (!signature.isEmpty()) {
@@ -494,7 +495,8 @@ void ChatModel::addRedactedThinkingBlock(const QString &requestId, const QString
     m_messages.append(thinkingMessage);
     endInsertRows();
     LOG_MESSAGE(QString("Added redacted thinking message at index %1 with signature length=%2")
-                    .arg(m_messages.size() - 1).arg(signature.length()));
+                    .arg(m_messages.size() - 1)
+                    .arg(signature.length()));
 }
 
 void ChatModel::updateMessageContent(const QString &messageId, const QString &newContent)
@@ -538,7 +540,7 @@ void ChatModel::onFileEditArchived(const QString &editId)
 void ChatModel::updateFileEditStatus(
     const QString &editId, const QString &status, const QString &statusMessage)
 {
-    const QString marker = "QODEASSIST_FILE_EDIT:";
+    const QString marker = "H2LOOP_FILE_EDIT:";
 
     for (int i = 0; i < m_messages.size(); ++i) {
         if (m_messages[i].role == ChatRole::FileEdit && m_messages[i].id == editId) {
