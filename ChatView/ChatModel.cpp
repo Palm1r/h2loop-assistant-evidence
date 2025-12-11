@@ -27,6 +27,7 @@
 #include <QUrl>
 #include <QtQml>
 
+#include "../tools/CtagUtils.hpp"
 #include "ChatAssistantSettings.hpp"
 #include "Logger.hpp"
 #include "context/ChangesManager.h"
