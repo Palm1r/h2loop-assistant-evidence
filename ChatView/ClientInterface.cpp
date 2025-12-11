@@ -178,16 +178,23 @@ void ClientInterface::sendMessage(
         apiMessage.role = msg.role == ChatModel::ChatRole::User ? "user" : "assistant";
         apiMessage.content = msg.content;
         if (!msg.attachments.isEmpty()) {
-            apiMessage.content += "\n\nAttached files list:"
-                                  + std::accumulate(
-                                      msg.attachments.begin(),
-                                      msg.attachments.end(),
-                                      QString(),
-                                      [](QString acc, const Context::ContentFile &attachment) {
-                                          return acc
-                                                 + QString("\nname: %1\nfile content:\n%2")
-                                                       .arg(attachment.filename, attachment.content);
-                                      });
+            apiMessage.content
+                += "\n\nAttached files list:"
+                   + std::accumulate(
+                       msg.attachments.begin(),
+                       msg.attachments.end(),
+                       QString(),
+                       [](QString acc, const Context::ContentFile &attachment) {
+                           QString ctags = CtagUtils::generateCtagforFile(attachment.fullPath);
+
+                           QString fileInfo
+                               = !ctags.isEmpty()
+                                     ? QString("\nName: %1\nCtags (symbols and structure) of file:: \n%2")
+                                           .arg(attachment.filename, ctags)
+                                     : QString("\nName: %1\nFile content:\n%2")
+                                           .arg(attachment.filename, attachment.content);
+                           return acc + fileInfo;
+                       });
         }
         apiMessage.isThinking = (msg.role == ChatModel::ChatRole::Thinking);
         apiMessage.isRedacted = msg.isRedacted;
@@ -398,9 +405,7 @@ QString ClientInterface::getSystemPromptWithLinkedFiles(
             QString filteredCtags = CtagUtils::generateCtagforFile(file.fullPath);
             if (!filteredCtags.isEmpty()) {
                 updatedPrompt += QString("\n## File: %1\n").arg(file.filename);
-                updatedPrompt
-                    += "### Ctags (symbols and structure) of file: Just use it for reference "
-                       "and always use the actual file content for editing a file.\n";
+                updatedPrompt += "### Ctags (symbols and structure) of file:\n";
                 updatedPrompt += filteredCtags + "\n";
             } else {
                 // Fallback to basic file info if no tags
