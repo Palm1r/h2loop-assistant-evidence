@@ -3,6 +3,7 @@
 #include <logger/Logger.hpp>
 #include <QCoreApplication>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
@@ -117,9 +118,15 @@ QString CtagUtils::filterCtagsOutput(const QString &output)
 
 QString CtagUtils::generateCtagforFile(const QString &filePath)
 {
-    QString ctagsOutput = runCtags(filePath);
-    if (!ctagsOutput.isEmpty()) {
-        return filterCtagsOutput(ctagsOutput);
+    QFileInfo fileInfo(filePath);
+    QString suffix = fileInfo.suffix().toLower();
+    QStringList supportedExtensions = {"c", "cpp", "h"};
+
+    if (supportedExtensions.contains(suffix)) {
+        QString ctagsOutput = runCtags(filePath);
+        if (!ctagsOutput.isEmpty()) {
+            return filterCtagsOutput(ctagsOutput);
+        }
     }
     return QString();
 }
