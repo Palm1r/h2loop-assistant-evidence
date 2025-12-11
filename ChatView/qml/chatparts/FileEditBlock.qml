@@ -104,7 +104,19 @@ Rectangle {
             if (content.indexOf(marker) >= 0) {
                 jsonStr = content.substring(content.indexOf(marker) + marker.length);
             }
-            return JSON.parse(jsonStr);
+            const data = JSON.parse(jsonStr);
+            // If there are edits array, return the first edit for single block display
+            if (data.edits && data.edits.length > 0) {
+                const firstEdit = data.edits[0];
+                return {
+                    edit_id: firstEdit.edit_id || "",
+                    file: data.file || "",
+                    status: firstEdit.status || "pending",
+                    status_message: firstEdit.status_message || "",
+                    diff: data.diff || ""
+                };
+            }
+            return data;
         } catch (e) {
             return {
                 edit_id: "",
