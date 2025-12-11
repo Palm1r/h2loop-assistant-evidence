@@ -24,9 +24,9 @@ QString CtagUtils::runCtags(const QString &filePath)
         ctagsProgram = bundledCtags;
     } else {
         // Fallback to system ctags
-        QProcess whichProcess;
-        whichProcess.start("which", {"ctags"});
-        if (!whichProcess.waitForFinished(5000) || whichProcess.exitCode() != 0) {
+        QProcess testProcess;
+        testProcess.start("ctags", {"--version"});
+        if (!testProcess.waitForFinished(5000) || testProcess.exitCode() != 0) {
             LOG_MESSAGE("ctags command not found in system PATH or bundled location");
             return QString();
         }
