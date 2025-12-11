@@ -24,12 +24,12 @@ QString CtagUtils::runCtags(const QString &filePath)
         ctagsProgram = bundledCtags;
     } else {
         // Fallback to system ctags
-        QProcess testProcess;
-        testProcess.start("ctags", {"--version"});
-        if (!testProcess.waitForFinished(5000) || testProcess.exitCode() != 0) {
-            LOG_MESSAGE("ctags command not found in system PATH or bundled location");
-            return QString();
-        }
+        // QProcess testProcess;
+        // testProcess.start("ctags", {"--version"});
+        // if (!testProcess.waitForFinished(5000) || testProcess.exitCode() != 0) {
+        //     LOG_MESSAGE("ctags command not found in system PATH or bundled location");
+        //     return QString();
+        // }
         ctagsProgram = "ctags";
     }
 
@@ -37,6 +37,9 @@ QString CtagUtils::runCtags(const QString &filePath)
     process.setProgram(ctagsProgram);
     process.setArguments(
         {"--output-format=json", "--fields=+neS", "--sort=no", "--extras=+p", filePath});
+
+    LOG_MESSAGE(
+        QString("Running ctags command: %1 %2").arg(ctagsProgram).arg(process.arguments().join(" ")));
 
     process.start();
     if (!process.waitForFinished(30000)) { // 30 second timeout
