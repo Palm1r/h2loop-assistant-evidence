@@ -1050,7 +1050,7 @@ void ChatRootView::updateFileEditStatus(const QString &editId, const QString &st
 {
     auto messages = m_chatModel->getChatHistory();
     for (int i = 0; i < messages.size(); ++i) {
-        if (messages[i].role == Chat::ChatModel::FileEdit && messages[i].id == editId) {
+        if (messages[i].role == Chat::ChatModel::FileEdit) {
             QString content = messages[i].content;
 
             const QString marker = "H2LOOP_FILE_EDIT:";
@@ -1064,20 +1064,54 @@ void ChatRootView::updateFileEditStatus(const QString &editId, const QString &st
             QJsonDocument doc = QJsonDocument::fromJson(jsonStr.toUtf8());
             if (doc.isObject()) {
                 QJsonObject obj = doc.object();
-                obj["status"] = status;
 
-                auto edit = Context::ChangesManager::instance().getFileEdit(editId);
-                if (!edit.statusMessage.isEmpty()) {
-                    obj["status_message"] = edit.statusMessage;
+                bool containsEdit = false;
+                if (obj.contains("edits") && obj["edits"].isArray()) {
+                    QJsonArray edits = obj["edits"].toArray();
+                    for (int j = 0; j < edits.size(); ++j) {
+                        QJsonObject editObj = edits[j].toObject();
+                        if (editObj["edit_id"].toString() == editId) {
+                            containsEdit = true;
+                            break;
+                        }
+                    }
+                } else if (obj.contains("edit_id") && obj["edit_id"].toString() == editId) {
+                    containsEdit = true;
                 }
 
-                QString updatedContent = marker
-                                         + QString::fromUtf8(
-                                             QJsonDocument(obj).toJson(QJsonDocument::Compact));
-                m_chatModel->updateMessageContent(editId, updatedContent);
-                LOG_MESSAGE(QString("Updated file edit status to: %1").arg(status));
+                if (containsEdit) {
+                    auto edit = Context::ChangesManager::instance().getFileEdit(editId);
+
+                    if (obj.contains("edits") && obj["edits"].isArray()) {
+                        QJsonArray edits = obj["edits"].toArray();
+                        for (int j = 0; j < edits.size(); ++j) {
+                            QJsonObject editObj = edits[j].toObject();
+                            if (editObj["edit_id"].toString() == editId) {
+                                editObj["status"] = status;
+                                if (!edit.statusMessage.isEmpty()) {
+                                    editObj["status_message"] = edit.statusMessage;
+                                }
+                                edits[j] = editObj;
+                                break;
+                            }
+                        }
+                        obj["edits"] = edits;
+                    } else {
+                        // Fallback for old format without edits array
+                        obj["status"] = status;
+                        if (!edit.statusMessage.isEmpty()) {
+                            obj["status_message"] = edit.statusMessage;
+                        }
+                    }
+
+                    QString updatedContent = marker
+                                             + QString::fromUtf8(
+                                                 QJsonDocument(obj).toJson(QJsonDocument::Compact));
+                    m_chatModel->updateMessageContent(messages[i].id, updatedContent);
+                    LOG_MESSAGE(QString("Updated file edit status to: %1").arg(status));
+                    break;
+                }
             }
-            break;
         }
     }
 
@@ -1162,7 +1196,7 @@ void ChatRootView::undoAllFileEditsForCurrentMessage()
             m_currentMessageRequestId);
         for (const auto &edit : edits) {
             if (edit.status == Context::ChangesManager::Rejected) {
-                updateFileEditStatus(edit.editId, "rejected");
+                updateFileEditStatus(edit.editId, "undone");
             }
         }
     }

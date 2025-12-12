@@ -543,7 +543,7 @@ void ChatModel::updateFileEditStatus(
     const QString marker = "H2LOOP_FILE_EDIT:";
 
     for (int i = 0; i < m_messages.size(); ++i) {
-        if (m_messages[i].role == ChatRole::FileEdit && m_messages[i].id == editId) {
+        if (m_messages[i].role == ChatRole::FileEdit) {
             const QString &content = m_messages[i].content;
 
             if (content.contains(marker)) {
@@ -557,20 +557,55 @@ void ChatModel::updateFileEditStatus(
                     if (doc.isObject()) {
                         QJsonObject editData = doc.object();
 
-                        editData["status"] = status;
-                        editData["status_message"] = statusMessage;
+                        bool containsEdit = false;
+                        if (editData.contains("edits") && editData["edits"].isArray()) {
+                            QJsonArray edits = editData["edits"].toArray();
+                            for (int j = 0; j < edits.size(); ++j) {
+                                QJsonObject editObj = edits[j].toObject();
+                                if (editObj["edit_id"].toString() == editId) {
+                                    containsEdit = true;
+                                    break;
+                                }
+                            }
+                        } else if (
+                            editData.contains("edit_id")
+                            && editData["edit_id"].toString() == editId) {
+                            containsEdit = true;
+                        }
 
-                        QString updatedContent = marker
-                                                 + QString::fromUtf8(QJsonDocument(editData).toJson(
-                                                     QJsonDocument::Compact));
+                        if (containsEdit) {
+                            if (editData.contains("edits") && editData["edits"].isArray()) {
+                                QJsonArray edits = editData["edits"].toArray();
+                                for (int j = 0; j < edits.size(); ++j) {
+                                    QJsonObject editObj = edits[j].toObject();
+                                    if (editObj["edit_id"].toString() == editId) {
+                                        editObj["status"] = status;
+                                        editObj["status_message"] = statusMessage;
+                                        edits[j] = editObj;
+                                        break;
+                                    }
+                                }
+                                editData["edits"] = edits;
+                            } else {
+                                // Fallback for old format without edits array
+                                editData["status"] = status;
+                                editData["status_message"] = statusMessage;
+                            }
 
-                        m_messages[i].content = updatedContent;
+                            QString updatedContent = marker
+                                                     + QString::fromUtf8(
+                                                         QJsonDocument(editData).toJson(
+                                                             QJsonDocument::Compact));
 
-                        emit dataChanged(index(i), index(i));
+                            m_messages[i].content = updatedContent;
 
-                        LOG_MESSAGE(QString("Updated FileEdit message status: editId=%1, status=%2")
-                                        .arg(editId, status));
-                        break;
+                            emit dataChanged(index(i), index(i));
+
+                            LOG_MESSAGE(
+                                QString("Updated FileEdit message status: editId=%1, status=%2")
+                                    .arg(editId, status));
+                            break;
+                        }
                     }
                 }
             }
