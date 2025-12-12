@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2025 Petr Mironychev
  *
  * This file is part of QodeAssist.
@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include "CtagUtils.hpp"
 #include "FileSearchUtils.hpp"
 
 #include <context/IgnoreManager.hpp>
@@ -30,12 +29,12 @@
 
 namespace QodeAssist::Tools {
 
-class FindAndReadFileTool : public LLMCore::BaseTool
+class CtagsTool : public LLMCore::BaseTool
 {
     Q_OBJECT
 
 public:
-    explicit FindAndReadFileTool(QObject *parent = nullptr);
+    explicit CtagsTool(QObject *parent = nullptr);
 
     QString name() const override;
     QString stringName() const override;
@@ -45,10 +44,8 @@ public:
     QFuture<QString> executeAsync(const QJsonObject &input) override;
 
 private:
-    QString formatResult(const FileSearchUtils::FileMatch &match, bool readContent) const;
-
-    QList<Tag> findMatchingTags(const QList<Tag> &tags, const QString &query) const;
-    QString readLines(const QString &filePath, const QList<Tag> &tags) const;
+    QString runCtags(const QString &filePath) const;
+    QString parseCtagsOutput(const QString &output) const;
 
     Context::IgnoreManager *m_ignoreManager;
 };

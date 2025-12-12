@@ -27,6 +27,7 @@
 #include <QUrl>
 #include <QtQml>
 
+#include "../tools/CtagUtils.hpp"
 #include "ChatAssistantSettings.hpp"
 #include "Logger.hpp"
 #include "context/ChangesManager.h"
@@ -311,9 +312,17 @@ QJsonArray ChatModel::prepareMessagesForRequest(const QString &systemPrompt) con
                             message.attachments.end(),
                             QString(),
                             [](QString acc, const Context::ContentFile &attachment) {
-                                return acc
-                                       + QString("\nname: %1\nfile content:\n%2")
-                                             .arg(attachment.filename, attachment.content);
+                                QString ctags = QodeAssist::Tools::CtagUtils::generateCtagforFile(
+                                    attachment.fullPath);
+                                if (!ctags.isEmpty()) {
+                                    return acc
+                                           + QString("\nname: %1\nctags:\n%2")
+                                                 .arg(attachment.filename, ctags);
+                                } else {
+                                    return acc
+                                           + QString("\nname: %1\nfile content:\n%2")
+                                                 .arg(attachment.filename, attachment.content);
+                                }
                             });
 
         messages.append(QJsonObject{{"role", role}, {"content", content}});

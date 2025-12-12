@@ -49,6 +49,9 @@
 #include "ToolsSettings.hpp"
 #include <RulesLoader.hpp>
 #include <context/ChangesManager.h>
+#include <tools/CtagUtils.hpp>
+
+using namespace QodeAssist::Tools;
 
 namespace QodeAssist::Chat {
 
@@ -175,16 +178,23 @@ void ClientInterface::sendMessage(
         apiMessage.role = msg.role == ChatModel::ChatRole::User ? "user" : "assistant";
         apiMessage.content = msg.content;
         if (!msg.attachments.isEmpty()) {
-            apiMessage.content += "\n\nAttached files list:"
-                                  + std::accumulate(
-                                      msg.attachments.begin(),
-                                      msg.attachments.end(),
-                                      QString(),
-                                      [](QString acc, const Context::ContentFile &attachment) {
-                                          return acc
-                                                 + QString("\nname: %1\nfile content:\n%2")
-                                                       .arg(attachment.filename, attachment.content);
-                                      });
+            apiMessage.content
+                += "\n\nAttached files list:"
+                   + std::accumulate(
+                       msg.attachments.begin(),
+                       msg.attachments.end(),
+                       QString(),
+                       [](QString acc, const Context::ContentFile &attachment) {
+                           QString ctags = CtagUtils::generateCtagforFile(attachment.fullPath);
+
+                           QString fileInfo
+                               = !ctags.isEmpty()
+                                     ? QString("\nName: %1\nCtags (symbols and structure) of file:: \n%2")
+                                           .arg(attachment.filename, ctags)
+                                     : QString("\nName: %1\nFile content:\n%2")
+                                           .arg(attachment.filename, attachment.content);
+                           return acc + fileInfo;
+                       });
         }
         apiMessage.isThinking = (msg.role == ChatModel::ChatRole::Thinking);
         apiMessage.isRedacted = msg.isRedacted;
@@ -385,11 +395,23 @@ QString ClientInterface::getSystemPromptWithLinkedFiles(
     QString updatedPrompt = basePrompt;
 
     if (!linkedFiles.isEmpty()) {
-        updatedPrompt += "\n\nLinked files for reference:\n";
+        updatedPrompt += "\n\nLinked files and it's information for reference:\n";
 
         auto contentFiles = m_contextManager->getContentFiles(linkedFiles);
         for (const auto &file : contentFiles) {
-            updatedPrompt += QString("\nFile: %1\nContent:\n%2\n").arg(file.filename, file.content);
+            LOG_MESSAGE(
+                QString("Processing file: %1 (full path: %2)").arg(file.filename, file.fullPath));
+
+            QString filteredCtags = CtagUtils::generateCtagforFile(file.fullPath);
+            if (!filteredCtags.isEmpty()) {
+                updatedPrompt += QString("\n## File: %1\n").arg(file.filename);
+                updatedPrompt += "### Ctags (symbols and structure) of file:\n";
+                updatedPrompt += filteredCtags + "\n";
+            } else {
+                // Fallback to basic file info if no tags
+                updatedPrompt += QString("\nFile: %1\nAnd it's content:\n%2\n")
+                                     .arg(file.filename, file.content);
+            }
         }
     }
 
