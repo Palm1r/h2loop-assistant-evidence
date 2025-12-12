@@ -124,6 +124,15 @@ QFuture<QString> FindAndReadFileTool::executeAsync(const QJsonObject &input)
         QString filePattern = input["file_pattern"].toString();
         bool readContent = input["read_content"].toBool(true);
         QString searchQuery = input["search_query"].toString();
+        int startLine = input["start_line"].toInt(0);
+        int endLine = input["end_line"].toInt(0);
+
+        LOG_MESSAGE(
+            QString("FindAndReadFileTool: Searching for '%1' (pattern: %2, read: %3, lines: %4-%5)")
+                .arg(query, filePattern.isEmpty() ? "none" : filePattern)
+                .arg(readContent)
+                .arg(startLine > 0 ? QString::number(startLine) : "1")
+                .arg(endLine > 0 ? QString::number(endLine) : "end"));
 
         if (!searchQuery.isEmpty()) {
             readContent = false;
