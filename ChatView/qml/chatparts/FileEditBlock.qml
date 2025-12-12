@@ -34,8 +34,7 @@ Rectangle {
     readonly property string fileName: getFileName(filePath)
     readonly property string editStatus: editData.status || "pending"
     readonly property string statusMessage: editData.status_message || ""
-    readonly property string oldContent: editData.old_content || ""
-    readonly property string newContent: editData.new_content || ""
+    readonly property var diffBlocks: parseDiffBlocks(editData.diff || "")
 
     signal applyEdit(string editId)
     signal rejectEdit(string editId)
@@ -95,8 +94,8 @@ Rectangle {
         return qsTr("PENDING")
     }
 
-    readonly property int addedLines: countLines(newContent)
-    readonly property int removedLines: countLines(oldContent)
+    readonly property int addedLines: calculateAddedLines()
+    readonly property int removedLines: calculateRemovedLines()
 
     function parseEditData(content) {
         try {
@@ -105,7 +104,19 @@ Rectangle {
             if (content.indexOf(marker) >= 0) {
                 jsonStr = content.substring(content.indexOf(marker) + marker.length);
             }
-            return JSON.parse(jsonStr);
+            const data = JSON.parse(jsonStr);
+            // If there are edits array, return the first edit for single block display
+            if (data.edits && data.edits.length > 0) {
+                const firstEdit = data.edits[0];
+                return {
+                    edit_id: firstEdit.edit_id || "",
+                    file: data.file || "",
+                    status: firstEdit.status || "pending",
+                    status_message: firstEdit.status_message || "",
+                    diff: data.diff || ""
+                };
+            }
+            return data;
         } catch (e) {
             return {
                 edit_id: "",
@@ -127,6 +138,67 @@ Rectangle {
     function countLines(text) {
         if (!text) return 0;
         return text.split('\n').length;
+    }
+
+    function parseDiffBlocks(diffText) {
+        if (!diffText) return [];
+
+        const blocks = [];
+        const lines = diffText.split('\n');
+        let currentBlock = null;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            if (line.startsWith('<<<<<<< SEARCH')) {
+                currentBlock = {
+                    search: '',
+                    replace: '',
+                    startLine: parseInt(line.match(/:start_line:(\d+)/)?.[1] || '0')
+                };
+            } else if (line === '>>>>>>> REPLACE') {
+                if (currentBlock) {
+                    blocks.push(currentBlock);
+                    currentBlock = null;
+                }
+            } else if (currentBlock) {
+                if (line === '=======') {
+                    currentBlock.replaceStarted = true;
+                } else if (!currentBlock.replaceStarted) {
+                    currentBlock.search += line + '\n';
+                } else {
+                    currentBlock.replace += line + '\n';
+                }
+            }
+        }
+
+        // Clean up trailing newlines
+        blocks.forEach(block => {
+            block.search = block.search.trim();
+            block.replace = block.replace.trim();
+        });
+
+        return blocks;
+    }
+
+    function calculateAddedLines() {
+        let total = 0;
+        for (const block of diffBlocks) {
+            const replaceLines = countLines(block.replace);
+            const searchLines = countLines(block.search);
+            total += Math.max(0, replaceLines - searchLines);
+        }
+        return total;
+    }
+
+    function calculateRemovedLines() {
+        let total = 0;
+        for (const block of diffBlocks) {
+            const replaceLines = countLines(block.replace);
+            const searchLines = countLines(block.search);
+            total += Math.max(0, searchLines - replaceLines);
+        }
+        return total;
     }
 
     implicitHeight: fileEditView.implicitHeight
@@ -213,8 +285,8 @@ Rectangle {
                     id: headerText
                     Layout.fillWidth: true
                     text: {
-                        var modeText = root.oldContent.length > 0 ? qsTr("Replace") : qsTr("Append")
-                        if (root.oldContent.length > 0) {
+                        var modeText = root.diffBlocks.length > 0 ? qsTr("Replace") : qsTr("Append")
+                        if (root.diffBlocks.length > 0) {
                             return qsTr("%1: %2 (+%3 -%4)")
                                 .arg(modeText)
                                 .arg(root.fileName)
@@ -335,119 +407,162 @@ Rectangle {
                 elide: Text.ElideMiddle
             }
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: oldContentColumn.implicitHeight + 12
-                color: Qt.rgba(1, 0.2, 0.2, 0.1)
-                radius: 4
-                border.width: 1
-                border.color: Qt.rgba(1, 0.2, 0.2, 0.3)
-                visible: root.oldContent.length > 0
+            Repeater {
+                model: root.diffBlocks
 
-                Column {
-                    id: oldContentColumn
-                    width: parent.width
-                    x: 6
-                    y: 6
-                    spacing: 4
+                delegate: ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
 
-                    TextEdit {
-                        id: oldContentText
-
-                        width: parent.width - 12
-                        height: contentHeight
-                        text: root.oldContent
-                        font.family: root.codeFontFamily
-                        font.pixelSize: root.codeFontSize
-                        color: palette.text
-                        wrapMode: TextEdit.Wrap
-                        readOnly: true
-                        selectByMouse: true
-                        selectByKeyboard: true
-                        textFormat: TextEdit.PlainText
-
-                        MouseArea {
-                            anchors.fill: parent
-                            acceptedButtons: Qt.RightButton
-                            onClicked: oldConentContextMenu.open()
-                        }
+                    Text {
+                        text: qsTr("Block %1 (Line %2)").arg(index + 1).arg(modelData.startLine)
+                        font.pixelSize: 10
+                        font.bold: true
+                        color: palette.mid
                     }
 
-                    Platform.Menu {
-                        id: oldConentContextMenu
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: searchColumn.implicitHeight + 12
+                        color: Qt.rgba(1, 0.2, 0.2, 0.1)
+                        radius: 4
+                        border.width: 1
+                        border.color: Qt.rgba(1, 0.2, 0.2, 0.3)
+                        visible: modelData.search.length > 0
 
-                        Platform.MenuItem {
-                            text: qsTr("Copy")
-                            onTriggered: {
-                                const textToCopy = oldContentText.selectedText || root.oldContent
-                                utils.copyToClipboard(textToCopy)
+                        Column {
+                            id: searchColumn
+                            width: parent.width
+                            x: 6
+                            y: 6
+                            spacing: 4
+
+                            Text {
+                                text: qsTr("Search (to be replaced):")
+                                font.pixelSize: 9
+                                color: Qt.rgba(1, 0.2, 0.2, 0.8)
+                                font.bold: true
+                            }
+
+                            TextEdit {
+                                width: parent.width - 12
+                                height: contentHeight
+                                text: modelData.search
+                                font.family: root.codeFontFamily
+                                font.pixelSize: root.codeFontSize
+                                color: palette.text
+                                wrapMode: TextEdit.Wrap
+                                readOnly: true
+                                selectByMouse: true
+                                selectByKeyboard: true
+                                textFormat: TextEdit.PlainText
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    acceptedButtons: Qt.RightButton
+                                    onClicked: searchContextMenu.open()
+                                }
+                            }
+
+                            Platform.Menu {
+                                id: searchContextMenu
+
+                                Platform.MenuItem {
+                                    text: qsTr("Copy")
+                                    onTriggered: {
+                                        const textToCopy = parent.selectedText || modelData.search
+                                        utils.copyToClipboard(textToCopy)
+                                    }
+                                }
+
+                                Platform.MenuSeparator {}
+
+                                Platform.MenuItem {
+                                    text: fileEditView.expanded ? qsTr("Collapse") : qsTr("Expand")
+                                    onTriggered: fileEditView.expanded = !fileEditView.expanded
+                                }
                             }
                         }
 
-                        Platform.MenuSeparator {}
-
-                        Platform.MenuItem {
-                            text: fileEditView.expanded ? qsTr("Collapse") : qsTr("Expand")
-                            onTriggered: fileEditView.expanded = !fileEditView.expanded
-                        }
-                    }
-                }
-            }
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: newContentColumn.implicitHeight + 12
-                color: Qt.rgba(0.2, 0.8, 0.2, 0.1)
-                radius: 4
-                border.width: 1
-                border.color: Qt.rgba(0.2, 0.8, 0.2, 0.3)
-
-                Column {
-                    id: newContentColumn
-
-                    width: parent.width
-                    x: 6
-                    y: 6
-                    spacing: 4
-
-                    TextEdit {
-                        id: newContentText
-
-                        width: parent.width - 12
-                        height: contentHeight
-                        text: root.newContent
-                        font.family: root.codeFontFamily
-                        font.pixelSize: root.codeFontSize
-                        color: palette.text
-                        wrapMode: TextEdit.Wrap
-                        readOnly: true
-                        selectByMouse: true
-                        selectByKeyboard: true
-                        textFormat: TextEdit.PlainText
-
-                        MouseArea {
-                            anchors.fill: parent
-                            acceptedButtons: Qt.RightButton
-                            onClicked: newContentContextMenu.open()
-                        }
-                    }
-
-                    Platform.Menu {
-                        id: newContentContextMenu
-
-                        Platform.MenuItem {
+                        Button {
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: 6
                             text: qsTr("Copy")
-                            onTriggered: {
-                                const textToCopy = newContentText.selectedText || root.newContent
-                                utils.copyToClipboard(textToCopy)
+                            font.pixelSize: 9
+                            onClicked: utils.copyToClipboard(modelData.search)
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: replaceColumn.implicitHeight + 12
+                        color: Qt.rgba(0.2, 0.8, 0.2, 0.1)
+                        radius: 4
+                        border.width: 1
+                        border.color: Qt.rgba(0.2, 0.8, 0.2, 0.3)
+
+                        Column {
+                            id: replaceColumn
+                            width: parent.width
+                            x: 6
+                            y: 6
+                            spacing: 4
+
+                            Text {
+                                text: qsTr("Replace with:")
+                                font.pixelSize: 9
+                                color: Qt.rgba(0.2, 0.8, 0.2, 0.8)
+                                font.bold: true
+                            }
+
+                            TextEdit {
+                                width: parent.width - 12
+                                height: contentHeight
+                                text: modelData.replace
+                                font.family: root.codeFontFamily
+                                font.pixelSize: root.codeFontSize
+                                color: palette.text
+                                wrapMode: TextEdit.Wrap
+                                readOnly: true
+                                selectByMouse: true
+                                selectByKeyboard: true
+                                textFormat: TextEdit.PlainText
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    acceptedButtons: Qt.RightButton
+                                    onClicked: replaceContextMenu.open()
+                                }
+                            }
+
+                            Platform.Menu {
+                                id: replaceContextMenu
+
+                                Platform.MenuItem {
+                                    text: qsTr("Copy")
+                                    onTriggered: {
+                                        const textToCopy = parent.selectedText || modelData.replace
+                                        utils.copyToClipboard(textToCopy)
+                                    }
+                                }
+
+                                Platform.MenuSeparator {}
+
+                                Platform.MenuItem {
+                                    text: fileEditView.expanded ? qsTr("Collapse") : qsTr("Expand")
+                                    onTriggered: fileEditView.expanded = !fileEditView.expanded
+                                }
                             }
                         }
 
-                        Platform.MenuSeparator {}
-
-                        Platform.MenuItem {
-                            text: fileEditView.expanded ? qsTr("Collapse") : qsTr("Expand")
-                            onTriggered: fileEditView.expanded = !fileEditView.expanded
+                        Button {
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: 6
+                            text: qsTr("Copy")
+                            font.pixelSize: 9
+                            onClicked: utils.copyToClipboard(modelData.replace)
                         }
                     }
                 }
