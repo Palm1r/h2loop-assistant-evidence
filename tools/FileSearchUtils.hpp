@@ -108,16 +108,32 @@ public:
 
     /**
      * @brief Read file content with security checks
-     * 
+     *
      * Performs the following checks:
      * - File exists and is readable
      * - Respects project boundary settings (allowAccessOutsideProject)
      * - Logs access to files outside project scope
-     * 
+     *
      * @param filePath Absolute path to file
      * @return File content as QString, or null QString on error
      */
     static QString readFileContent(const QString &filePath);
+
+    /**
+     * @brief Read file content with line numbers and optional range
+     *
+     * Reads file content and formats it with line numbers (e.g., "1 | content").
+     * Optionally reads only a specific line range for efficiency.
+     *
+     * Performs the same security checks as readFileContent.
+     *
+     * @param filePath Absolute path to file
+     * @param startLine Starting line number (1-based, 0 = from beginning)
+     * @param endLine Ending line number (1-based, 0 = to end)
+     * @return Line-numbered content as QString, or null QString on error
+     */
+    static QString readFileContentWithLineNumbers(
+        const QString &filePath, int startLine = 0, int endLine = 0);
 
     /**
      * @brief Search for files in filesystem directory tree

@@ -80,7 +80,7 @@ FileSearchUtils::FileMatch FileSearchUtils::findBestMatch(
 
         for (const auto &filePath : projectFiles) {
             QString absolutePath = filePath.path();
-            
+
             if (ignoreManager && ignoreManager->shouldIgnore(absolutePath, project))
                 continue;
 
@@ -171,7 +171,7 @@ void FileSearchUtils::searchInFileSystem(
             break;
 
         QString absolutePath = entry.absoluteFilePath();
-        
+
         if (ignoreManager && ignoreManager->shouldIgnore(absolutePath, project))
             continue;
 
@@ -253,6 +253,58 @@ QString FileSearchUtils::readFileContent(const QString &filePath)
     QString content = stream.readAll();
 
     return content;
+}
+
+QString FileSearchUtils::readFileContentWithLineNumbers(
+    const QString &filePath, int startLine, int endLine)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return QString();
+    }
+
+    QString canonicalPath = QFileInfo(filePath).canonicalFilePath();
+    bool isInProject = Context::ProjectUtils::isFileInProject(canonicalPath);
+
+    if (!isInProject) {
+        const auto &settings = Settings::toolsSettings();
+        if (!settings.allowAccessOutsideProject()) {
+            LOG_MESSAGE(QString("Access denied to file outside project: %1").arg(canonicalPath));
+            return QString();
+        }
+        LOG_MESSAGE(QString("Reading file outside project scope: %1").arg(canonicalPath));
+    }
+
+    QTextStream stream(&file);
+    stream.setAutoDetectUnicode(true);
+
+    QStringList lines;
+    QString line;
+    while (stream.readLineInto(&line)) {
+        lines.append(line);
+    }
+
+    // Validate line numbers
+    int totalLines = lines.size();
+    if (startLine < 0)
+        startLine = 0;
+    if (endLine <= 0 || endLine > totalLines)
+        endLine = totalLines;
+    if (startLine >= totalLines)
+        return QString(); // Empty result if start is beyond file
+
+    // Adjust to 0-based indexing
+    int startIdx = startLine > 0 ? startLine - 1 : 0;
+    int endIdx = endLine - 1;
+
+    QString result;
+    for (int i = startIdx; i <= endIdx && i < totalLines; ++i) {
+        if (!result.isEmpty())
+            result += '\n';
+        result += QString("%1 | %2").arg(i + 1, 6).arg(lines[i]);
+    }
+
+    return result;
 }
 
 } // namespace QodeAssist::Tools

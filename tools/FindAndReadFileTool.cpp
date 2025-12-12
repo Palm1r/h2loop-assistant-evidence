@@ -44,8 +44,9 @@ QString FindAndReadFileTool::stringName() const
 
 QString FindAndReadFileTool::description() const
 {
-    return "Search for a file by name/path and optionally read its content. "
-           "Returns the best matching file and its content.";
+    return "Search for a file by name/path and optionally read its content with line numbers. "
+           "Returns the best matching file and its line-numbered content. "
+           "Supports reading specific line ranges for efficiency.";
 }
 
 QJsonObject FindAndReadFileTool::getDefinition(LLMCore::ToolSchemaFormat format) const
@@ -62,6 +63,16 @@ QJsonObject FindAndReadFileTool::getDefinition(LLMCore::ToolSchemaFormat format)
     properties["read_content"] = QJsonObject{
         {"type", "boolean"},
         {"description", "Read file content in addition to finding path (default: true)"}};
+
+    properties["start_line"] = QJsonObject{
+        {"type", "integer"},
+        {"description", "Starting line number to read from (1-based, default: 1)"},
+        {"minimum", 1}};
+
+    properties["end_line"] = QJsonObject{
+        {"type", "integer"},
+        {"description", "Ending line number to read to (1-based, default: end of file)"},
+        {"minimum", 1}};
 
     QJsonObject definition;
     definition["type"] = "object";
@@ -96,20 +107,26 @@ QFuture<QString> FindAndReadFileTool::executeAsync(const QJsonObject &input)
 
         QString filePattern = input["file_pattern"].toString();
         bool readContent = input["read_content"].toBool(true);
+        int startLine = input["start_line"].toInt(0);
+        int endLine = input["end_line"].toInt(0);
 
-        LOG_MESSAGE(QString("FindAndReadFileTool: Searching for '%1' (pattern: %2, read: %3)")
-                        .arg(query, filePattern.isEmpty() ? "none" : filePattern)
-                        .arg(readContent));
+        LOG_MESSAGE(
+            QString("FindAndReadFileTool: Searching for '%1' (pattern: %2, read: %3, lines: %4-%5)")
+                .arg(query, filePattern.isEmpty() ? "none" : filePattern)
+                .arg(readContent)
+                .arg(startLine > 0 ? QString::number(startLine) : "1")
+                .arg(endLine > 0 ? QString::number(endLine) : "end"));
 
-        FileSearchUtils::FileMatch bestMatch = FileSearchUtils::findBestMatch(
-            query, filePattern, 10, m_ignoreManager);
+        FileSearchUtils::FileMatch bestMatch
+            = FileSearchUtils::findBestMatch(query, filePattern, 10, m_ignoreManager);
 
         if (bestMatch.absolutePath.isEmpty()) {
             return QString("No file found matching '%1'").arg(query);
         }
 
         if (readContent) {
-            bestMatch.content = FileSearchUtils::readFileContent(bestMatch.absolutePath);
+            bestMatch.content = FileSearchUtils::readFileContentWithLineNumbers(
+                bestMatch.absolutePath, startLine, endLine);
             if (bestMatch.content.isNull()) {
                 bestMatch.error = "Could not read file";
             }
@@ -119,8 +136,8 @@ QFuture<QString> FindAndReadFileTool::executeAsync(const QJsonObject &input)
     });
 }
 
-QString FindAndReadFileTool::formatResult(const FileSearchUtils::FileMatch &match,
-                                          bool readContent) const
+QString FindAndReadFileTool::formatResult(
+    const FileSearchUtils::FileMatch &match, bool readContent) const
 {
     QString result
         = QString("Found file: %1\nAbsolute path: %2").arg(match.relativePath, match.absolutePath);
@@ -129,7 +146,7 @@ QString FindAndReadFileTool::formatResult(const FileSearchUtils::FileMatch &matc
         if (!match.error.isEmpty()) {
             result += QString("\nError: %1").arg(match.error);
         } else {
-            result += QString("\n\n=== Content ===\n%1").arg(match.content);
+            result += QString("\n\n=== Content (with line numbers) ===\n%1").arg(match.content);
         }
     }
 
