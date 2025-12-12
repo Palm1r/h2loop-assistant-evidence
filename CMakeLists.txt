@@ -241,6 +241,7 @@ add_qtc_plugin(QodeAssist
     tools/ReadFileLinesTool.hpp tools/ReadFileLinesTool.cpp
     tools/CtagsTool.hpp tools/CtagsTool.cpp
     tools/CtagUtils.hpp tools/CtagUtils.cpp
+    tools/DocStringUtils.hpp tools/DocStringUtils.cpp
     tools/FileSearchUtils.hpp tools/FileSearchUtils.cpp
     providers/ClaudeMessage.hpp providers/ClaudeMessage.cpp
     providers/OpenAIMessage.hpp providers/OpenAIMessage.cpp

@@ -19,40 +19,24 @@
 
 #pragma once
 
+#include <QJsonArray>
 #include <QJsonDocument>
-#include <QList>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QObject>
 #include <QString>
 
 namespace QodeAssist::Tools {
 
-// Struct to represent a ctags tag
-struct Tag
+class DocStringUtils : public QObject
 {
-    QString name;
-    QString kind;
-    QString scope;
-    QString signature;
-    int line;
-    int endLine;
-    QString pattern;
+    Q_OBJECT
 
-    bool matchesQuery(const QString &query) const
-    {
-        return name.contains(query, Qt::CaseInsensitive)
-               || kind.contains(query, Qt::CaseInsensitive)
-               || (!scope.isEmpty() && scope.contains(query, Qt::CaseInsensitive));
-    }
-};
-
-class CtagUtils
-{
 public:
-    static QString runCtags(const QString &filePath);
-    static QList<Tag> parseCtagsJson(const QString &output);
-    static QString filterCtagsOutput(const QString &output);
-    static QString generateCtagforFile(const QString &filePath);
-    static QString mergeDocstringsWithCtags(
-        const QString &ctagsOutput, const QJsonDocument &docstrings);
+    explicit DocStringUtils(QObject *parent = nullptr);
+
+    QJsonDocument generateDocstrings(const QString &filePath);
+    QJsonDocument filterDocString(const QJsonDocument &rawDoc);
 };
 
 } // namespace QodeAssist::Tools
