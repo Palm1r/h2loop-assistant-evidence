@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <QJsonDocument>
 #include <QList>
 #include <QString>
 
@@ -50,6 +51,8 @@ public:
     static QList<Tag> parseCtagsJson(const QString &output);
     static QString filterCtagsOutput(const QString &output);
     static QString generateCtagforFile(const QString &filePath);
+    static QString mergeDocstringsWithCtags(
+        const QString &ctagsOutput, const QJsonDocument &docstrings);
 };
 
 } // namespace QodeAssist::Tools

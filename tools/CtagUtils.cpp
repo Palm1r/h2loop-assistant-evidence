@@ -117,6 +117,78 @@ QString CtagUtils::filterCtagsOutput(const QString &output)
     return filteredLines.join('\n');
 }
 
+QString CtagUtils::mergeDocstringsWithCtags(
+    const QString &ctagsOutput, const QJsonDocument &docstrings)
+{
+    QStringList ctagsLines = ctagsOutput.split('\n', Qt::SkipEmptyParts);
+    QStringList enhancedLines;
+
+    for (const QString &line : ctagsLines) {
+        QJsonDocument doc = QJsonDocument::fromJson(line.toUtf8());
+        if (!doc.isObject()) {
+            enhancedLines.append(line);
+            continue;
+        }
+
+        QJsonObject ctagObj = doc.object();
+        QString type = ctagObj["_type"].toString();
+
+        if (type == "tag" && ctagObj.contains("line") && ctagObj.contains("end")) {
+            int ctagLine = ctagObj["line"].toInt();
+            int ctagEnd = ctagObj["end"].toInt();
+
+            // Find matching docstring
+            if (docstrings.isArray()) {
+                for (const QJsonValue &docstringValue : docstrings.array()) {
+                    if (!docstringValue.isObject()) {
+                        continue;
+                    }
+
+                    QJsonObject docstringObj = docstringValue.toObject();
+                    if (!docstringObj.contains("labels") || !docstringObj["labels"].isArray()) {
+                        continue;
+                    }
+
+                    QJsonArray labels = docstringObj["labels"].toArray();
+                    if (labels.size() < 2) {
+                        continue;
+                    }
+
+                    // Check if labels[1] (function) matches ctag line range
+                    // labels[0] = info about docstring; labels[1] = info about that function
+                    QJsonObject functionLabel = labels[1].toObject();
+                    if (functionLabel.contains("range") && functionLabel["range"].isObject()) {
+                        QJsonObject range = functionLabel["range"].toObject();
+                        if (range.contains("start") && range["start"].isObject()
+                            && range.contains("end") && range["end"].isObject()) {
+                            QJsonObject start = range["start"].toObject();
+                            QJsonObject end = range["end"].toObject();
+
+                            int funcStartLine = start["line"].toInt();
+                            int funcEndLine = end["line"].toInt();
+
+                            if (funcStartLine == ctagLine && funcEndLine == ctagEnd) {
+                                // Found matching docstring, add it to ctag
+                                QJsonObject docstringLabel = labels[0].toObject();
+                                if (docstringLabel.contains("text")) {
+                                    ctagObj["docstring"] = docstringLabel["text"];
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Convert back to JSON
+        QJsonDocument enhancedDoc(ctagObj);
+        enhancedLines.append(QString::fromUtf8(enhancedDoc.toJson(QJsonDocument::Compact)));
+    }
+
+    return enhancedLines.join('\n');
+}
+
 QString CtagUtils::generateCtagforFile(const QString &filePath)
 {
     QFileInfo fileInfo(filePath);
@@ -129,15 +201,20 @@ QString CtagUtils::generateCtagforFile(const QString &filePath)
             // Generate docstrings for the file
             DocStringUtils docUtils;
             QJsonDocument docstrings = docUtils.generateDocstrings(filePath);
-            if (!docstrings.isNull()) {
+
+            QString enhancedCtags = ctagsOutput;
+
+            if (!docstrings.isNull() && docstrings.isArray()) {
                 LOG_MESSAGE(QString("Docstrings generated for file: %1\n%2")
                                 .arg(filePath)
                                 .arg(QString::fromUtf8(docstrings.toJson(QJsonDocument::Indented))));
+
+                enhancedCtags = mergeDocstringsWithCtags(ctagsOutput, docstrings);
             } else {
                 LOG_MESSAGE(QString("Failed to generate docstrings for file: %1").arg(filePath));
             }
 
-            return filterCtagsOutput(ctagsOutput);
+            return filterCtagsOutput(enhancedCtags);
         }
     }
     return QString();
