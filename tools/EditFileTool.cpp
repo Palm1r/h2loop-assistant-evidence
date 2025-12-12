@@ -212,6 +212,13 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
             throw ToolInvalidArgument("'content' parameter is required and cannot be empty");
         }
 
+        if (!content.contains("<<<<<<< SEARCH:")) {
+            throw ToolInvalidArgument(
+                "SEARCH/REPLACE blocks must include the SEARCH section with line numbers. "
+                "The content must contain '<<<<<<< SEARCH:start_line:end_line' to specify what to "
+                "replace.");
+        }
+
         // Parse SEARCH/REPLACE blocks from content
         QList<SearchReplaceBlock> blocks = parseSearchReplaceBlocks(content);
 
