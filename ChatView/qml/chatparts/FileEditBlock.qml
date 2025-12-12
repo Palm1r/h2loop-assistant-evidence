@@ -483,6 +483,15 @@ Rectangle {
                                 }
                             }
                         }
+
+                        Button {
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: 6
+                            text: qsTr("Copy")
+                            font.pixelSize: 9
+                            onClicked: utils.copyToClipboard(modelData.search)
+                        }
                     }
 
                     Rectangle {
@@ -545,6 +554,15 @@ Rectangle {
                                     onTriggered: fileEditView.expanded = !fileEditView.expanded
                                 }
                             }
+                        }
+
+                        Button {
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: 6
+                            text: qsTr("Copy")
+                            font.pixelSize: 9
+                            onClicked: utils.copyToClipboard(modelData.replace)
                         }
                     }
                 }
