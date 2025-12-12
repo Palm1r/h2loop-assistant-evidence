@@ -1,4 +1,5 @@
 #include "CtagUtils.hpp"
+#include "DocStringUtils.hpp"
 
 #include <logger/Logger.hpp>
 #include <QCoreApplication>
@@ -125,6 +126,17 @@ QString CtagUtils::generateCtagforFile(const QString &filePath)
     if (supportedExtensions.contains(suffix)) {
         QString ctagsOutput = runCtags(filePath);
         if (!ctagsOutput.isEmpty()) {
+            // Generate docstrings for the file
+            DocStringUtils docUtils;
+            QJsonDocument docstrings = docUtils.generateDocstrings(filePath);
+            if (!docstrings.isNull()) {
+                LOG_MESSAGE(QString("Docstrings generated for file: %1\n%2")
+                                .arg(filePath)
+                                .arg(QString::fromUtf8(docstrings.toJson(QJsonDocument::Indented))));
+            } else {
+                LOG_MESSAGE(QString("Failed to generate docstrings for file: %1").arg(filePath));
+            }
+
             return filterCtagsOutput(ctagsOutput);
         }
     }

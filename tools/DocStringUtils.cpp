@@ -84,7 +84,82 @@ QJsonDocument DocStringUtils::generateDocstrings(const QString &filePath)
     }
 
     LOG_MESSAGE("DocStringUtils: Docstring generation completed successfully");
-    return doc;
+    return filterDocString(doc);
+}
+
+QJsonDocument DocStringUtils::filterDocString(const QJsonDocument &rawDoc)
+{
+    if (!rawDoc.isArray()) {
+        return rawDoc;
+    }
+
+    QJsonArray filteredArray;
+
+    for (const QJsonValue &value : rawDoc.array()) {
+        if (!value.isObject()) {
+            continue;
+        }
+
+        QJsonObject obj = value.toObject();
+        QJsonObject filteredObj;
+
+        // Keep only essential fields
+        if (obj.contains("file")) {
+            filteredObj["file"] = obj["file"];
+        }
+        if (obj.contains("language")) {
+            filteredObj["language"] = obj["language"];
+        }
+
+        // Filter labels to simplified format
+        if (obj.contains("labels") && obj["labels"].isArray()) {
+            QJsonArray originalLabels = obj["labels"].toArray();
+            QJsonArray filteredLabels;
+
+            for (const QJsonValue &labelValue : originalLabels) {
+                if (!labelValue.isObject()) {
+                    continue;
+                }
+
+                QJsonObject labelObj = labelValue.toObject();
+                QJsonObject filteredLabel;
+
+                if (labelObj.contains("text")) {
+                    filteredLabel["text"] = labelObj["text"];
+                }
+
+                if (labelObj.contains("range") && labelObj["range"].isObject()) {
+                    QJsonObject rangeObj = labelObj["range"].toObject();
+                    QJsonObject simpleRange;
+
+                    if (rangeObj.contains("start") && rangeObj["start"].isObject()) {
+                        simpleRange["start"] = rangeObj["start"];
+                    }
+                    if (rangeObj.contains("end") && rangeObj["end"].isObject()) {
+                        simpleRange["end"] = rangeObj["end"];
+                    }
+
+                    if (!simpleRange.isEmpty()) {
+                        filteredLabel["range"] = simpleRange;
+                    }
+                }
+
+                if (!filteredLabel.isEmpty()) {
+                    filteredLabels.append(filteredLabel);
+                }
+            }
+
+            if (!filteredLabels.isEmpty()) {
+                filteredObj["labels"] = filteredLabels;
+            }
+        }
+
+        if (!filteredObj.isEmpty()) {
+            filteredArray.append(filteredObj);
+        }
+    }
+
+    return QJsonDocument(filteredArray);
 }
 
 } // namespace QodeAssist::Tools

@@ -19,7 +19,10 @@
 
 #pragma once
 
+#include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
 #include <QObject>
 #include <QString>
 
@@ -33,6 +36,7 @@ public:
     explicit DocStringUtils(QObject *parent = nullptr);
 
     QJsonDocument generateDocstrings(const QString &filePath);
+    QJsonDocument filterDocString(const QJsonDocument &rawDoc);
 };
 
 } // namespace QodeAssist::Tools
