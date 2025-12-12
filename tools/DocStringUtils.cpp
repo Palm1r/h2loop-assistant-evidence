@@ -133,10 +133,18 @@ QJsonDocument DocStringUtils::filterDocString(const QJsonDocument &rawDoc)
                     QJsonObject simpleRange;
 
                     if (rangeObj.contains("start") && rangeObj["start"].isObject()) {
-                        simpleRange["start"] = rangeObj["start"];
+                        QJsonObject startObj = rangeObj["start"].toObject();
+                        if (startObj.contains("line")) {
+                            startObj["line"] = startObj["line"].toInt() + 1;
+                        }
+                        simpleRange["start"] = startObj;
                     }
                     if (rangeObj.contains("end") && rangeObj["end"].isObject()) {
-                        simpleRange["end"] = rangeObj["end"];
+                        QJsonObject endObj = rangeObj["end"].toObject();
+                        if (endObj.contains("line")) {
+                            endObj["line"] = endObj["line"].toInt() + 1;
+                        }
+                        simpleRange["end"] = endObj;
                     }
 
                     if (!simpleRange.isEmpty()) {
