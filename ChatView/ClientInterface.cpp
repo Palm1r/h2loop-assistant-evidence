@@ -184,9 +184,13 @@ void ClientInterface::sendMessage(
                        msg.attachments.begin(),
                        msg.attachments.end(),
                        QString(),
-                       [](QString acc, const Context::ContentFile &attachment) {
+                       [isToolsEnabled](QString acc, const Context::ContentFile &attachment) {
+                           if (!isToolsEnabled) {
+                               return acc
+                                      + QString("\nName: %1\nFile content:\n%2")
+                                            .arg(attachment.filename, attachment.content);
+                           }
                            QString ctags = CtagUtils::generateCtagforFile(attachment.fullPath);
-
                            QString fileInfo
                                = !ctags.isEmpty()
                                      ? QString("\nName: %1\nCtags (symbols and structure) of file:: \n%2")
