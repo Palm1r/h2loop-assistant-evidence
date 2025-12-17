@@ -2,6 +2,7 @@
 #include <coreplugin/messagemanager.h>
 
 #include <QDateTime>
+#include <QDir>
 #include <QFile>
 #include <QTextStream>
 
@@ -47,6 +48,28 @@ void Logger::setDebugLogFilePath(const QString &filePath)
 QString Logger::debugLogFilePath() const
 {
     return m_debugLogFilePath;
+}
+
+void Logger::createNewDebugLogFile(const QString &debugLogsDir)
+{
+    if (!debugLogsDir.isEmpty()) {
+        QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
+        QString logFilePath = QDir(debugLogsDir).filePath("h2loop_" + timestamp + "_debug.log");
+        setDebugLogFilePath(logFilePath);
+    }
+}
+
+void Logger::renameDebugLogFile(const QString &newFilePath)
+{
+    if (!m_debugLogFilePath.isEmpty() && QFile::exists(m_debugLogFilePath)) {
+        QFile file(m_debugLogFilePath);
+        if (file.rename(newFilePath)) {
+            setDebugLogFilePath(newFilePath);
+        }
+    } else {
+        // If no current file, just set the new path
+        setDebugLogFilePath(newFilePath);
+    }
 }
 
 void Logger::log(const QString &message, bool silent)

@@ -57,11 +57,7 @@ ChatRootView::ChatRootView(QQuickItem *parent)
 {
     // Set initial debug log file path for the chat
     QString debugLogsDir = getDebugLogsDir();
-    if (!debugLogsDir.isEmpty()) {
-        QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-        QString logFilePath = QDir(debugLogsDir).filePath("chat_" + timestamp + "_debug.log");
-        Logger::instance().setDebugLogFilePath(logFilePath);
-    }
+    Logger::instance().createNewDebugLogFile(debugLogsDir);
 
     m_isSyncOpenFiles = Settings::chatAssistantSettings().linkOpenFiles();
 
@@ -113,11 +109,7 @@ ChatRootView::ChatRootView(QQuickItem *parent)
 
         // Set new debug log file path for new chat
         QString debugLogsDir = getDebugLogsDir();
-        if (!debugLogsDir.isEmpty()) {
-            QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-            QString logFilePath = QDir(debugLogsDir).filePath("chat_" + timestamp + "_debug.log");
-            Logger::instance().setDebugLogFilePath(logFilePath);
-        }
+        Logger::instance().createNewDebugLogFile(debugLogsDir);
     });
     connect(m_chatModel, &ChatModel::messageAdded, this, &ChatRootView::updateInputTokensCount);
     connect(this, &ChatRootView::attachmentFilesChanged, &ChatRootView::updateInputTokensCount);
@@ -339,16 +331,8 @@ QString ChatRootView::getChatsHistoryDir() const
 
 QString ChatRootView::getDebugLogsDir() const
 {
-    QString path;
-
-    if (auto project = ProjectExplorer::ProjectManager::startupProject()) {
-        Settings::ProjectSettings projectSettings(project);
-        QString chatHistoryPath = projectSettings.chatHistoryPath().toFSPathString();
-        path = QDir(chatHistoryPath).absoluteFilePath("debug_logs");
-    } else {
-        path = QString("%1/h2loopassistant/debug_logs")
-                   .arg(Core::ICore::userResourcePath().toFSPathString());
-    }
+    QString path = QString("%1/h2loopassistant/debug_logs")
+                       .arg(Core::ICore::userResourcePath().toFSPathString());
 
     QDir dir(path);
     if (!dir.exists() && !dir.mkpath(".")) {
@@ -805,6 +789,14 @@ void ChatRootView::setRecentFilePath(const QString &filePath)
         m_recentFilePath = filePath;
         m_clientInterface->setChatFilePath(filePath);
         emit chatFileNameChanged();
+
+        // Rename debug log file to match the chat file name
+        if (!filePath.isEmpty()) {
+            QString baseName = QFileInfo(filePath).baseName();
+            QString debugDir = getDebugLogsDir();
+            QString newDebugPath = QDir(debugDir).filePath(baseName + "_debug.log");
+            Logger::instance().renameDebugLogFile(newDebugPath);
+        }
     }
 }
 

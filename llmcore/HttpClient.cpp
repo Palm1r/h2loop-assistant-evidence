@@ -51,8 +51,6 @@ void HttpClient::onSendRequest(const HttpRequest &request)
 
     DEBUG_LOG_MESSAGE(QString("HttpClient DEBUG: Sending HTTP request to %1 with headers:")
                           .arg(request.networkRequest.url().toString()));
-    DEBUG_LOG_MESSAGE(
-        QString("HttpClient DEBUG: Request payload: %1").arg(doc.toJson(QJsonDocument::Indented)));
 
     QNetworkReply *reply
         = m_manager->post(request.networkRequest, doc.toJson(QJsonDocument::Compact));
@@ -141,7 +139,8 @@ void HttpClient::onFinished()
             errorMsg = parseErrorFromResponse(statusCode, responseBody, networkErrorString);
         }
 
-        LOG_MESSAGE(QString("HttpClient: Request %1 - HTTP Status: %2").arg(requestId).arg(statusCode));
+        LOG_MESSAGE(
+            QString("HttpClient: Request %1 - HTTP Status: %2").arg(requestId).arg(statusCode));
 
         if (!responseBody.isEmpty()) {
             LOG_MESSAGE(QString("HttpClient: Request %1 - Response body (%2 bytes): %3")
@@ -191,7 +190,8 @@ QString HttpClient::parseErrorFromResponse(
                 if (!code.isEmpty())
                     errorMsg += QString(" (code: %1)").arg(code);
             } else {
-                errorMsg = QString("HTTP %1: %2").arg(statusCode).arg(QString::fromUtf8(responseBody));
+                errorMsg
+                    = QString("HTTP %1: %2").arg(statusCode).arg(QString::fromUtf8(responseBody));
             }
         } else {
             errorMsg = QString("HTTP %1: %2").arg(statusCode).arg(QString::fromUtf8(responseBody));

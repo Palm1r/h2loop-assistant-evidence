@@ -597,4 +597,14 @@ QString ChatModel::chatFilePath() const
     return m_chatFilePath;
 }
 
+bool ChatModel::hasImages() const
+{
+    for (const auto &message : m_messages) {
+        if (!message.images.isEmpty()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 } // namespace QodeAssist::Chat
