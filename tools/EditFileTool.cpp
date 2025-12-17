@@ -29,6 +29,7 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QUuid>
 #include <QtConcurrent>
 
@@ -51,23 +52,62 @@ QString EditFileTool::stringName() const
 
 QString EditFileTool::description() const
 {
-    return "Edit a file by replacing old content with new content. "
-           "Provide the filename (or absolute path), old_content to find and replace, "
-           "and new_content to replace it with. Changes are applied immediately if auto-apply "
-           "is enabled in settings. The user can undo or reapply changes at any time. "
-           "\n\nIMPORTANT:"
-           "\n- ALWAYS read the current file content before editing to ensure accuracy."
-           "\n- For EMPTY files: use empty old_content (empty string or omit parameter)."
-           "\n- To append at the END of file: use empty old_content."
-           "\n- To insert at the BEGINNING of a file (e.g., copyright header), you MUST provide "
-           "the EXACT first few lines of the file as old_content (at least 3-5 lines), "
-           "then put those lines + new header in new_content."
-           "\n- For replacements in the middle, provide EXACT matching text with sufficient "
-           "context (at least 5-10 lines) to ensure correct placement."
-           "\n- The system uses fuzzy matching with 85% similarity threshold for first-time edits. "
-           "Provide accurate old_content to avoid incorrect placement."
-           "\n- If changes remain 'pending' and file content hasn't changed, the user likely "
-           "disabled auto-apply. DO NOT retry the same edit - wait for user action.";
+    return "Edit a file using SEARCH/REPLACE blocks. "
+           "Provide the filename (or absolute path) and a content string containing one or more "
+           "SEARCH/REPLACE blocks. Changes are applied immediately if auto-apply is enabled. "
+           "The user can undo or reapply changes at any time."
+           "\n\nSEARCH/REPLACE Block Format (with line numbers - RECOMMENDED):"
+           "\n```"
+           "\n<<<<<<< SEARCH:start_line:end_line"
+           "\n[exact lines to find in the file]"
+           "\n======="
+           "\n[new lines to replace with]"
+           "\n>>>>>>> REPLACE"
+           "\n```"
+
+           "\n\nLine numbers help identify the correct location when similar code exists in "
+           "multiple places."
+           "\n- start_line (required): The line number of original content where the search block "
+           "starts. "
+           "\n- end_line (required): The line number of original content  where the search block "
+           "ends."
+           "\n\nIMPORTANT RULES:"
+           "\n- The SEARCH section must EXACTLY match existing file content (including whitespace)."
+           "\n- Each SEARCH/REPLACE block replaces only the FIRST occurrence found."
+           "\n- Include enough context lines (3-5) to uniquely identify the location."
+           "\n- For EMPTY files or to APPEND: use an empty SEARCH section."
+           "\n- Multiple SEARCH/REPLACE blocks can be provided in a single content string."
+           "\n- Blocks are processed in order from top to bottom."
+           "\n- The system requires 85% similarity for matching. Provide accurate SEARCH content."
+           "\n\nExample:"
+           "\nOriginal file content:"
+           "\n```cpp"
+           "\n1 | void calculateTotal(const std::vector<int>& items) {"
+           "\n2 |     int total = 0;"
+           "\n3 |     for (int item : items) {"
+           "\n4 |         total += item;"
+           "\n5 |     }"
+           "\n6 |     return total;"
+           "\n7 | }"
+           "\n```"
+           "\n"
+           "\nSearch/Replace block:"
+           "\n```"
+           "\n<<<<<<< SEARCH:1:7"
+           "\nvoid calculateTotal(const std::vector<int>& items) {"
+           "\n    int total = 0;"
+           "\n    for (int item : items) {"
+           "\n        total += item;"
+           "\n    }"
+           "\n    return total;"
+           "\n}"
+           "\n======="
+           "\nvoid calculateTotal(const std::vector<int>& items) {"
+           "\n    // Calculate total with 10% markup"
+           "\n    return std::accumulate(items.begin(), items.end(), 0) * 1.1;"
+           "\n}"
+           "\n>>>>>>> REPLACE"
+           "\n```";
 }
 
 QJsonObject EditFileTool::getDefinition(LLMCore::ToolSchemaFormat format) const
@@ -81,26 +121,28 @@ QJsonObject EditFileTool::getDefinition(LLMCore::ToolSchemaFormat format) const
           "it will be searched in the project";
     properties["filename"] = filenameProperty;
 
-    QJsonObject oldContentProperty;
-    oldContentProperty["type"] = "string";
-    oldContentProperty["description"]
-        = "The content to find and replace. For exact matches, provide precise text "
-          "(including whitespace). For changed files, the system uses fuzzy matching with "
-          "85% similarity threshold for first-time edits. If empty, new_content will be "
-          "appended to the end of the file";
-    properties["old_content"] = oldContentProperty;
+    QJsonObject contentProperty;
+    contentProperty["type"] = "string";
+    contentProperty["description"]
+        = "Content containing one or more SEARCH/REPLACE blocks. Each block starts with "
+          "<<<<<<< SEARCH:start_line:end_line, followed by the exact content to find, then "
+          "=======, "
+          "then the replacement content, and ends with >>>>>>> REPLACE. "
+          "For appending to a file, use an empty SEARCH section. "
+          "Example: '<<<<<<< SEARCH:1:7\\nvoid calculateTotal(const std::vector<int>& items) {\\n  "
+          "  int total = 0;\\n    for (int item : items) {\\n        total += item;\\n    }\\n    "
+          "return total;\\n}\\n=======\\nvoid calculateTotal(const std::vector<int>& items) {\\n   "
+          " // Calculate total with 10% markup\\n    return std::accumulate(items.begin(), "
+          "items.end(), 0) * 1.1;\\n}\\n>>>>>>> REPLACE'";
 
-    QJsonObject newContentProperty;
-    newContentProperty["type"] = "string";
-    newContentProperty["description"] = "The new content to replace the old content with";
-    properties["new_content"] = newContentProperty;
+    properties["content"] = contentProperty;
 
     QJsonObject definition;
     definition["type"] = "object";
     definition["properties"] = properties;
     QJsonArray required;
     required.append("filename");
-    required.append("new_content");
+    required.append("content");
     definition["required"] = required;
 
     switch (format) {
@@ -122,20 +164,64 @@ LLMCore::ToolPermissions EditFileTool::requiredPermissions() const
     return LLMCore::ToolPermission::FileSystemWrite;
 }
 
+QList<EditFileTool::SearchReplaceBlock> EditFileTool::parseSearchReplaceBlocks(const QString &content)
+{
+    QList<SearchReplaceBlock> blocks;
+
+    // Pattern to match SEARCH/REPLACE blocks with optional line numbers
+    // Format: <<<<<<< SEARCH:start_line:end_line or <<<<<<< SEARCH
+    // Handles optional code fence with language identifier
+    QRegularExpression blockPattern(
+        R"((?:```\w*\s*\n)?<<<<<<< SEARCH(?::(\d+):(\d+))?\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE(?:\n```)?)",
+        QRegularExpression::MultilineOption);
+
+    QRegularExpressionMatchIterator it = blockPattern.globalMatch(content);
+
+    while (it.hasNext()) {
+        QRegularExpressionMatch match = it.next();
+        SearchReplaceBlock block;
+
+        // Parse optional line numbers
+        QString startLineStr = match.captured(1);
+        QString endLineStr = match.captured(2);
+        if (!startLineStr.isEmpty() && !endLineStr.isEmpty()) {
+            block.startLine = startLineStr.toInt();
+            block.endLine = endLineStr.toInt();
+        }
+
+        block.searchContent = match.captured(3);
+        block.replaceContent = match.captured(4);
+        blocks.append(block);
+    }
+
+    return blocks;
+}
+
 QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
 {
     return QtConcurrent::run([this, input]() -> QString {
         QString filename = input["filename"].toString().trimmed();
-        QString oldContent = input["old_content"].toString();
-        QString newContent = input["new_content"].toString();
+        QString content = input["content"].toString();
         QString requestId = input["_request_id"].toString();
 
         if (filename.isEmpty()) {
             throw ToolInvalidArgument("'filename' parameter is required and cannot be empty");
         }
 
-        if (newContent.isEmpty()) {
-            throw ToolInvalidArgument("'new_content' parameter is required and cannot be empty");
+        if (content.isEmpty()) {
+            throw ToolInvalidArgument("'content' parameter is required and cannot be empty");
+        }
+
+        // Parse SEARCH/REPLACE blocks from content
+        QList<SearchReplaceBlock> blocks = parseSearchReplaceBlocks(content);
+
+        if (blocks.isEmpty()) {
+            throw ToolInvalidArgument(
+                "No valid SEARCH/REPLACE blocks found in content. "
+                "You must provide content in the exact SEARCH/REPLACE format. "
+                "Example: <<<<<<< SEARCH:start_line:end_line\\nexisting code here\\n=======\\nnew "
+                "code here\\n>>>>>>> "
+                "REPLACE");
         }
 
         QString filePath;
@@ -182,53 +268,80 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
             LOG_MESSAGE(QString("Editing file outside project scope: %1").arg(filePath));
         }
 
-        QString editId = QUuid::createUuid().toString(QUuid::WithoutBraces);
         bool autoApply = Settings::toolsSettings().autoApplyFileEdits();
 
-        LOG_MESSAGE(QString("EditFileTool: Edit details for %1:").arg(filePath));
-        LOG_MESSAGE(QString("  oldContent length: %1 chars").arg(oldContent.length()));
-        LOG_MESSAGE(QString("  newContent length: %1 chars").arg(newContent.length()));
-        if (oldContent.length() <= 200) {
-            LOG_MESSAGE(QString("  oldContent: '%1'").arg(oldContent));
-        } else {
+        QJsonArray editResults;
+        int blockIndex = 0;
+
+        for (const SearchReplaceBlock &block : blocks) {
+            QString editId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+
+            LOG_MESSAGE(QString("EditFileTool: Processing block %1 for %2:")
+                            .arg(blockIndex + 1)
+                            .arg(filePath));
+            if (block.startLine > 0 && block.endLine > 0) {
+                LOG_MESSAGE(QString("  line hints: %1-%2").arg(block.startLine).arg(block.endLine));
+            }
             LOG_MESSAGE(
-                QString("  oldContent (first 200 chars): '%1...'").arg(oldContent.left(200)));
-        }
-        if (newContent.length() <= 200) {
-            LOG_MESSAGE(QString("  newContent: '%1'").arg(newContent));
-        } else {
+                QString("  searchContent length: %1 chars").arg(block.searchContent.length()));
             LOG_MESSAGE(
-                QString("  newContent (first 200 chars): '%1...'").arg(newContent.left(200)));
+                QString("  replaceContent length: %1 chars").arg(block.replaceContent.length()));
+
+            if (block.searchContent.length() <= 200) {
+                LOG_MESSAGE(QString("  searchContent: '%1'").arg(block.searchContent));
+            } else {
+                LOG_MESSAGE(QString("  searchContent (first 200 chars): '%1...'")
+                                .arg(block.searchContent.left(200)));
+            }
+            if (block.replaceContent.length() <= 200) {
+                LOG_MESSAGE(QString("  replaceContent: '%1'").arg(block.replaceContent));
+            } else {
+                LOG_MESSAGE(QString("  replaceContent (first 200 chars): '%1...'")
+                                .arg(block.replaceContent.left(200)));
+            }
+
+            Context::ChangesManager::instance().addFileEdit(
+                editId,
+                filePath,
+                block.searchContent,
+                block.replaceContent,
+                autoApply,
+                false,
+                requestId,
+                block.startLine,
+                block.endLine);
+
+            auto edit = Context::ChangesManager::instance().getFileEdit(editId);
+            QString status = "pending";
+            if (edit.status == Context::ChangesManager::Applied) {
+                status = "applied";
+            } else if (edit.status == Context::ChangesManager::Rejected) {
+                status = "rejected";
+            } else if (edit.status == Context::ChangesManager::Archived) {
+                status = "archived";
+            }
+
+            QJsonObject blockResult;
+            blockResult["edit_id"] = editId;
+            blockResult["block_index"] = blockIndex;
+            blockResult["status"] = status;
+            blockResult["status_message"] = edit.statusMessage;
+            editResults.append(blockResult);
+
+            LOG_MESSAGE(QString("File edit created: %1 (ID: %2, Status: %3, Block: %4)")
+                            .arg(filePath, editId, status)
+                            .arg(blockIndex));
+
+            blockIndex++;
         }
-
-        Context::ChangesManager::instance()
-            .addFileEdit(editId, filePath, oldContent, newContent, autoApply, false, requestId);
-
-        auto edit = Context::ChangesManager::instance().getFileEdit(editId);
-        QString status = "pending";
-        if (edit.status == Context::ChangesManager::Applied) {
-            status = "applied";
-        } else if (edit.status == Context::ChangesManager::Rejected) {
-            status = "rejected";
-        } else if (edit.status == Context::ChangesManager::Archived) {
-            status = "archived";
-        }
-
-        QString statusMessage = edit.statusMessage;
 
         QJsonObject result;
-        result["edit_id"] = editId;
         result["file"] = filePath;
-        result["old_content"] = oldContent;
-        result["new_content"] = newContent;
-        result["status"] = status;
-        result["status_message"] = statusMessage;
+        result["blocks_processed"] = blocks.size();
+        result["edits"] = editResults;
+        result["diff"] = content;
 
-        LOG_MESSAGE(
-            QString("File edit created: %1 (ID: %2, Status: %3, Deferred: %4)")
-                .arg(filePath, editId, status, requestId.isEmpty() ? QString("no") : QString("yes")));
-
-        QString resultStr = "QODEASSIST_FILE_EDIT:"
+        QString resultStr = "H2LOOP_FILE_EDIT:"
                             + QString::fromUtf8(
                                 QJsonDocument(result).toJson(QJsonDocument::Compact));
         return resultStr;

@@ -45,37 +45,39 @@ public:
 
     struct DiffHunk
     {
-        int oldStartLine;       // Starting line in old file (1-based)
-        int oldLineCount;       // Number of lines in old file
-        int newStartLine;       // Starting line in new file (1-based)
-        int newLineCount;       // Number of lines in new file
-        QStringList contextBefore;  // Lines of context before the change (for anchoring)
-        QStringList removedLines;   // Lines to remove (prefixed with -)
-        QStringList addedLines;     // Lines to add (prefixed with +)
-        QStringList contextAfter;   // Lines of context after the change (for anchoring)
+        int oldStartLine;          // Starting line in old file (1-based)
+        int oldLineCount;          // Number of lines in old file
+        int newStartLine;          // Starting line in new file (1-based)
+        int newLineCount;          // Number of lines in new file
+        QStringList contextBefore; // Lines of context before the change (for anchoring)
+        QStringList removedLines;  // Lines to remove (prefixed with -)
+        QStringList addedLines;    // Lines to add (prefixed with +)
+        QStringList contextAfter;  // Lines of context after the change (for anchoring)
     };
 
     struct DiffInfo
     {
-        QList<DiffHunk> hunks;       // List of diff hunks
-        QString originalContent;     // Full original file content (for fallback)
-        QString modifiedContent;     // Full modified file content (for fallback)
-        int contextLines = 3;        // Number of context lines to keep
-        bool useFallback = false;    // If true, use original content-based approach
+        QList<DiffHunk> hunks;    // List of diff hunks
+        QString originalContent;  // Full original file content (for fallback)
+        QString modifiedContent;  // Full modified file content (for fallback)
+        int contextLines = 3;     // Number of context lines to keep
+        bool useFallback = false; // If true, use original content-based approach
     };
 
     struct FileEdit
     {
         QString editId;
         QString filePath;
-        QString oldContent;      // Kept for backward compatibility and fallback
-        QString newContent;      // Kept for backward compatibility and fallback
-        DiffInfo diffInfo;       // Initial diff (created once, may become stale after formatting)
+        QString oldContent; // Kept for backward compatibility and fallback
+        QString newContent; // Kept for backward compatibility and fallback
+        DiffInfo diffInfo;  // Initial diff (created once, may become stale after formatting)
         FileEditStatus status;
         QDateTime timestamp;
-        bool wasAutoApplied = false;  // Track if edit was already auto-applied once
-        bool isFromHistory = false;   // Track if edit was loaded from chat history
+        bool wasAutoApplied = false; // Track if edit was already auto-applied once
+        bool isFromHistory = false;  // Track if edit was loaded from chat history
         QString statusMessage;
+        int lineHintStart = -1; // Line hint for search start (-1 = not specified)
+        int lineHintEnd = -1;   // Line hint for search end (-1 = not specified)
     };
 
     static ChangesManager &instance();
@@ -91,21 +93,23 @@ public:
         const QString &newContent,
         bool autoApply = true,
         bool isFromHistory = false,
-        const QString &requestId = QString());
+        const QString &requestId = QString(),
+        int lineHintStart = -1,
+        int lineHintEnd = -1);
     bool applyFileEdit(const QString &editId);
     bool rejectFileEdit(const QString &editId);
     bool undoFileEdit(const QString &editId);
     FileEdit getFileEdit(const QString &editId) const;
     QList<FileEdit> getPendingEdits() const;
-    
+
     bool applyPendingEditsForRequest(const QString &requestId, QString *errorMsg = nullptr);
-    
+
     QList<FileEdit> getEditsForRequest(const QString &requestId) const;
-    
+
     bool undoAllEditsForRequest(const QString &requestId, QString *errorMsg = nullptr);
-    
+
     bool reapplyAllEditsForRequest(const QString &requestId, QString *errorMsg = nullptr);
-    
+
     void archiveAllNonArchivedEdits();
 
 signals:
@@ -121,14 +125,28 @@ private:
     ChangesManager(const ChangesManager &) = delete;
     ChangesManager &operator=(const ChangesManager &) = delete;
 
-    bool performFileEdit(const QString &filePath, const QString &oldContent, const QString &newContent, QString *errorMsg = nullptr);
-    bool performFileEditWithDiff(const QString &filePath, const DiffInfo &diffInfo, bool reverse, QString *errorMsg = nullptr);
+    bool performFileEdit(
+        const QString &filePath,
+        const QString &oldContent,
+        const QString &newContent,
+        QString *errorMsg = nullptr);
+    bool performFileEditWithDiff(
+        const QString &filePath,
+        const DiffInfo &diffInfo,
+        bool reverse,
+        QString *errorMsg = nullptr);
     QString readFileContent(const QString &filePath) const;
-    
-    DiffInfo createDiffInfo(const QString &originalContent, const QString &modifiedContent, const QString &filePath);
-    bool applyDiffToContent(QString &content, const DiffInfo &diffInfo, bool reverse, QString *errorMsg = nullptr);
-    bool findHunkLocation(const QStringList &fileLines, const DiffHunk &hunk, int &actualStartLine, QString *debugInfo = nullptr) const;
-    
+
+    DiffInfo createDiffInfo(
+        const QString &originalContent, const QString &modifiedContent, const QString &filePath);
+    bool applyDiffToContent(
+        QString &content, const DiffInfo &diffInfo, bool reverse, QString *errorMsg = nullptr);
+    bool findHunkLocation(
+        const QStringList &fileLines,
+        const DiffHunk &hunk,
+        int &actualStartLine,
+        QString *debugInfo = nullptr) const;
+
     // Helper method for fragment-based apply/undo operations
     bool performFragmentReplacement(
         const QString &filePath,
@@ -136,12 +154,29 @@ private:
         const QString &replaceContent,
         bool isAppendOperation,
         QString *errorMsg = nullptr,
-        bool isUndo = false);
-    
+        bool isUndo = false,
+        int lineHintStart = -1,
+        int lineHintEnd = -1);
+
     int levenshteinDistance(const QString &s1, const QString &s2) const;
-    QString findBestMatch(const QString &fileContent, const QString &searchContent, double threshold = 0.82, double *outSimilarity = nullptr) const;
-    QString findBestMatchLineBased(const QString &fileContent, const QString &searchContent, double threshold = 0.82, double *outSimilarity = nullptr) const;
-    QString findBestMatchWithNormalization(const QString &fileContent, const QString &searchContent, double *outSimilarity = nullptr, QString *outMatchType = nullptr) const;
+    QString findBestMatch(
+        const QString &fileContent,
+        const QString &searchContent,
+        double threshold = 0.82,
+        double *outSimilarity = nullptr) const;
+    QString findBestMatchLineBased(
+        const QString &fileContent,
+        const QString &searchContent,
+        double threshold = 0.82,
+        double *outSimilarity = nullptr) const;
+    QString findBestMatchWithNormalization(
+        const QString &fileContent,
+        const QString &searchContent,
+        double *outSimilarity = nullptr,
+        QString *outMatchType = nullptr,
+        int lineHintStart = -1,
+        int lineHintEnd = -1,
+        int *outPosition = nullptr) const;
 
     struct RequestEdits
     {
@@ -151,7 +186,7 @@ private:
 
     QHash<TextEditor::TextDocument *, QQueue<ChangeInfo>> m_documentChanges;
     QHash<QString, FileEdit> m_fileEdits;
-    QHash<QString, RequestEdits> m_requestEdits;  // requestId → ordered edits
+    QHash<QString, RequestEdits> m_requestEdits; // requestId → ordered edits
     QUndoStack *m_undoStack;
     mutable QMutex m_mutex;
 };

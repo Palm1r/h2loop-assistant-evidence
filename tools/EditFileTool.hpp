@@ -40,6 +40,19 @@ public:
 
     QFuture<QString> executeAsync(const QJsonObject &input = QJsonObject()) override;
 
+    // Struct to hold parsed SEARCH/REPLACE block
+    struct SearchReplaceBlock
+    {
+        QString searchContent;
+        QString replaceContent;
+        int startLine = -1;  // Line hint for search start (-1 = not specified)
+        int endLine = -1;    // Line hint for search end (-1 = not specified)
+    };
+
+    // Parse SEARCH/REPLACE blocks from content string
+    // Made public for testing purposes
+    static QList<SearchReplaceBlock> parseSearchReplaceBlocks(const QString &content);
+
 private:
     Context::IgnoreManager *m_ignoreManager;
 };

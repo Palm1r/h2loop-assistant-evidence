@@ -49,8 +49,9 @@ QString FindAndReadFileTool::stringName() const
 
 QString FindAndReadFileTool::description() const
 {
-    return "Search for a file by name/path and optionally read its content. "
-           "Returns the best matching file and its content.";
+    return "Search for a file by name/path and optionally read its content with line numbers. "
+           "Returns the best matching file and its line-numbered content. "
+           "Supports reading specific line ranges for efficiency.";
 }
 
 QJsonObject FindAndReadFileTool::getDefinition(LLMCore::ToolSchemaFormat format) const
@@ -78,6 +79,16 @@ QJsonObject FindAndReadFileTool::getDefinition(LLMCore::ToolSchemaFormat format)
          "to find and return only the relevant code elements, such as when user asks about "
          "one function, a specific class member, variable definition, or any code element "
          "without needing the entire file content"}};
+
+    properties["start_line"] = QJsonObject{
+        {"type", "integer"},
+        {"description", "Starting line number to read from (1-based, default: 1)"},
+        {"minimum", 1}};
+
+    properties["end_line"] = QJsonObject{
+        {"type", "integer"},
+        {"description", "Ending line number to read to (1-based, default: end of file)"},
+        {"minimum", 1}};
 
     QJsonObject definition;
     definition["type"] = "object";
@@ -113,6 +124,15 @@ QFuture<QString> FindAndReadFileTool::executeAsync(const QJsonObject &input)
         QString filePattern = input["file_pattern"].toString();
         bool readContent = input["read_content"].toBool(true);
         QString searchQuery = input["search_query"].toString();
+        int startLine = input["start_line"].toInt(0);
+        int endLine = input["end_line"].toInt(0);
+
+        LOG_MESSAGE(
+            QString("FindAndReadFileTool: Searching for '%1' (pattern: %2, read: %3, lines: %4-%5)")
+                .arg(query, filePattern.isEmpty() ? "none" : filePattern)
+                .arg(readContent)
+                .arg(startLine > 0 ? QString::number(startLine) : "1")
+                .arg(endLine > 0 ? QString::number(endLine) : "end"));
 
         if (!searchQuery.isEmpty()) {
             readContent = false;
@@ -126,7 +146,8 @@ QFuture<QString> FindAndReadFileTool::executeAsync(const QJsonObject &input)
         }
 
         if (readContent) {
-            bestMatch.content = FileSearchUtils::readFileContent(bestMatch.absolutePath);
+            bestMatch.content = FileSearchUtils::readFileContentWithLineNumbers(
+                bestMatch.absolutePath, startLine, endLine);
             if (bestMatch.content.isNull()) {
                 bestMatch.error = "Could not read file";
             }
