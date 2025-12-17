@@ -163,7 +163,7 @@ void ClientInterface::sendMessage(
         }
 
         if (!linkedFiles.isEmpty()) {
-            systemPrompt = getSystemPromptWithLinkedFiles(systemPrompt, linkedFiles);
+            systemPrompt = getSystemPromptWithLinkedFiles(systemPrompt, linkedFiles, useAgentMode);
         }
         context.systemPrompt = systemPrompt;
     }
@@ -184,9 +184,13 @@ void ClientInterface::sendMessage(
                        msg.attachments.begin(),
                        msg.attachments.end(),
                        QString(),
-                       [](QString acc, const Context::ContentFile &attachment) {
+                       [isToolsEnabled](QString acc, const Context::ContentFile &attachment) {
+                           if (!isToolsEnabled) {
+                               return acc
+                                      + QString("\nName: %1\nFile content:\n%2")
+                                            .arg(attachment.filename, attachment.content);
+                           }
                            QString ctags = CtagUtils::generateCtagforFile(attachment.fullPath);
-
                            QString fileInfo
                                = !ctags.isEmpty()
                                      ? QString("\nName: %1\nCtags (symbols and structure) of file:: \n%2")
@@ -390,7 +394,7 @@ QString ClientInterface::filterToolCallSyntax(const QString &response) const
 }
 
 QString ClientInterface::getSystemPromptWithLinkedFiles(
-    const QString &basePrompt, const QList<QString> &linkedFiles) const
+    const QString &basePrompt, const QList<QString> &linkedFiles, bool isAgentMode) const
 {
     QString updatedPrompt = basePrompt;
 
@@ -401,6 +405,12 @@ QString ClientInterface::getSystemPromptWithLinkedFiles(
         for (const auto &file : contentFiles) {
             LOG_MESSAGE(
                 QString("Processing file: %1 (full path: %2)").arg(file.filename, file.fullPath));
+
+            if (!isAgentMode) {
+                updatedPrompt += QString("\nFile: %1\nAnd it's content:\n%2\n")
+                                     .arg(file.filename, file.content);
+                continue;
+            }
 
             QString filteredCtags = CtagUtils::generateCtagforFile(file.fullPath);
             if (!filteredCtags.isEmpty()) {
