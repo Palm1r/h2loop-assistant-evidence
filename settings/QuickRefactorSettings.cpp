@@ -93,8 +93,9 @@ QuickRefactorSettings::QuickRefactorSettings()
     // Ollama Settings
     ollamaLivetime.setSettingsKey(Constants::QR_OLLAMA_LIVETIME);
     ollamaLivetime.setToolTip(
-        Tr::tr("Time to suspend Ollama after completion request (in minutes), "
-               "Only Ollama,  -1 to disable"));
+        Tr::tr(
+            "Time to suspend Ollama after completion request (in minutes), "
+            "Only Ollama,  -1 to disable"));
     ollamaLivetime.setLabelText("Livetime:");
     ollamaLivetime.setDefaultValue("5m");
     ollamaLivetime.setDisplayStyle(Utils::StringAspect::LineEditDisplay);
@@ -104,32 +105,35 @@ QuickRefactorSettings::QuickRefactorSettings()
     contextWindow.setRange(-1, 10000);
     contextWindow.setDefaultValue(2048);
 
-    useTools.setSettingsKey(Constants::QR_USE_TOOLS);
-    useTools.setLabelText(Tr::tr("Enable Tools"));
-    useTools.setToolTip(
-        Tr::tr("Enable AI tools/functions for quick refactoring (allows reading project files, "
-               "searching code, etc.)"));
-    useTools.setDefaultValue(false);
+    // useTools.setSettingsKey(Constants::QR_USE_TOOLS);
+    // useTools.setLabelText(Tr::tr("Enable Tools"));
+    // useTools.setToolTip(
+    //     Tr::tr("Enable AI tools/functions for quick refactoring (allows reading project files, "
+    //            "searching code, etc.)"));
+    // useTools.setDefaultValue(false);
 
     useThinking.setSettingsKey(Constants::QR_USE_THINKING);
     useThinking.setLabelText(Tr::tr("Enable Thinking Mode"));
     useThinking.setToolTip(
-        Tr::tr("Enable extended thinking mode for complex refactoring tasks (supported by "
-               "compatible models like Claude and Google AI)"));
+        Tr::tr(
+            "Enable extended thinking mode for complex refactoring tasks (supported by "
+            "compatible models like Claude and Google AI)"));
     useThinking.setDefaultValue(false);
 
     thinkingBudgetTokens.setSettingsKey(Constants::QR_THINKING_BUDGET_TOKENS);
     thinkingBudgetTokens.setLabelText(Tr::tr("Thinking Budget Tokens:"));
     thinkingBudgetTokens.setToolTip(
-        Tr::tr("Number of tokens allocated for thinking process. Use -1 for dynamic thinking "
-               "(model decides), 0 to disable, or positive value for custom budget"));
+        Tr::tr(
+            "Number of tokens allocated for thinking process. Use -1 for dynamic thinking "
+            "(model decides), 0 to disable, or positive value for custom budget"));
     thinkingBudgetTokens.setRange(-1, 100000);
     thinkingBudgetTokens.setDefaultValue(10000);
 
     thinkingMaxTokens.setSettingsKey(Constants::QR_THINKING_MAX_TOKENS);
     thinkingMaxTokens.setLabelText(Tr::tr("Thinking Max Output Tokens:"));
     thinkingMaxTokens.setToolTip(
-        Tr::tr("Maximum output tokens when thinking mode is enabled (includes thinking + response)"));
+        Tr::tr(
+            "Maximum output tokens when thinking mode is enabled (includes thinking + response)"));
     thinkingMaxTokens.setRange(1000, 200000);
     thinkingMaxTokens.setDefaultValue(16000);
 
@@ -189,7 +193,7 @@ QuickRefactorSettings::QuickRefactorSettings()
         ollamaGrid.addRow({contextWindow});
 
         auto toolsGrid = Grid{};
-        toolsGrid.addRow({useTools});
+        // toolsGrid.addRow({useTools});
         toolsGrid.addRow({useThinking});
         toolsGrid.addRow({thinkingBudgetTokens});
         toolsGrid.addRow({thinkingMaxTokens});
@@ -264,7 +268,7 @@ void QuickRefactorSettings::resetSettingsToDefaults()
         resetAspect(frequencyPenalty);
         resetAspect(ollamaLivetime);
         resetAspect(contextWindow);
-        resetAspect(useTools);
+        // resetAspect(useTools);
         resetAspect(useThinking);
         resetAspect(thinkingBudgetTokens);
         resetAspect(thinkingMaxTokens);
@@ -292,4 +296,3 @@ public:
 const QuickRefactorSettingsPage quickRefactorSettingsPage;
 
 } // namespace QodeAssist::Settings
-
