@@ -69,7 +69,7 @@ private:
     void handleLLMResponse(const QString &response, const QJsonObject &request);
     QString getCurrentFileContext() const;
     QString getSystemPromptWithLinkedFiles(
-        const QString &basePrompt, const QList<QString> &linkedFiles) const;
+        const QString &basePrompt, const QList<QString> &linkedFiles, bool isAgentMode) const;
     bool isImageFile(const QString &filePath) const;
     QString getMediaTypeForImage(const QString &filePath) const;
     QString encodeImageToBase64(const QString &filePath) const;

@@ -163,7 +163,7 @@ void ClientInterface::sendMessage(
         }
 
         if (!linkedFiles.isEmpty()) {
-            systemPrompt = getSystemPromptWithLinkedFiles(systemPrompt, linkedFiles);
+            systemPrompt = getSystemPromptWithLinkedFiles(systemPrompt, linkedFiles, useAgentMode);
         }
         context.systemPrompt = systemPrompt;
     }
@@ -394,7 +394,7 @@ QString ClientInterface::filterToolCallSyntax(const QString &response) const
 }
 
 QString ClientInterface::getSystemPromptWithLinkedFiles(
-    const QString &basePrompt, const QList<QString> &linkedFiles) const
+    const QString &basePrompt, const QList<QString> &linkedFiles, bool isAgentMode) const
 {
     QString updatedPrompt = basePrompt;
 
@@ -405,6 +405,12 @@ QString ClientInterface::getSystemPromptWithLinkedFiles(
         for (const auto &file : contentFiles) {
             LOG_MESSAGE(
                 QString("Processing file: %1 (full path: %2)").arg(file.filename, file.fullPath));
+
+            if (!isAgentMode) {
+                updatedPrompt += QString("\nFile: %1\nAnd it's content:\n%2\n")
+                                     .arg(file.filename, file.content);
+                continue;
+            }
 
             QString filteredCtags = CtagUtils::generateCtagforFile(file.fullPath);
             if (!filteredCtags.isEmpty()) {
