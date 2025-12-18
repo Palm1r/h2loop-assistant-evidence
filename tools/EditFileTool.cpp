@@ -212,6 +212,12 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
             throw ToolInvalidArgument("'content' parameter is required and cannot be empty");
         }
 
+        // If SEARCH tag is missing but REPLACE and separator are present, try adding SEARCH tag [h2loop's model issue/case]
+        if (!content.contains("<<<<<<< SEARCH") && content.contains("=======")
+            && content.contains(">>>>>>> REPLACE")) {
+            content = "<<<<<<< SEARCH\n" + content;
+        }
+
         // Parse SEARCH/REPLACE blocks from content
         QList<SearchReplaceBlock> blocks = parseSearchReplaceBlocks(content);
 
