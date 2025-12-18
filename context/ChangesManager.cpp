@@ -364,6 +364,8 @@ bool ChangesManager::performFileEdit(
                     cursor.insertText(newContent);
                     cursor.endEditBlock();
 
+                    textEditor->save();
+
                     LOG_MESSAGE(QString("Appended to open editor: %1").arg(filePath));
                     setError("Applied successfully (appended to end of file)");
                     return true;
@@ -383,6 +385,8 @@ bool ChangesManager::performFileEdit(
                     cursor.removeSelectedText();
                     cursor.insertText(newContent);
                     cursor.endEditBlock();
+
+                    textEditor->save();
 
                     LOG_MESSAGE(QString("Updated open editor (exact match): %1").arg(filePath));
                     setError("Applied successfully (exact match)");
@@ -407,6 +411,9 @@ bool ChangesManager::performFileEdit(
                             cursor.removeSelectedText();
                             cursor.insertText(newContent);
                             cursor.endEditBlock();
+
+                            // Auto-save the modified file
+                            textEditor->save();
 
                             LOG_MESSAGE(QString("Updated open editor (fuzzy match %1%%): %2")
                                             .arg(qRound(similarity * 100))
@@ -1030,6 +1037,8 @@ bool ChangesManager::performFragmentReplacement(
                         cursor.insertText(resultContent);
                         cursor.endEditBlock();
 
+                        textEditor->save();
+
                         if (errorMsg && errorMsg->isEmpty()) {
                             *errorMsg = isUndo ? "Successfully undone" : "Successfully applied";
                         }
@@ -1450,6 +1459,8 @@ bool ChangesManager::performFileEditWithDiff(
                     cursor.removeSelectedText();
                     cursor.insertText(modifiedContent);
                     cursor.endEditBlock();
+
+                    textEditor->save();
 
                     LOG_MESSAGE(
                         QString("  ✓ Successfully applied diff to open editor: %1").arg(filePath));
