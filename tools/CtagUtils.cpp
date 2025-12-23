@@ -17,10 +17,15 @@ QString CtagUtils::runCtags(const QString &filePath)
 
     // First try bundled ctags
     QString pluginDir = QCoreApplication::applicationDirPath();
-    QString bundledCtags = pluginDir + "/ctags";
+    QString bundledCtags;
+    LOG_MESSAGE(QString("Plugin directory for ctags: %1").arg(pluginDir));
 #ifdef Q_OS_WIN
-    bundledCtags += ".exe";
+    bundledCtags = pluginDir + "/ctags-p6.2.20251130.0-clang-x64/ctags.exe";
+#elif defined(Q_OS_LINUX)
+    bundledCtags = pluginDir + "/ctags-2025.11.27-1-x86_64-linux/ctags";
 #endif
+    LOG_MESSAGE(QString("Checking for bundled ctags at: %1").arg(bundledCtags));
+
     if (QFile::exists(bundledCtags)) {
         ctagsProgram = bundledCtags;
     } else {
