@@ -43,6 +43,8 @@ public:
     Utils::BoolAspect enableDebugLogging{this};
     Utils::BoolAspect enableCheckUpdate{this};
 
+    Utils::StringAspect pluginDir{this};
+
     ButtonAspect checkUpdate{this};
     ButtonAspect resetToDefaults{this};
 

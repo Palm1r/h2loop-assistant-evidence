@@ -90,6 +90,8 @@ GeneralSettings::GeneralSettings()
         "Enable detailed logging of LLM requests and responses for debugging purposes");
     enableDebugLogging.setDefaultValue(false);
 
+    initStringAspect(pluginDir, Constants::PLUGIN_DIR, "Plugin Directory", "");
+
     resetToDefaults.m_buttonText = TrConstants::RESET_TO_DEFAULTS;
 
     initStringAspect(ccProvider, Constants::CC_PROVIDER, TrConstants::PROVIDER, "OpenAI Compatible");
@@ -361,6 +363,7 @@ GeneralSettings::GeneralSettings()
             Row{enableQodeAssist, Stretch{1}, resetToDefaults},
             Row{enableLogging, Stretch{1}},
             Row{enableDebugLogging, Stretch{1}},
+            Row{pluginDir, Space{300}},
             Space{8},
             ccGroup,
             Space{8},
@@ -680,6 +683,7 @@ void GeneralSettings::resetPageToDefaults()
         resetAspect(enableQodeAssist);
         resetAspect(enableLogging);
         resetAspect(enableDebugLogging);
+        resetAspect(pluginDir);
         resetAspect(ccProvider);
         resetAspect(ccModel);
         resetAspect(ccTemplate);

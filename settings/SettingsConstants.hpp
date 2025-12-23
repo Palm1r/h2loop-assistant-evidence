@@ -74,6 +74,7 @@ const char CC_PRESET1_CUSTOM_ENDPOINT_HISTORY[] = "QodeAssist.caPreset1CustomEnd
 
 // settings
 const char ENABLE_QODE_ASSIST[] = "QodeAssist.enableQodeAssist";
+const char PLUGIN_DIR[] = "QodeAssist.pluginDir";
 const char CC_AUTO_COMPLETION[] = "QodeAssist.ccAutoCompletion";
 const char CC_SHOW_PROGRESS_WIDGET[] = "QodeAssist.ccShowProgressWidget";
 const char CC_USE_OPEN_FILES_CONTEXT[] = "QodeAssist.ccUseOpenFilesContext";

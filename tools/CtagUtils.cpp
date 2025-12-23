@@ -2,6 +2,7 @@
 #include "DocStringUtils.hpp"
 
 #include <logger/Logger.hpp>
+#include <settings/GeneralSettings.hpp>
 #include <QCoreApplication>
 #include <QFile>
 #include <QFileInfo>
@@ -16,7 +17,9 @@ QString CtagUtils::runCtags(const QString &filePath)
     QString ctagsProgram;
 
     // First try bundled ctags
-    QString pluginDir = QCoreApplication::applicationDirPath();
+    QString pluginDir = QodeAssist::Settings::generalSettings().pluginDir().isEmpty()
+                            ? QCoreApplication::applicationDirPath()
+                            : QodeAssist::Settings::generalSettings().pluginDir();
     QString bundledCtags;
     LOG_MESSAGE(QString("Plugin directory for ctags: %1").arg(pluginDir));
 #ifdef Q_OS_WIN
