@@ -1,6 +1,8 @@
 #include "DocStringUtils.hpp"
 
 #include <logger/Logger.hpp>
+#include <settings/GeneralSettings.hpp>
+#include <QCoreApplication>
 #include <QJsonDocument>
 #include <QProcess>
 #include <QTemporaryFile>
@@ -52,11 +54,33 @@ QJsonDocument DocStringUtils::generateDocstrings(const QString &filePath)
     QStringList arguments;
     arguments << "scan" << "--json" << "-r" << rulesFile << filePath;
 
+    QString astGrepProgram;
+
+    // First try bundled ast-grep
+    QString pluginDir = QodeAssist::Settings::generalSettings().pluginDir().isEmpty()
+                            ? QCoreApplication::applicationDirPath()
+                            : QodeAssist::Settings::generalSettings().pluginDir();
+    QString bundledAstGrep;
+#ifdef Q_OS_WIN
+    bundledAstGrep = pluginDir + "/app-aarch64-pc-windows-msvc/ast-grep.exe";
+#elif defined(Q_OS_LINUX)
+    bundledAstGrep = pluginDir + "/ast-grep-app-x86_64-unknown-linux-gnu/ast-grep";
+#endif
+
+    LOG_MESSAGE(QString("Checking for bundled ast-grep at: %1").arg(bundledAstGrep));
+
+    if (QFile::exists(bundledAstGrep)) {
+        astGrepProgram = bundledAstGrep;
+    } else {
+        // Fallback to system ast-grep
+        astGrepProgram = "ast-grep";
+    }
+
     LOG_MESSAGE(
         QString("DocStringUtils: Executing ast-grep with args: %1").arg(arguments.join(" ")));
 
     QProcess process;
-    process.setProgram("ast-grep");
+    process.setProgram(astGrepProgram);
     process.setArguments(arguments);
     process.start();
     if (!process.waitForFinished(30000)) { // 30 second timeout
