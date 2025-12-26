@@ -221,15 +221,6 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
         // Parse SEARCH/REPLACE blocks from content
         QList<SearchReplaceBlock> blocks = parseSearchReplaceBlocks(content);
 
-        if (blocks.isEmpty()) {
-            throw ToolInvalidArgument(
-                "No valid SEARCH/REPLACE blocks found in content. "
-                "You must provide content in the exact SEARCH/REPLACE format. "
-                "Example: <<<<<<< SEARCH:start_line:end_line\\nexisting code here\\n=======\\nnew "
-                "code here\\n>>>>>>> "
-                "REPLACE");
-        }
-
         QString filePath;
         QFileInfo fileInfo(filename);
 
@@ -253,6 +244,32 @@ QFuture<QString> EditFileTool::executeAsync(const QJsonObject &input)
         QFile file(filePath);
         if (!file.exists()) {
             throw ToolRuntimeError(QString("File does not exist: %1").arg(filePath));
+        }
+
+        QString originalContent;
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            originalContent = QString::fromUtf8(file.readAll());
+            file.close();
+        } else {
+            throw ToolRuntimeError(QString("Cannot read file: %1").arg(filePath));
+        }
+
+        if (blocks.isEmpty()) {
+            if (originalContent.isEmpty()) {
+                // For empty files, treat the entire content as the new file content
+                SearchReplaceBlock block;
+                block.searchContent = "";
+                block.replaceContent = content;
+                blocks.append(block);
+            } else {
+                throw ToolInvalidArgument(
+                    "No valid SEARCH/REPLACE blocks found in content. "
+                    "You must provide content in the exact SEARCH/REPLACE format. "
+                    "Example: <<<<<<< SEARCH:start_line:end_line\\nexisting code "
+                    "here\\n=======\\nnew "
+                    "code here\\n>>>>>>> "
+                    "REPLACE");
+            }
         }
 
         QFileInfo finalFileInfo(filePath);
