@@ -172,7 +172,7 @@ QList<EditFileTool::SearchReplaceBlock> EditFileTool::parseSearchReplaceBlocks(c
     // Format: <<<<<<< SEARCH:start_line:end_line or <<<<<<< SEARCH
     // Handles optional code fence with language identifier
     QRegularExpression blockPattern(
-        R"((?:```\w*\s*\n)?<<<<<<< SEARCH(?::(\d+):(\d+))?\n([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE(?:\n```)?)",
+        R"((?:```\w*\s*\n)?<<<<<<< SEARCH(?::(\d+):(\d+))?\n([\s\S]*?)\n?=======\n([\s\S]*?)\n>>>>>>> REPLACE(?:\n```)?)",
         QRegularExpression::MultilineOption);
 
     QRegularExpressionMatchIterator it = blockPattern.globalMatch(content);
