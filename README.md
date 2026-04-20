@@ -85,7 +85,8 @@ QodeAssist contributors whose copyright was affected by the rebrand:
 
 ### Scale of modification
 
-just renaming and disable updating
+Commits on `release-dec-22` (latest release branch) that do not exist on
+my upstream `main`: **250 commits**.
 
 ## Integrity
 
